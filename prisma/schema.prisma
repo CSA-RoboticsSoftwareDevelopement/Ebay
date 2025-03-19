@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profile
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  name          String?
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  signupKey     SignupKey?     @relation(fields: [signupKeyId], references: [id])
+  signupKeyId   String?
+  ebayAccounts  EbayAccount[]
+
+  @@map("users")
+}
+
+// SignupKey model for admin-generated registration keys
+model SignupKey {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  isUsed      Boolean   @default(false)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?   // Admin who created the key
+  usedBy      User[]
+
+  @@map("signup_keys")
+}
+
+// EbayAccount model for eBay integration
+model EbayAccount {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ebayUserId      String
+  accessToken     String    @db.Text
+  refreshToken    String    @db.Text
+  tokenExpiresAt  DateTime
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  products        Product[]
+
+  @@unique([userId, ebayUserId])
+  @@map("ebay_accounts")
+}
+
+// Product model for storing eBay product data
+model Product {
+  id                String          @id @default(uuid())
+  ebayAccountId     String
+  ebayAccount       EbayAccount     @relation(fields: [ebayAccountId], references: [id], onDelete: Cascade)
+  ebayItemId        String
+  title             String
+  price             Float
+  currency          String          @default("USD")
+  quantity          Int             @default(0)
+  quantitySold      Int             @default(0)
+  sellThroughRate   Float?
+  timeToSell        Int?            // in days
+  costPrice         Float?
+  shipping          Float?
+  ebayFees          Float?
+  profit            Float?
+  profitMargin      Float?
+  roi               Float?
+  imageUrl          String?
+  listingStatus     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  competitorData    CompetitorData?
+
+  @@unique([ebayAccountId, ebayItemId])
+  @@map("products")
+}
+
+// CompetitorData model for storing competitor analysis
+model CompetitorData {
+  id                String   @id @default(uuid())
+  productId         String   @unique
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  avgPrice          Float?
+  avgShipping       Float?
+  lowestPrice       Float?
+  highestPrice      Float?
+  avgSellerFeedback Float?
+  avgListingPosition Int?
+  avgImageCount     Float?
+  competitorCount   Int?
+  lastUpdated       DateTime @default(now())
+
+  @@map("competitor_data")
+}
+
+// Enum for user roles
+enum Role {
+  USER
+  ADMIN
+} 
