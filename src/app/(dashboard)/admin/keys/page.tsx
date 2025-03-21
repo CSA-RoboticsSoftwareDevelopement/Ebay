@@ -31,59 +31,128 @@ export default function AdminKeysPage() {
 
   // Check if user is admin
   useEffect(() => {
-    if (user && user.role !== 'ADMIN') {
-      router.push('/dashboard');
+    if (user && user.role === 'ADMIN') {
+      fetchKeys();
     }
-  }, [user, router]);
+  }, [user]); // Runs when user is updated
+  
 
   // Fetch keys from API
   const fetchKeys = async () => {
+    if (!user) return; // Ensure user exists before making the request
+  
     try {
       setIsLoading(true);
-      const response = await axios.get('/api/admin/keys');
-      setKeys(response.data.keys);
-    } catch (error) {
+  
+      const response = await axios.get('/api/admin/keys', {
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": user.role || "GUEST", // Ensure role is provided
+        },
+      });
+  
+      // Ensure keys is always an array, even if the API response doesn't return it properly
+      setKeys(Array.isArray(response.data.keys) ? response.data.keys : []); // Safe check
+    } catch (error: any) {
       console.error('Error fetching keys:', error);
-      toast.error('Failed to fetch signup keys');
+  
+      if (error.response?.status === 403) {
+        toast.error('You do not have permission to view signup keys.');
+        router.push('/dashboard'); // Redirect if unauthorized
+      } else {
+        toast.error('Failed to fetch signup keys.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
+  
+  
+  
   // Generate new key
   const generateKey = async () => {
+    if (!user) {
+      toast.error("You are not authorized to generate keys.");
+      return;
+    }
+  
+    // Log user role and id for debugging purposes
+  
     try {
       setIsGenerating(true);
-      const response = await axios.post('/api/admin/keys', {
-        expiresInDays: parseInt(expiresInDays),
-      });
-      
-      toast.success('Signup key generated successfully!');
-      
-      // Add new key to list
-      setKeys([response.data.key, ...keys]);
-    } catch (error) {
-      console.error('Error generating key:', error);
-      toast.error('Failed to generate signup key');
+  
+      // Send request to backend to generate the signup key
+      const response = await axios.post(
+        "http://localhost:5000/api/generate-signup-key", // Backend endpoint
+        {
+          expiresAt: new Date(Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000), // Expiration date based on days
+          userId: user.name, // Pass user id in the request body
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-role": user.role || "GUEST", // Pass user role in the request headers
+          },
+        }
+      );
+  
+      // Successfully generated key
+      toast.success("Signup key generated successfully!");
+      setKeys([response.data.key, ...keys]); // Ensure the key is treated as a single item and not an array
+      fetchKeys(); // Refresh the list of keys  
+    } catch (error: any) {
+      console.error("Error generating key:", error);
+  
+      // Handle specific error cases
+      if (error.response?.status === 403) {
+        toast.error("You do not have permission to generate signup keys.");
+        router.push("/dashboard"); // Redirect to dashboard if permission is denied
+      } else {
+        toast.error("Failed to generate signup key.");
+      }
     } finally {
-      setIsGenerating(false);
+      setIsGenerating(false); // Reset the loading state
     }
-  };
+  };  
 
   // Delete key
   const deleteKey = async (id: string) => {
+    if (!user) {
+      toast.error("You are not authorized to delete keys.");
+      return;
+    }
+  
     try {
-      await axios.delete(`/api/admin/keys?id=${id}`);
-      
-      toast.success('Signup key deleted successfully!');
-      
-      // Remove key from list
-      setKeys(keys.filter(key => key.id !== id));
-    } catch (error) {
-      console.error('Error deleting key:', error);
-      toast.error('Failed to delete signup key');
+      // Send a DELETE request to the correct backend URL
+      await axios.delete('http://localhost:5000/api/delete-signup-key', {
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": user.role || "GUEST", // Pass user role in headers
+        },
+        data: {
+          id, // Send the key ID in the request body
+        },
+      });
+  
+      toast.success("Signup key deleted successfully!");
+  
+      // Remove the deleted key from the state
+      setKeys(keys.filter((key) => key.id !== id));
+    } catch (error: any) {
+      console.error("Error deleting key:", error);
+  
+      if (error.response?.status === 403) {
+        toast.error("You do not have permission to delete signup keys.");
+        router.push("/dashboard"); // Redirect if unauthorized
+      } else if (error.response?.status === 404) {
+        toast.error("Signup key not found.");
+      } else {
+        toast.error("Failed to delete signup key.");
+      }
     }
   };
+  
+  
 
   // Format date
   const formatDate = (dateString: string | null) => {
@@ -183,13 +252,14 @@ export default function AdminKeysPage() {
                       {formatDate(key.expiresAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => deleteKey(key.id)}
-                        className="text-red-600 hover:text-red-900"
-                        disabled={key.isUsed}
-                      >
-                        Delete
-                      </button>
+                    <button
+  onClick={() => deleteKey(key.id)}
+  className={`text-red-600 ${key.isUsed ? 'text-gray-400 cursor-not-allowed' : 'hover:text-red-900'}`}
+  disabled={key.isUsed}
+>
+  Delete
+</button>
+
                     </td>
                   </tr>
                 ))

@@ -16,6 +16,7 @@ export default function Header() {
           <button
             type="button"
             className="p-2 text-neutral-gray-500 hover:text-primary-black rounded-full hover:bg-neutral-gray-100"
+            aria-label="Notifications"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -37,6 +38,8 @@ export default function Header() {
               type="button"
               className="flex items-center space-x-2"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
+              aria-label="User menu"
+              aria-expanded={isProfileOpen}
             >
               <div className="w-8 h-8 rounded-full bg-neutral-gray-200 flex items-center justify-center text-sm font-medium">
                 U
@@ -91,4 +94,4 @@ export default function Header() {
       </div>
     </header>
   );
-} 
+}

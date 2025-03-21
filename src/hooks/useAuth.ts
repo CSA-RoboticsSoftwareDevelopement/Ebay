@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 
 // Define user type
 export type User = {
+  auth_token: any;
   id: string;
   email: string;
   name: string | null;

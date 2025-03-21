@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import axios from 'axios';
+
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
@@ -36,27 +38,42 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
+    setError(''); // Clear any previous errors
+  
     // Basic validation
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match'); 
       return;
     }
-
+  
     if (password.length < 8) {
       setError('Password must be at least 8 characters long');
       return;
     }
-
+  
     try {
-      await signup(email, password, name, signupKey);
-    } catch (err) {
-      // Error is handled by the auth hook
+      // Send the signup data to the backend API
+      const response = await axios.post('http://localhost:5000/api/signup', {
+        signupKey,
+        email,
+        password,
+        name,
+      });
+  
+      // Handle success
+      console.log('Signup successful:', response.data);
+      window.location.href = '/login'; // Redirect to the login page
+      // You might want to redirect the user or show a success message here.
+    } catch (err: any) {
+      // Handle error (could be a network error or server error)
       console.error('Signup error:', err);
+      if (err.response) {
+        setError(err.response.data.message);  // Show the error message from the server
+      } else {
+        setError('An error occurred. Please try again later.');
+      }
     }
   };
-
   return (
     <div className="card">
       <div className="text-center mb-8">

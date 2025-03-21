@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Settings() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function Settings() {
     marketUpdates: false,
     competitorChanges: true,
   });
-  
+   const { user } = useAuth();  
   // eBay account state
   const [isConnected, setIsConnected] = useState(false);
   const [ebayUserId, setEbayUserId] = useState('');
@@ -44,10 +45,18 @@ export default function Settings() {
       try {
         setIsLoading(true);
         
-        // In a real app, this would be an API call to get user data
-        const response = await axios.get('/api/user/profile');
-        const { data } = response;
+        // Get user ID (Replace with actual logic to get ID, e.g., from localStorage or context)
+        if (!user || !user.id) {
+          return; // Wait until user is available
+        }
         
+        
+        const userId = user.id;
+    
+        // Fetch user profile data
+        const response = await axios.get(`/api/user/change-password?id=${userId}`);
+        const { data } = response;
+    
         setName(data.name || '');
         setEmail(data.email || '');
         setNotifications(data.notifications || {
@@ -58,17 +67,17 @@ export default function Settings() {
           marketUpdates: false,
           competitorChanges: true,
         });
-        
+    
         // Fetch eBay account data
         const ebayResponse = await axios.get('/api/user/ebay-accounts');
         const ebayAccounts = ebayResponse.data;
-        
+    
         if (ebayAccounts && ebayAccounts.length > 0) {
           setIsConnected(true);
           setEbayUserId(ebayAccounts[0].ebayUserId || '');
           setLastSync(new Date(ebayAccounts[0].updatedAt).toLocaleString() || '');
         }
-        
+    
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Failed to load user data');
@@ -77,9 +86,9 @@ export default function Settings() {
       }
     };
     
+    
     fetchUserData();
-  }, []);
-  
+  }, [user]);  
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -618,12 +627,14 @@ export default function Settings() {
             
             <div className="space-y-4">
               <div>
-                <label className="label">Data Retention</label>
+                <label htmlFor="data-retention" className="label">Data Retention</label>
                 <p className="text-sm text-neutral-gray-500 mb-2">Choose how long to keep your historical data</p>
                 <select
+                  id="data-retention"
                   value={dataRetention}
                   onChange={(e) => handleDataRetentionChange(e.target.value)}
                   className="input w-full"
+                  title="Data retention period"
                 >
                   <option value="1month">1 Month</option>
                   <option value="3months">3 Months</option>
@@ -647,5 +658,4 @@ export default function Settings() {
         </div>
       )}
     </div>
-  );
-} 
+  );} 

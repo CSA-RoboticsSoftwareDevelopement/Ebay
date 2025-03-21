@@ -115,6 +115,18 @@ export async function generateSignupKey(createdBy: string, expiresAt?: Date) {
     },
   });
 }
+// 🟢 Get user profile
+export async function getUserProfile(userId: string) {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+    },
+  });
+}
 
 // Change password
 export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
