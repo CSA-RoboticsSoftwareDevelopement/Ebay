@@ -24,137 +24,90 @@ export default function AdminKeysPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  // Fetch keys on component mount
+  // ✅ Redirect non-admins
   useEffect(() => {
-    fetchKeys();
-  }, []);
+    if (user && user.is_admin !== 1) {
+      toast.error('Access denied. Only admins can manage signup keys.');
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
-  // Check if user is admin
+  // ✅ Fetch signup keys
   useEffect(() => {
-    if (user && user.role === 'ADMIN') {
+    if (user && user.is_admin === 1) {
       fetchKeys();
     }
-  }, [user]); // Runs when user is updated
-  
+  }, [user]);
 
-  // Fetch keys from API
   const fetchKeys = async () => {
-    if (!user) return; // Ensure user exists before making the request
-  
+    if (!user) return;
+
     try {
       setIsLoading(true);
-  
       const response = await axios.get('/api/admin/keys', {
         headers: {
           "Content-Type": "application/json",
-          "x-user-role": user.role || "GUEST", // Ensure role is provided
+          "x-user-admin": user.is_admin?.toString() || "0", // ✅ Use is_admin
         },
       });
-  
-      // Ensure keys is always an array, even if the API response doesn't return it properly
-      setKeys(Array.isArray(response.data.keys) ? response.data.keys : []); // Safe check
+
+      setKeys(Array.isArray(response.data.keys) ? response.data.keys : []);
     } catch (error: any) {
       console.error('Error fetching keys:', error);
-  
-      if (error.response?.status === 403) {
-        toast.error('You do not have permission to view signup keys.');
-        router.push('/dashboard'); // Redirect if unauthorized
-      } else {
-        toast.error('Failed to fetch signup keys.');
-      }
+      toast.error('Failed to fetch signup keys.');
     } finally {
       setIsLoading(false);
     }
   };
-  
-  
-  
-  // Generate new key
+
+  // ✅ Generate new key
   const generateKey = async () => {
-    if (!user) {
+    if (!user || user.is_admin !== 1) {
       toast.error("You are not authorized to generate keys.");
       return;
     }
-  
-    // Log user role and id for debugging purposes
-  
+
     try {
       setIsGenerating(true);
-  
-      // Send request to backend to generate the signup key
       const response = await axios.post(
-        "http://localhost:5000/api/generate-signup-key", // Backend endpoint
-        {
-          expiresAt: new Date(Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000), // Expiration date based on days
-          userId: user.name, // Pass user id in the request body
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-role": user.role || "GUEST", // Pass user role in the request headers
-          },
-        }
+        "/api/admin/generate-signup-key",
+        { expiresAt: new Date(Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000) },
+        { headers: { "x-user-admin": user.is_admin?.toString() || "0" } }
       );
-  
-      // Successfully generated key
+
       toast.success("Signup key generated successfully!");
-      setKeys([response.data.key, ...keys]); // Ensure the key is treated as a single item and not an array
-      fetchKeys(); // Refresh the list of keys  
+      setKeys([response.data.key, ...keys]);
+      fetchKeys();
     } catch (error: any) {
       console.error("Error generating key:", error);
-  
-      // Handle specific error cases
-      if (error.response?.status === 403) {
-        toast.error("You do not have permission to generate signup keys.");
-        router.push("/dashboard"); // Redirect to dashboard if permission is denied
-      } else {
-        toast.error("Failed to generate signup key.");
-      }
+      toast.error("Failed to generate signup key.");
     } finally {
-      setIsGenerating(false); // Reset the loading state
+      setIsGenerating(false);
     }
-  };  
+  };
 
-  // Delete key
+  // ✅ Delete key
   const deleteKey = async (id: string) => {
-    if (!user) {
+    if (!user || user.is_admin !== 1) {
       toast.error("You are not authorized to delete keys.");
       return;
     }
-  
+
     try {
-      // Send a DELETE request to the correct backend URL
-      await axios.delete('http://localhost:5000/api/delete-signup-key', {
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-role": user.role || "GUEST", // Pass user role in headers
-        },
-        data: {
-          id, // Send the key ID in the request body
-        },
+      await axios.delete('/api/admin/delete-signup-key', {
+        headers: { "x-user-admin": user.is_admin?.toString() || "0" },
+        data: { id },
       });
-  
+
       toast.success("Signup key deleted successfully!");
-  
-      // Remove the deleted key from the state
       setKeys(keys.filter((key) => key.id !== id));
     } catch (error: any) {
       console.error("Error deleting key:", error);
-  
-      if (error.response?.status === 403) {
-        toast.error("You do not have permission to delete signup keys.");
-        router.push("/dashboard"); // Redirect if unauthorized
-      } else if (error.response?.status === 404) {
-        toast.error("Signup key not found.");
-      } else {
-        toast.error("Failed to delete signup key.");
-      }
+      toast.error("Failed to delete signup key.");
     }
   };
-  
-  
 
-  // Format date
+  // ✅ Format date
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never';
     return new Date(dateString).toLocaleDateString();
@@ -166,7 +119,7 @@ export default function AdminKeysPage() {
         <h1 className="text-2xl font-bold">Signup Keys</h1>
         <div className="flex items-center space-x-4">
           <div>
-            <label htmlFor="expiresInDays" className="block text-sm font-medium text-neutral-gray-700 mb-1">
+            <label htmlFor="expiresInDays" className="block text-sm font-medium mb-1">
               Expires In (days)
             </label>
             <input
@@ -195,71 +148,42 @@ export default function AdminKeysPage() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-neutral-gray-200">
-            <thead className="bg-neutral-gray-50">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-gray-500 uppercase tracking-wider">
-                  Key
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-gray-500 uppercase tracking-wider">
-                  Created By
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-gray-500 uppercase tracking-wider">
-                  Created At
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-gray-500 uppercase tracking-wider">
-                  Expires At
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Key</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires At</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-neutral-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200">
               {keys.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-neutral-gray-500">
-                    No signup keys found. Generate one to get started.
-                  </td>
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">No signup keys found.</td>
                 </tr>
               ) : (
                 keys.map((key) => (
                   <tr key={key.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {key.key}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{key.key}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          key.isUsed
-                            ? 'bg-neutral-gray-100 text-neutral-gray-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${key.isUsed ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'}`}>
                         {key.isUsed ? 'Used' : 'Available'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-gray-500">
-                      {key.createdBy || 'System'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-gray-500">
-                      {formatDate(key.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-gray-500">
-                      {formatDate(key.expiresAt)}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{key.createdBy || 'System'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(key.createdAt)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(key.expiresAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-  onClick={() => deleteKey(key.id)}
-  className={`text-red-600 ${key.isUsed ? 'text-gray-400 cursor-not-allowed' : 'hover:text-red-900'}`}
-  disabled={key.isUsed}
->
-  Delete
-</button>
-
+                      <button
+                        onClick={() => deleteKey(key.id)}
+                        className={`text-red-600 ${key.isUsed ? 'text-gray-400 cursor-not-allowed' : 'hover:text-red-900'}`}
+                        disabled={key.isUsed}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -270,4 +194,4 @@ export default function AdminKeysPage() {
       )}
     </div>
   );
-} 
+}

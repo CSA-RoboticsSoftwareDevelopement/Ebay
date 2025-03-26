@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { changePassword } from '@/services/auth/authService';
-import { getUserProfile } from '@/services/auth/authService';
+import { changePassword } from '@/config/auth';
+import { getUserProfile } from '@/config/auth';
 
 
 

@@ -6,7 +6,7 @@ export type User = {
   id: string;
   email: string;
   name: string | null;
-  role: string;
+  is_admin: number;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -35,3 +35,4 @@ export function useAuth() {
   
   return context;
 } 
+

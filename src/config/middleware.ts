@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from './services/auth/authService';
+import { verifyToken } from '@/config/auth'; // ✅ Updated path
 
 // Define public paths that don't require authentication
 const publicPaths = [
@@ -24,37 +24,35 @@ const adminPaths = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if path is public
+  // ✅ Allow public routes
   if (publicPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
-  // Get token from cookies
+  // ✅ Get token from cookies
   const token = request.cookies.get('auth_token')?.value;
 
-  // If no token, redirect to login
+  // ✅ If no token, redirect to login
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   try {
-    // Verify token
-    const decoded = verifyToken(token) as { id: string; email: string; role: string };
+    // ✅ Verify token & get user info
+    const decoded = verifyToken(token) as { id: string; email: string; is_admin: number };
 
-    // Check if path is admin-only
-    if (adminPaths.some(path => pathname.startsWith(path))) {
-      // Only allow if user is admin
-      if (decoded.role !== 'ADMIN') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    }
+// ✅ Ensure only `is_admin === 1` can access admin paths
+if (adminPaths.some(path => pathname.startsWith(path)) && decoded.is_admin !== 1) {
+  return NextResponse.redirect(new URL('/dashboard', request.url));
+}
 
-    // Set user info in request headers for API routes
+
+    // ✅ Attach user info to API requests
     if (pathname.startsWith('/api/')) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set('x-user-id', decoded.id);
       requestHeaders.set('x-user-email', decoded.email);
-      requestHeaders.set('x-user-role', decoded.role);
+      requestHeaders.set('x-user-admin', decoded.is_admin.toString());
 
       return NextResponse.next({
         request: {
@@ -63,17 +61,18 @@ export function middleware(request: NextRequest) {
       });
     }
 
-    // Continue to protected route
+    // ✅ Allow access to protected route
     return NextResponse.next();
   } catch (error) {
     console.error('Middleware token verification error:', error);
-    // Invalid token, redirect to login
+    // ✅ Invalid token, redirect to login
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('auth_token');
     return response;
   }
 }
 
+// ✅ Middleware Configuration
 export const config = {
   matcher: [
     /*
@@ -85,4 +84,4 @@ export const config = {
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)',
   ],
-}; 
+};

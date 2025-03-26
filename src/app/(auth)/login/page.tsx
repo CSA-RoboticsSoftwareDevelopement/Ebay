@@ -11,13 +11,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  // Function to set a cookie manually
-  const setCookie = (name: string, value: string, days: number) => {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-    document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; Secure; SameSite=Strict`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -27,21 +20,24 @@ export default function LoginPage() {
       const res = await fetch('http://localhost:5000/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Ensures cookies are sent/received
+        credentials: 'include', // ✅ Important: Ensures cookies are sent/received
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
 
-      // Store auth_token in cookies manually
-      setCookie('auth_token', data.auth_token, 7); // Expires in 7 days
+      console.log('🔹 Login Success:', data);
 
-      // Redirect to dashboard or home page
-      router.push('/dashboard');
-
+      // ✅ Redirect only if auth_token exists
+      if (data.auth_token) {
+        router.push('/dashboard');
+      } else {
+        setError('Login succeeded, but session token missing.');
+      }
     } catch (err: any) {
-      setError(err.message);
+      console.error('❌ Login Error:', err);
+      setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }

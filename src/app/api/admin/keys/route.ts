@@ -1,26 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateSignupKey } from '@/services/auth/authService';
-import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/config/auth';
+import { executeQuery } from '@/config/database';
 
 // Get all signup keys (admin only)
 export async function GET(request: NextRequest) {
   try {
     // Check if user is admin
-    const userRole = request.headers.get('x-user-role');
+    const is_admin = request.headers.get('x-user-is_admin');
     
-    if (userRole !== 'ADMIN') {
+    if (is_admin !== '1') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
       );
     }
 
-    // Get all signup keys
-    const keys = await prisma.signupKey.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    // ✅ Get all signup keys
+    const keys = await executeQuery(
+      "SELECT id, `key`, is_used as isUsed, expires_at as expiresAt, created_at as createdAt, updated_at as updatedAt, created_by as createdBy FROM signup_keys ORDER BY created_at DESC"
+    );
 
     return NextResponse.json({ keys });
   } catch (error) {
@@ -37,10 +36,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check if user is admin
-    const userRole = request.headers.get('x-user-role');
+    const is_admin = request.headers.get('x-user-is_admin');
     const userEmail = request.headers.get('x-user-email');
     
-    if (userRole !== 'ADMIN') {
+    if (is_admin !== '1') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -58,7 +57,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate key
-    const key = await generateSignupKey(userEmail || 'admin', expiresAt);
+    // Generate a random key
+    const randomKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    
+    // Insert the key into database
+    const [result] = await executeQuery(
+      "INSERT INTO signup_keys (`key`, expires_at, created_by) VALUES (?, ?, ?)",
+      [randomKey, expiresAt, userEmail || '1']
+    );
+    
+    // Get the inserted key details
+    const [key] = await executeQuery(
+      "SELECT id, `key`, is_used as isUsed, expires_at as expiresAt, created_at as createdAt, updated_at as updatedAt, created_by as createdBy FROM signup_keys WHERE id = ?",
+      [(result as any).insertId]
+    );
 
     return NextResponse.json({
       key,
@@ -78,9 +90,9 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Check if user is admin
-    const userRole = request.headers.get('x-user-role');
+    const is_admin = request.headers.get('x-user-is_admin');
     
-    if (userRole !== 'ADMIN') {
+    if (is_admin !== '1') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -97,10 +109,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete key
-    await prisma.signupKey.delete({
-      where: { id: keyId },
-    });
+    // ✅ Delete signup key
+    await executeQuery(
+      "DELETE FROM signup_keys WHERE id = ?",
+      [keyId]
+    );
 
     return NextResponse.json({
       message: 'Signup key deleted successfully',
@@ -113,4 +126,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
