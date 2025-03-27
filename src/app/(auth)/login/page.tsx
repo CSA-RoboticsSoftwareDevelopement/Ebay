@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -10,6 +10,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false); // ✅ Fix: Prevent hydration mismatch
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,21 +25,17 @@ export default function LoginPage() {
       const res = await fetch('http://localhost:5000/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // ✅ Important: Ensures cookies are sent/received
+        credentials: 'include', // ✅ Sends cookies with request
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
 
-      console.log('🔹 Login Success:', data);
+      console.log('🔹 Login Success:', data.user);
 
-      // ✅ Redirect only if auth_token exists
-      if (data.auth_token) {
-        router.push('/dashboard');
-      } else {
-        setError('Login succeeded, but session token missing.');
-      }
+      // ✅ Redirect to dashboard after successful login
+      router.push('/dashboard');
     } catch (err: any) {
       console.error('❌ Login Error:', err);
       setError(err.message || 'Something went wrong');
@@ -42,6 +43,9 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // ✅ Prevent rendering until hydration is complete
+  if (!isMounted) return null;
 
   return (
     <div className="card">
@@ -60,9 +64,7 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label htmlFor="email" className="label">
-            Email Address
-          </label>
+          <label htmlFor="email" className="label">Email Address</label>
           <input
             id="email"
             type="email"
@@ -76,12 +78,8 @@ export default function LoginPage() {
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-1">
-            <label htmlFor="password" className="label">
-              Password
-            </label>
-            <Link href="/forgot-password" className="text-sm">
-              Forgot password?
-            </Link>
+            <label htmlFor="password" className="label">Password</label>
+            <Link href="/forgot-password" className="text-sm">Forgot password?</Link>
           </div>
           <input
             id="password"
@@ -94,11 +92,7 @@ export default function LoginPage() {
           />
         </div>
 
-        <button
-          type="submit"
-          className="btn btn-primary w-full"
-          disabled={loading}
-        >
+        <button type="submit" className="btn btn-primary w-full" disabled={loading}>
           {loading ? 'Logging in...' : 'Log In'}
         </button>
       </form>

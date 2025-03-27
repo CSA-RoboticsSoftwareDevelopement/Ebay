@@ -3,7 +3,8 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const mysql = require('mysql2/promise'); // ✅ Use MySQL instead of Prisma
+const mysql = require('mysql2/promise'); 
+const ebayRoutes = require("./ebayOperations"); // ✅ Import eBay API routes
 require('dotenv').config();
 
 const app = express();
@@ -62,7 +63,11 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ message: 'Please enter all fields' });
     }
 
-    const [users] = await db.query("SELECT id, email, password, IFNULL(is_admin, 0) AS is_admin FROM users WHERE email = ?", [email]);
+    const [users] = await db.query(
+      "SELECT id, email, password, IFNULL(is_admin, 0) AS is_admin FROM users WHERE email = ?",
+      [email]
+    );
+
     if (users.length === 0) {
       console.log(`❌ Login failed: User ${email} not found`);
       return res.status(400).json({ message: 'User does not exist' });
@@ -83,6 +88,14 @@ app.post('/api/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // ✅ Insert or Update session to prevent duplicates
+    await db.query(
+      `INSERT INTO sessions (user_id, auth_token, expires_at)
+       VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+       ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+      [user.id, auth_token]
+    );
+
     res.cookie('auth_token', auth_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -97,6 +110,8 @@ app.post('/api/login', async (req, res) => {
     return res.status(500).json({ message: 'Internal Server Error', error: err.toString() });
   }
 });
+
+
 
 // ✅ Get All Logged-in Users (Debugging)
 app.get('/api/users', async (req, res) => {
@@ -114,27 +129,30 @@ app.get('/api/users', async (req, res) => {
 // ✅ Get Current Session
 app.get('/api/auth/session', async (req, res) => {
   try {
-    const token = req.cookies.auth_token;
-    if (!token) {
-      return res.status(401).json({ message: 'Not authenticated' });
+    const auth_token = req.cookies.auth_token; // Get token from cookies
+
+    if (!auth_token) {
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: 'Invalid token' });
+    // ✅ Retrieve user session from the database
+    const [session] = await db.query(
+      "SELECT users.id, users.email, users.is_admin,users.username FROM users JOIN sessions ON users.id = sessions.user_id WHERE sessions.auth_token = ?",
+      [auth_token]
+    );
+
+    if (session.length === 0) {
+      return res.status(401).json({ message: 'Invalid session' });
     }
 
-    const [users] = await db.query("SELECT id, email, username, is_admin FROM users WHERE id = ?", [decoded.id]);
-    if (users.length === 0) {
-      return res.status(401).json({ message: 'User not found' });
-    }
+    return res.json({ user: session[0] });
 
-    return res.status(200).json({ user: users[0] });
-  } catch (error) {
-    console.error('❌ Session error:', error);
-    return res.status(500).json({ message: 'Server error' });
+  } catch (err) {
+    console.error("❌ Session Error:", err);
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
 
 // ✅ User Signup API
 app.post('/api/signup', async (req, res) => {
@@ -166,10 +184,34 @@ app.post('/api/signup', async (req, res) => {
 
 
 // ✅ Logout API
-app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('auth_token');
-  res.json({ message: 'Logged out successfully' });
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+    const auth_token = req.cookies.auth_token; // ✅ Get the auth token from cookies
+
+    if (!auth_token) {
+      return res.status(400).json({ message: 'No active session found' });
+    }
+
+    // ✅ Delete session from the database
+    await db.query("DELETE FROM sessions WHERE auth_token = ?", [auth_token]);
+
+    // ✅ Clear the auth_token cookie
+    res.clearCookie('auth_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+    });
+
+    return res.json({ message: 'Logged out successfully' });
+
+  } catch (err) {
+    console.error("❌ Logout Error:", err);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
+
+// ✅ Use eBay API Routes
+app.use("/api/ebay", ebayRoutes(db));
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;

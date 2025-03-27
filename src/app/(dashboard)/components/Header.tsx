@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-
+import { useAuth } from '@/context/AuthContext';
 export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
+  const { user } = useAuth();
+  const username = user?.username || ' User Name'; // Default to 'User' if username is not available
   return (
     <header className="bg-white border-b border-neutral-gray-200 h-16">
       <div className="h-full px-4 flex items-center justify-between">
@@ -44,7 +45,7 @@ export default function Header() {
               <div className="w-8 h-8 rounded-full bg-neutral-gray-200 flex items-center justify-center text-sm font-medium">
                 U
               </div>
-              <span className="hidden md:block text-sm font-medium">User Name</span>
+              <span className="hidden md:block text-sm font-medium">{username}</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"

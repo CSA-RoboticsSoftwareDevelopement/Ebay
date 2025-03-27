@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+
+
 
 type SignupKey = {
   id: string;
@@ -21,10 +23,11 @@ export default function AdminKeysPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [expiresInDays, setExpiresInDays] = useState('30');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { user } = useAuth();
   const router = useRouter();
 
-  // ✅ Redirect non-admins
+  const {user} = useAuth(); // Assuming you have an AuthContext with user state
+
+  // ✅ Redirect non-admin users
   useEffect(() => {
     if (user && user.is_admin !== 1) {
       toast.error('Access denied. Only admins can manage signup keys.');
@@ -34,7 +37,7 @@ export default function AdminKeysPage() {
 
   // ✅ Fetch signup keys
   useEffect(() => {
-    if (user && user.is_admin === 1) {
+    if (user?.is_admin === 1) {
       fetchKeys();
     }
   }, [user]);
@@ -47,7 +50,7 @@ export default function AdminKeysPage() {
       const response = await axios.get('/api/admin/keys', {
         headers: {
           "Content-Type": "application/json",
-          "x-user-admin": user.is_admin?.toString() || "0", // ✅ Use is_admin
+          "x-user-admin": user.is_admin?.toString() || "0",
         },
       });
 
@@ -179,8 +182,7 @@ export default function AdminKeysPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => deleteKey(key.id)}
-                        className={`text-red-600 ${key.isUsed ? 'text-gray-400 cursor-not-allowed' : 'hover:text-red-900'}`}
-                        disabled={key.isUsed}
+                        className="text-red-600 hover:text-red-900"
                       >
                         Delete
                       </button>

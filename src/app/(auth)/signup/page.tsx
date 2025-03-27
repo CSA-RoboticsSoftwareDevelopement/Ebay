@@ -2,9 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import axios from 'axios';
-
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
@@ -13,90 +11,91 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { signup, loading, error: authError } = useAuth();
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); // ✅ Added missing `loading` state
 
+  // ✅ Validate Signup Key with API
   const validateKey = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Basic validation
     if (!signupKey.trim()) {
       setError('Signup key is required');
       return;
     }
 
     try {
-      // For now, we'll just move to the next step
-      // In a real implementation, we would validate the key with the server
-      setStep(2);
+      setLoading(true);
+      const response = await axios.post('http://localhost:5000/api/validate-key', {
+        signupKey,
+      });
+
+      if (response.data.valid) {
+        setStep(2);
+      } else {
+        setError('Invalid signup key. Please try again or contact support.');
+      }
     } catch (err) {
       setError('Invalid signup key. Please try again or contact support.');
       console.error('Key validation error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ✅ Handle Signup Form Submission
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Clear any previous errors
-  
-    // Basic validation
+    setError('');
+
     if (password !== confirmPassword) {
-      setError('Passwords do not match'); 
+      setError('Passwords do not match');
       return;
     }
-  
+
     if (password.length < 8) {
       setError('Password must be at least 8 characters long');
       return;
     }
-  
+
     try {
-      // Send the signup data to the backend API
+      setLoading(true);
       const response = await axios.post('http://localhost:5000/api/signup', {
         signupKey,
         email,
         password,
         name,
       });
-  
-      // Handle success
+
       console.log('Signup successful:', response.data);
-      window.location.href = '/login'; // Redirect to the login page
-      // You might want to redirect the user or show a success message here.
+      window.location.href = '/login'; // Redirect to login page
     } catch (err: any) {
-      // Handle error (could be a network error or server error)
       console.error('Signup error:', err);
-      if (err.response) {
-        setError(err.response.data.message);  // Show the error message from the server
-      } else {
-        setError('An error occurred. Please try again later.');
-      }
+      setError(err.response?.data?.message || 'An error occurred. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="card">
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold">Create your Resale account</h1>
         <p className="text-neutral-gray-600 mt-2">
-          {step === 1 
-            ? 'Enter your signup key to get started' 
-            : 'Complete your account information'}
+          {step === 1 ? 'Enter your signup key to get started' : 'Complete your account information'}
         </p>
       </div>
 
-      {(error || authError) && (
+      {error && (
         <div className="bg-error/10 text-error p-4 rounded-md mb-6">
-          {error || authError}
+          {error}
         </div>
       )}
 
       {step === 1 ? (
         <form onSubmit={validateKey}>
           <div className="mb-6">
-            <label htmlFor="signupKey" className="label">
-              Signup Key
-            </label>
+            <label htmlFor="signupKey" className="label">Signup Key</label>
             <input
               id="signupKey"
               type="text"
@@ -123,9 +122,7 @@ export default function SignupPage() {
       ) : (
         <form onSubmit={handleSignup}>
           <div className="mb-4">
-            <label htmlFor="email" className="label">
-              Email Address
-            </label>
+            <label htmlFor="email" className="label">Email Address</label>
             <input
               id="email"
               type="email"
@@ -138,9 +135,7 @@ export default function SignupPage() {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="name" className="label">
-              Full Name
-            </label>
+            <label htmlFor="name" className="label">Full Name</label>
             <input
               id="name"
               type="text"
@@ -153,9 +148,7 @@ export default function SignupPage() {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="password" className="label">
-              Password
-            </label>
+            <label htmlFor="password" className="label">Password</label>
             <input
               id="password"
               type="password"
@@ -168,9 +161,7 @@ export default function SignupPage() {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="confirmPassword" className="label">
-              Confirm Password
-            </label>
+            <label htmlFor="confirmPassword" className="label">Confirm Password</label>
             <input
               id="confirmPassword"
               type="password"
@@ -202,4 +193,4 @@ export default function SignupPage() {
       </div>
     </div>
   );
-} 
+}
