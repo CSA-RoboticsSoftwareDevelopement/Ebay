@@ -167,19 +167,22 @@ export default function Settings() {
 
       {/* Tabs */}
       <div className="border-b">
-        <nav className="flex space-x-8">
-          {['account', 'notifications', 'integrations', 'preferences'].map((tab) => (
-            <button
-              key={tab}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab
-                ? 'border-primary-yellow text-primary-black'
-                : 'border-transparent text-neutral-gray-500 hover:text-neutral-gray-700 hover:border-neutral-gray-300'
+        <nav className="flex overflow-x-auto scrollbar-hide -mb-px">
+          <div className="flex min-w-full space-x-8 px-4">
+            {['account', 'notifications', 'integrations', 'preferences'].map((tab) => (
+              <button
+                key={tab}
+                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                  activeTab === tab
+                    ? 'border-primary-yellow text-primary-black'
+                    : 'border-transparent text-neutral-gray-500 hover:text-neutral-gray-700 hover:border-neutral-gray-300'
                 }`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
         </nav>
       </div>
 
@@ -297,7 +300,7 @@ export default function Settings() {
              </div>
              <button
                type="button"
-               className="bg-blue-600 relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+               className="bg-primary-yellow relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
                disabled
              >
                <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
@@ -327,7 +330,7 @@ export default function Settings() {
              </div>
              <button
                type="button"
-               className="bg-blue-600 relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+               className="bg-primary-yellow relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
                disabled
              >
                <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
@@ -383,7 +386,7 @@ export default function Settings() {
               <button
                 onClick={handleConnectEbay}
                 disabled={isLoading}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                className="px-6 py-2 bg-primary-yellow text-primary-black font-medium  rounded-lg hover:bg-primary-black hover:text-white  font-medium transition disabled:opacity-50"
               >
                 {isLoading ? "Redirecting..." : "Connect eBay Account"}
               </button>

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import Swal from 'sweetalert2';
 
 // ✅ Separate Icon Components
 const DashboardIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
@@ -12,7 +13,7 @@ const DashboardIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
   </svg>
 );
 
-const ProductsIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
+const InventoryIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
   </svg>
@@ -30,6 +31,11 @@ const AdminIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
   </svg>
 );
+const productFinderIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+  </svg>
+);
 
 interface NavItem {
   name: string;
@@ -40,16 +46,36 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: DashboardIcon },
-  { name: "Inventory", href: "/inventory", icon: ProductsIcon },
-  { name: "Products Finder", href: "/", icon: ProductsIcon },
+  { name: "Inventory", href: "/inventory", icon: InventoryIcon },
+  { name: "Products Finder", href: "/productFinder", icon: productFinderIcon },
   { name: "Admin Keys", href: "/admin/keys", icon: AdminIcon, adminOnly: true },
   { name: "Settings", href: "/settings", icon: SettingsIcon }
 ];
+
+
 
 export default function Sidebar() {
   const { user, logout, checkAuth } = useAuth();
   const pathname = usePathname();
   const isAdmin = user?.is_admin === 1; // ✅ Ensure correct admin check
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'You will be logged out of your account.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#ffc300',
+      confirmButtonText: 'Yes, log me out',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      logout();
+    }
+  };
 
   // ✅ Ensure Sidebar updates after login
   useEffect(() => {
@@ -57,70 +83,98 @@ export default function Sidebar() {
   }, []);
 
   return (
-    <div className="h-full bg-primary-black text-white w-64 flex-shrink-0">
-      <div className="p-4 border-b border-neutral-gray-800">
-        <Link href="/dashboard" className="flex items-center">
-          <span className="text-primary-yellow font-bold text-2xl">Resale</span>
-        </Link>
-      </div>
 
-      <nav className="mt-6 px-2">
-        <ul className="space-y-1">
-          {navigation
-            .filter((item) => !item.adminOnly || isAdmin) // ✅ Fix: Correct filtering
-            .map((item) => {
+    <>
+      {/* Sidebar Toggle Button (Only visible when sidebar is closed) */}
+      {!isSidebarOpen && (
+        <button
+          className="md:hidden fixed top-4 left-4 bg-primary-yellow p-2 rounded-md text-black shadow-lg z-50"
+          onClick={() => setIsSidebarOpen(true)}
+        >
+          ☰
+        </button>
+      )}
+
+      {/* Sidebar Overlay (for mobile) */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* Sidebar Container */}
+      <div className={`fixed inset-y-0 left-0 bg-primary-black text-white w-64 transform transition-transform z-50 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:relative md:flex md:flex-col md:w-64 h-screen shadow-lg`}>
+
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-neutral-gray-800 flex justify-between">
+          <Link href="/dashboard" className="text-primary-yellow font-bold text-2xl">Resale</Link>
+          {/* Close button for mobile */}
+          <button
+            className="md:hidden text-white"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            ✖
+          </button>
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="mt-6 px-2 flex-grow">
+          <ul className="space-y-1">
+            {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className={`flex items-center px-4 py-3 text-sm rounded-md transition-colors ${
-                      isActive ? 'bg-primary-yellow text-primary-black font-medium' : 'text-neutral-gray-300 hover:bg-neutral-gray-800'
-                    }`}
+                    className={`flex items-center px-4 py-3 text-sm rounded-md transition-colors ${isActive ? "bg-primary-yellow text-primary-black font-medium" : "text-neutral-gray-300 hover:bg-neutral-gray-800"}`}
+                    onClick={() => setIsSidebarOpen(false)} // ✅ Close sidebar on click
                   >
+                    <span className="mr-3"></span>
                     {item.icon && item.icon({})}
                     {item.name}
+
                   </Link>
                 </li>
               );
             })}
-        </ul>
-      </nav>
+          </ul>
+        </nav>
 
-      {/* Bottom section - Contains user profile and authentication controls */}
-      <div className="absolute bottom-0 w-64 p-4 border-t border-neutral-gray-800">
-        {user ? (
-          <div className="flex flex-col">
-            <div className="flex items-center mb-3">
-              <div className="w-8 h-8 rounded-full bg-neutral-gray-700 flex items-center justify-center text-sm font-medium">
-                {user.username?.charAt(0) ?? user.email?.charAt(0) ?? ''}
+        {/* User Profile & Logout */}
+        <div className="absolute bottom-0 w-full p-4 border-t border-neutral-gray-800">
+          {user ? (
+            <div className="flex flex-col space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-neutral-gray-700 flex items-center justify-center text-sm font-medium">
+                  {user.username?.charAt(0) ?? user.email?.charAt(0) ?? ""}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{user.username || "User"}</p>
+                  <p className="text-xs text-neutral-gray-400">{user.email}</p>
+                </div>
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium">{user.username || 'User'}</p>
-                <p className="text-xs text-neutral-gray-400">{user.email}</p>
+              <button
+                onClick={handleLogout}
+                className="w-full px-3 py-1 text-sm hover:bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                </svg>
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-full bg-neutral-gray-700 flex items-center justify-center text-sm font-medium">?</div>
+              <div>
+                <p className="text-sm font-medium">Guest</p>
+                <Link href="/login" className="text-xs text-primary-yellow">Log In</Link>
               </div>
             </div>
-            <button
-              onClick={logout}
-              className="w-full text-sm text-neutral-gray-300 hover:text-white py-2 px-3 rounded-md hover:bg-neutral-gray-800 transition-colors"
-            >
-              Log Out
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-neutral-gray-700 flex items-center justify-center text-sm font-medium">
-              ?
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium">Guest</p>
-              <Link href="/login" className="text-xs text-primary-yellow">
-                Log In
-              </Link>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

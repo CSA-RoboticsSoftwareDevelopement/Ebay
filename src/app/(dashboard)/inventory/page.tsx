@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import ProductCard from '../../../components/products/ProductCard';
-import ProductDetailModal, { Product, CompetitorData } from '../../../components/products/ProductDetailModal';
+import ProductCard from '../../../components/productsTemplate/InventoryProductCard';
+import ProductDetailModal, { Product, CompetitorData } from '../../../components/productsTemplate/InventoryProductDetailModal';
 import { formatCurrency, formatPercentage } from '../../../lib/formatters';
 
 // Placeholder product data
@@ -248,14 +248,14 @@ export default function Products() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Products</h1>
+        <h1 className="text-2xl font-bold">Inventory</h1>
         <button className="btn btn-primary">Add Product</button>
       </div>
       
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white rounded-lg shadow p-4 mb-12 mt-5">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label htmlFor="search" className="sr-only">Search</label>

@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { formatCurrency } from '../../lib/formatters';
-import { Product } from './ProductDetailModal';
+import { Product } from './InventoryProductDetailModal';
 
 // Define the ProductCard props type
 export type ProductCardProps = {
