@@ -40,7 +40,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: DashboardIcon },
-  { name: "Inventory", href: "/products", icon: ProductsIcon },
+  { name: "Inventory", href: "/inventory", icon: ProductsIcon },
   { name: "Products Finder", href: "/", icon: ProductsIcon },
   { name: "Admin Keys", href: "/admin/keys", icon: AdminIcon, adminOnly: true },
   { name: "Settings", href: "/settings", icon: SettingsIcon }
