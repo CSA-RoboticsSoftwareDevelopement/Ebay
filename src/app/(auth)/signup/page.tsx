@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import axios from 'axios';
 
+const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
+
 export default function SignupPage() {
   const [step, setStep] = useState(1);
   const [signupKey, setSignupKey] = useState('');
@@ -26,7 +28,7 @@ export default function SignupPage() {
 
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/validate-key', {
+      const response = await axios.post(`${BACKEND_SERVER_URL}/api/validate-key`, {
         signupKey,
       });
 
@@ -60,7 +62,7 @@ export default function SignupPage() {
 
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/signup', {
+      const response = await axios.post(`${BACKEND_SERVER_URL}/api/signup`, {
         signupKey,
         email,
         password,

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 // ✅ Define User Type
 type User = {
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/auth/session', {
+      const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
         withCredentials: true,
       });
 
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       const response = await axios.post(
-        'http://localhost:5000/api/auth/login',
+        `${BACKEND_SERVER_URL}}/api/auth/login`,
         { email, password },
         { withCredentials: true }
       );
@@ -86,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ✅ Logout Function
   const logout = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/logout', {}, { withCredentials: true });
+      await axios.post(`${BACKEND_SERVER_URL}/api/auth/logout`, {}, { withCredentials: true });
       setUser(null);
       setAuthToken(null); // ✅ Clear token on logout
       router.push('/login');

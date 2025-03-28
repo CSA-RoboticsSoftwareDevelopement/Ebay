@@ -5,6 +5,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import Swal from "sweetalert2"; // ✅ Import SweetAlert2
+const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 type EbayProfile = {
   username: string;
@@ -43,7 +44,7 @@ export default function Settings() {
         console.log('✅ Token:', authToken);
 
         const profileResponse = await axios.get(
-          `http://localhost:5000/api/ebay/profile?user_id=${user.id}`,
+          `${BACKEND_SERVER_URL}/api/ebay/profile?user_id=${user.id}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -91,7 +92,7 @@ export default function Settings() {
         throw new Error("User ID not found. Please login again.");
       }
 
-      await axios.delete("http://localhost:5000/api/ebay/disconnect", {
+      await axios.delete(`${BACKEND_SERVER_URL}/api/ebay/disconnect`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
