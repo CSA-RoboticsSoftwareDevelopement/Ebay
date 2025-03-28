@@ -131,26 +131,23 @@ export default function Settings() {
   const handleConnectEbay = async () => {
     try {
       setIsLoading(true);
-  
-      // ✅ Move `useAuth()` inside the component
-      const userId = user?.id; // ✅ Get user ID safely
-  
-      if (!userId) {
+      
+      if (!user || !user.id) {
         throw new Error("User ID not found. Please log in.");
       }
-  
+      
       // ✅ Send request with userId
-      const response = await axios.get(`/api/ebay/auth-url?user_id=${userId}`);
-  
+      const response = await axios.get(`/api/ebay/auth-url?user_id=${user.id}`);
+      
       if (!response.data.url) throw new Error("Invalid OAuth URL from server");
-  
+      
       // ✅ Open popup AFTER fetching URL (prevents blank popup issue)
       const popup = window.open(
         response.data.url, // ✅ eBay OAuth URL
         "eBayOAuth",
         "width=600,height=700,resizable=yes,scrollbars=yes"
       );
-  
+      
       if (!popup) throw new Error("Popup blocked. Please allow pop-ups.");
     } catch (error) {
       console.error("❌ Error connecting to eBay:", error);

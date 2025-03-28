@@ -10,7 +10,18 @@ const EBAY_API_URL = process.env.EBAY_API_URL;
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const userId = searchParams.get("user_id"); // ✅ Fetch user_id from query params
+  const stateParam = searchParams.get("state");
+
+  let userId;
+  // ✅ Extract userId from state parameter
+  if (stateParam) {
+    try {
+      const stateObj = JSON.parse(stateParam);
+      userId = stateObj.userId;
+    } catch (error) {
+      console.error("❌ Error parsing state parameter:", error);
+    }
+  }
 
   // ✅ Check for missing values
   if (!code) {
@@ -42,15 +53,24 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const { access_token, refresh_token, expires_in } = response.data;
+    const { access_token, refresh_token, expires_in, refresh_token_expires_in } = response.data;
     console.log("✅ eBay Access Token:", access_token);
+    console.log("✅ eBay Refresh Token:", refresh_token);
+
+    // ✅ Calculate expiration timestamps
+    const access_token_expires_at = Date.now() + expires_in * 1000; // Convert to milliseconds
+    const refresh_token_expires_at = Date.now() + refresh_token_expires_in * 1000; // Convert to milliseconds
 
     // ✅ Store tokens in the database
     await executeQuery(
-      `INSERT INTO ebay_accounts (user_id, access_token, refresh_token, expires_at) 
-       VALUES (?, ?, ?, ?) 
-       ON DUPLICATE KEY UPDATE access_token=VALUES(access_token), refresh_token=VALUES(refresh_token), expires_at=VALUES(expires_at)`,
-      [userId, access_token, refresh_token, Date.now() + expires_in * 1000]
+      `INSERT INTO ebay_accounts (user_id, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at) 
+       VALUES (?, ?, ?, ?, ?) 
+       ON DUPLICATE KEY UPDATE 
+       access_token=VALUES(access_token), 
+       refresh_token=VALUES(refresh_token), 
+       access_token_expires_at=VALUES(access_token_expires_at), 
+       refresh_token_expires_at=VALUES(refresh_token_expires_at)`,
+      [userId, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at]
     );
 
     // ✅ Close the popup and notify the parent window
@@ -66,8 +86,11 @@ export async function GET(request: NextRequest) {
       { headers: { "Content-Type": "text/html" } }
     );
 
-  } catch (error: any) {
-    console.error("❌ Error fetching eBay token:", error.response?.data || error.message);
-    return NextResponse.json({ error: "Failed to get access token", details: error.response?.data }, { status: 500 });
+  } catch (error) {
+    console.error("❌ Error fetching eBay token:", (error as any).response?.data || (error as Error).message);
+    return NextResponse.json({ 
+      error: "Failed to get access token", 
+      details: (error as any).response?.data 
+    }, { status: 500 });
   }
 }
