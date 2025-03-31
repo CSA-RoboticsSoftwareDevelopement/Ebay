@@ -100,10 +100,11 @@ export default function AdminKeysPage() {
       return;
     }
     try {
-      await axios.delete('/api/admin/delete-signup-key', {
+      await axios.delete('/api/admin/keys', {
         headers: { "x-user-admin": user.is_admin?.toString() || "0" },
         data: { id },
       });
+      
       toast.success("Signup key deleted successfully!");
       setKeys(keys.filter((key) => key.id !== id));
     } catch (error) {

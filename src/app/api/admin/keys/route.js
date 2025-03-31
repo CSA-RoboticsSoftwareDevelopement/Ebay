@@ -68,3 +68,30 @@ export async function GET() {
     );
   }
 }
+
+export async function DELETE(req) {
+  try {
+    const { id } = await req.json();
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing ID." }, { status: 400 });
+    }
+
+    // ✅ Delete from database
+    const [result] = await pool.execute("DELETE FROM admin_keys WHERE id = ?", [
+      id,
+    ]);
+
+    if (result.affectedRows === 0) {
+      return NextResponse.json({ error: "Key not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting key:", error);
+    return NextResponse.json(
+      { error: "Failed to delete key." },
+      { status: 500 }
+    );
+  }
+}
