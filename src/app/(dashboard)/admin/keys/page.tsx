@@ -74,9 +74,10 @@ export default function AdminKeysPage() {
     setIsGenerating(true);
 
     const response = await axios.post('/api/admin/keys', {
-      expiresInDays: expiresInDays, // Ensure it's a number
-      createdBy: user.username || "Admin", // ✅ Corrected payload key
+      expiresInDays: expiresInDays,
+      userId: user.id, // ✅ Send userId instead of createdBy
     });
+    
 
     if (response.data.success) {
       setKeys((prevKeys) => [response.data.key, ...prevKeys]);

@@ -10,15 +10,26 @@ const generateRandomKey = () => {
 // ✅ Handle POST request (Generate Key)
 export async function POST(req) {
   try {
-    const { expiresInDays, createdBy } = await req.json();
+    const { expiresInDays, userId } = await req.json();
 
-    if (!expiresInDays || !createdBy) {
+    if (!expiresInDays || !userId) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
       );
     }
 
+    // ✅ Fetch the username from users table using userId
+    const [userResult] = await pool.execute(
+      "SELECT username FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (userResult.length === 0) {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
+    const createdBy = userResult[0].username; // ✅ Extract username
     const key = generateRandomKey();
     const createdAt = new Date().toISOString();
     const expiresAt = new Date(
@@ -38,7 +49,7 @@ export async function POST(req) {
         id: result.insertId,
         key,
         status: "Available",
-        createdBy,
+        createdBy, // ✅ Real username from users table
         createdAt,
         expiresAt,
       },
