@@ -40,52 +40,60 @@ export default function AdminKeysPage() {
   }, [user]);
 
   const fetchKeys = async () => {
-    if (!user) return;
     try {
       setIsLoading(true);
-      const response = await axios.get('/api/admin/keys', {
-        headers: { "x-user-admin": user.is_admin?.toString() || "0" },
-      });
-      setKeys(Array.isArray(response.data.keys) ? response.data.keys : []);
+      const response = await axios.get('/api/admin/keys');
+      
+      // ✅ Fix: Adjust mapping based on API response
+      const formattedKeys = response.data.keys.map((key: { id: any; key_value: any; status: string; created_by: any; created_at: any; expires_at: any; }) => ({
+        id: key.id,
+        key: key.key_value, // 🔥 Ensure this matches DB field
+        isUsed: key.status !== 'Available',
+        createdBy: key.created_by || "System",
+        createdAt: key.created_at,
+        expiresAt: key.expires_at
+      }));
+  
+      setKeys(formattedKeys);
     } catch (error) {
-      console.error('Error fetching keys:', error);
-      toast.error('Failed to fetch signup keys.');
+      console.error("Error fetching keys:", error);
+      toast.error("Failed to fetch signup keys.");
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   const generateKey = async () => {
-    if (!user || user.is_admin !== 1) {
-      toast.error("You are not authorized to generate keys.");
-      return;
+  if (!user || user.is_admin !== 1) {
+    toast.error("You are not authorized to generate keys.");
+    return;
+  }
+
+  try {
+    setIsGenerating(true);
+
+    const response = await axios.post('/api/admin/keys', {
+      expiresInDays: expiresInDays,
+      userId: user.id, // ✅ Send userId instead of createdBy
+    });
+    
+
+    if (response.data.success) {
+      setKeys((prevKeys) => [response.data.key, ...prevKeys]);
+      toast.success("Signup key generated successfully!");
+    } else {
+      toast.error("Failed to generate signup key.");
     }
+  } catch (error) {
+    console.error("Error generating key:", error);
+    toast.error("Failed to generate signup key.");
+  } finally {
+    setIsGenerating(false);
+  }
+};
+
   
-    try {
-      setIsGenerating(true);
-  
-      // ✅ Dummy key generation
-      const dummyKey = {
-        id: Math.random().toString(36).substr(2, 9),
-        key: `KEY-${Math.random().toString(36).substr(2, 15).toUpperCase()}`,
-        isUsed: false,
-        createdBy: user.username || "Admin",
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000).toISOString(),
-      };
-  
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
-  
-      setKeys((prevKeys) => [{ ...dummyKey, updatedAt: new Date().toISOString() }, ...prevKeys]);
-  
-      toast.success("Dummy signup key generated successfully!");
-    } catch (error) {
-      console.error("Error generating dummy key:", error);
-      toast.error("Failed to generate dummy signup key.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   const deleteKey = async (id: string) => {
     if (!user || user.is_admin !== 1) {
@@ -93,10 +101,11 @@ export default function AdminKeysPage() {
       return;
     }
     try {
-      await axios.delete('/api/admin/delete-signup-key', {
+      await axios.delete('/api/admin/keys', {
         headers: { "x-user-admin": user.is_admin?.toString() || "0" },
         data: { id },
       });
+      
       toast.success("Signup key deleted successfully!");
       setKeys(keys.filter((key) => key.id !== id));
     } catch (error) {
@@ -111,9 +120,10 @@ export default function AdminKeysPage() {
   };
 
   // 🔍 **Filter keys based on search query**
-  const filteredKeys = keys.filter((key) =>
-    key.key.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+const filteredKeys = keys.filter((key) =>
+  key?.key?.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
