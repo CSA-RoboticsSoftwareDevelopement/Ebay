@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
     console.log("✅ eBay Refresh Token:", refresh_token);
 
     // ✅ Calculate expiration timestamps
-    const access_token_expires_at = Date.now() + expires_in * 1000; // Convert to milliseconds
-    const refresh_token_expires_at = Date.now() + refresh_token_expires_in * 1000; // Convert to milliseconds
+    const access_token_expires_at =  expires_in ; // Convert to milliseconds
+    const refresh_token_expires_at = refresh_token_expires_in ; // Convert to milliseconds
 
     // ✅ Store tokens in the database
     await executeQuery(
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       [userId, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at]
     );
 
-    // ✅ Close the popup and notify the parent window
+  //  ✅ Close the popup and notify the parent window
     return new NextResponse(
       `<html>
         <body>

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const mysql = require('mysql2/promise'); 
 const ebayRoutes = require("./ebayOperations"); // ✅ Import eBay API routes
+const ebayProducts = require('./ebayProducts');
 require('dotenv').config();
 
 const app = express();
@@ -212,6 +213,9 @@ app.post('/api/auth/logout', async (req, res) => {
 
 // ✅ Use eBay API Routes
 app.use("/api/ebay", ebayRoutes(db));
+// ✅ Use eBay Products API Routes
+app.use("/api/ebay/products", ebayProducts(db));
+
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;

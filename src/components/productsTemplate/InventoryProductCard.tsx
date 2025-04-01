@@ -1,11 +1,12 @@
 import React from 'react';
+import { useState } from "react";
 import Image from 'next/image';
 import { formatCurrency } from '../../lib/formatters';
 import { Product } from './InventoryProductDetailModal';
 
 // Define the ProductCard props type
 export type ProductCardProps = {
-  product: Pick<Product, 'id' | 'title' | 'price' | 'currency' | 'quantity' | 'quantitySold' | 'sellThroughRate' | 'profit' | 'profitMargin' | 'roi' | 'imageUrl' | 'listingStatus'>;
+  product: Pick<Product, 'id' | 'title' | 'description' | 'price' | 'currency' | 'quantity' | 'quantitySold' | 'sellThroughRate' | 'profit' | 'profitMargin' | 'roi' | 'imageUrl' | 'listingStatus'>;
   onClick: (productId: string) => void;
 };
 
@@ -28,8 +29,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
   };
 
   // Generate a placeholder image URL if none exists
-  const imageUrlSrc = product.imageUrl || 
-    `https://placehold.co/300x300/e5e7eb/a1a1aa?text=${encodeURIComponent(product.title.substring(0, 1))}`;
+ const imageUrlSrc = product.imageUrl || 
+  `https://placehold.co/400x300?text=${encodeURIComponent(product.title?.substring(0, 1) || product.title)}`;
+
+  const [imgSrc, setImgSrc] = useState(product.imageUrl || `https://placehold.co/400x300?text=${encodeURIComponent(product.title?.substring(0, 1) || product.title)}`);
 
   // Calculate sell-through percentage for display
   const sellThroughDisplay = product.sellThroughRate 
@@ -44,13 +47,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       <div className="h-48 overflow-hidden relative">
         {/* Image with placeholder fallback */}
         <div className="relative w-full h-full">
-          <Image 
-            src={imageUrlSrc}
-            alt={product.title}
-            className="object-cover"
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
+        <Image 
+  src={imgSrc}
+  alt={product.title || "No image available"} // ✅ Fallback alt text
+  className="object-cover"
+  fill
+  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+  onError={() => setImgSrc(`https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`)} // ✅ Fallback to placeholder
+/>
         </div>
         
         {/* Status badge */}
@@ -63,7 +67,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       
       <div className="p-4">
         {/* Title with truncation */}
-        <h3 className="font-medium text-lg line-clamp-2 min-h-[56px]">{product.title}</h3>
+        <h3 className="font-medium text-lg line-clamp-2 ">{product.title}</h3>
         
         {/* Key metrics grid */}
         <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
@@ -86,6 +90,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           <div>
             <p className="text-gray-600">Sell Through</p>
             <p className="font-semibold">{sellThroughDisplay}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Quantity</p>
+<p className="font-semibold">{product.quantity}</p>
           </div>
         </div>
         
