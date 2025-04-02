@@ -41,7 +41,7 @@ export default function Settings() {
         }
 
         console.log('✅ User ID:', user.id);
-        console.log('✅ Token:', authToken);
+        console.log('✅ Auth Token:', authToken);
 
         const profileResponse = await axios.get(
           `${BACKEND_SERVER_URL}/api/ebay/profile?user_id=${user.id}`,

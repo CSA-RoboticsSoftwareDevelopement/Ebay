@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
@@ -40,27 +40,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ✅ Check Authentication Status
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
+  
+      // Fetch cookies from API
+      const cookieResponse = await axios.get(`${BACKEND_SERVER_URL}/api/auth/get-cookies`, {
         withCredentials: true,
       });
-
-      setUser(response.data.user);
-      setAuthToken(response.data.token || null); // ✅ Store token if available
+  
+      // Extract auth_token correctly from response
+      const storedToken = cookieResponse.data?.cookies?.auth_token;
+  
+      if (storedToken) {
+        document.cookie = `auth_token=${storedToken}; path=/`; // Store in cookies
+        setAuthToken(storedToken);
+      }
+  
+      // Call session API with token
+      const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
+        withCredentials: true,
+        headers: storedToken ? { Authorization: `Bearer ${storedToken}` } : {},
+      });
+  
+      if (response.data.user) {
+        setUser(response.data.user);
+      } else {
+        setUser(null);
+      }
+  
+      if (response.data.token) {
+        setAuthToken(response.data.token);
+        localStorage.setItem('auth_token', response.data.token);
+      }
     } catch (error) {
+      console.error('❌ Authentication check failed:', error);
       setUser(null);
       setAuthToken(null);
+      localStorage.removeItem('auth_token'); // Ensure clearing on failure
     } finally {
       setLoading(false);
     }
-  };
-
+  }, []);
+  
   // ✅ Run checkAuth() when component mounts
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   // ✅ Login Function
   const login = async (email: string, password: string) => {
