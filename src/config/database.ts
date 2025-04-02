@@ -15,7 +15,7 @@ const pool = mysql.createPool({
 });
 
 // ✅ Function to execute SQL queries
-export async function executeQuery<T = any>(query: string, values: any[] = []): Promise<T[]> {
+export async function executeQuery<T = Record<string, unknown>>(query: string, values: (string | number | boolean | null)[] = []): Promise<T[]> {
   try {
     const [results] = await pool.execute(query, values);
     return results as T[];

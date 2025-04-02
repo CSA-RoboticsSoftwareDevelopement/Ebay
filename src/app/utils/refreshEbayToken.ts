@@ -7,13 +7,12 @@ const EBAY_TOKEN_URL = process.env.EBAY_API_URL + "/identity/v1/oauth2/token";
 
 export const refreshEbayToken = async (userId: number): Promise<string> => {
   try {
-    // ✅ Fetch the stored refresh token from DB
-    const result = await executeQuery<{ refresh_token: string }[]>(
+    const result = await executeQuery<{ refresh_token: string }>(
       "SELECT refresh_token FROM ebay_accounts WHERE user_id = ?",
       [userId]
     );
 
-    const user = result.length > 0 ? result[0] : null; // ✅ Ensure we get the first object
+    const user = result.length > 0 ? result[0] : null;
 
     if (!user || !user.refresh_token) {
       throw new Error("No refresh token found.");
@@ -21,13 +20,12 @@ export const refreshEbayToken = async (userId: number): Promise<string> => {
 
     console.log("🔄 Refreshing eBay token for user:", userId);
 
-    // ✅ Make request to refresh token
     const response = await axios.post(
       EBAY_TOKEN_URL,
       new URLSearchParams({
         grant_type: "refresh_token",
         refresh_token: user.refresh_token, // ✅ Now safely accessing refresh_token
-        scope: "https://api.ebay.com/oauth/api_scope", // ✅ Ensure correct scope
+        scope: "https://api.ebay.com/oauth/api_scope",
       }).toString(),
       {
         headers: {
@@ -41,7 +39,6 @@ export const refreshEbayToken = async (userId: number): Promise<string> => {
 
     console.log("✅ Refreshed eBay Access Token:", access_token);
 
-    // ✅ Update the token in the database
     await executeQuery(
       "UPDATE ebay_accounts SET access_token=?, expires_at=? WHERE user_id=?",
       [access_token, new Date(Date.now() + expires_in * 1000), userId]

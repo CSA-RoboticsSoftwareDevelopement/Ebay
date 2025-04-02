@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import ProductCard from "../../../components/productsTemplate/InventoryProductCard";
-import ProductDetailModal, {
-  Product,
-} from "../../../components/productsTemplate/InventoryProductDetailModal";
+import ProductDetailModal from "../../../components/productsTemplate/InventoryProductDetailModal";
 import AddProductModal from "../../../components/productsTemplate/AddProductModal"; // ✅ Import AddProductModal
-
-const EBAY_INVENTORY_API = "http://localhost:5000/api/ebay/products/inventory";
+import { Product } from "../../../types/ProductTypes";
+const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
+const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory`;
 
 export default function Products() {
   const [productsData, setProductsData] = useState<Product[]>([]);
@@ -33,11 +32,26 @@ export default function Products() {
         const inventoryItems = data["1"]?.inventoryItems || [];
 
         // Transform API response to match previous structure
-        const formattedProducts = inventoryItems.map((item: any) => ({
+        interface InventoryItem {
+          sku: string;
+          product: {
+            title: string;
+            description: string;
+            mpn: string;
+            imageUrls?: string[];
+          };
+          availability: {
+            shipToLocationAvailability: {
+              quantity: number;
+            };
+          };
+        }
+        
+        const formattedProducts = inventoryItems.map((item: InventoryItem) => ({
           id: item.sku,
           title: item.product.title,
           description: item.product.description,
-          price: parseFloat(item.product.mpn) || 0, // Assuming 'mpn' holds the price
+          price: !isNaN(parseFloat(item.product.mpn)) ? parseFloat(item.product.mpn) : 0,
           currency: "USD",
           quantity: item.availability.shipToLocationAvailability.quantity,
           quantitySold: 0,
@@ -69,8 +83,9 @@ export default function Products() {
 
         setProductsData(formattedProducts);
         setLoading(false);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: Error | unknown) {
+        const error = err as Error;
+        setError(error.message);
         setLoading(false);
       }
     }
@@ -79,9 +94,26 @@ export default function Products() {
   }, [refreshTrigger]);
 
   const handleAddProduct = (newProduct: Product) => {
-    setProductsData((prevProducts) => [...prevProducts, newProduct]);
+    setProductsData((prevProducts) => {
+      // Check for duplicates before adding
+      if (prevProducts.some((product) => product.id === newProduct.id)) {
+        return prevProducts;
+      }
+  
+      const updatedProduct: Product = {
+        ...newProduct,
+        currency: newProduct.currency || "USD",
+        quantitySold: newProduct.quantitySold || 0,
+        createdAt: newProduct.createdAt || new Date().toISOString(),
+        updatedAt: newProduct.updatedAt || new Date().toISOString(),
+      };
+  
+      return [...prevProducts, updatedProduct];
+    });
+  
     setRefreshTrigger((prev) => prev + 1); // 🔹 Forces re-fetch
   };
+  
 
   // Find the selected product
   const selectedProduct = selectedProductId

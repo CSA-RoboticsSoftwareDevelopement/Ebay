@@ -5,6 +5,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 type SignupKey = {
   id: string;
@@ -53,7 +54,16 @@ export default function AdminKeysPage() {
       setIsLoading(true);
       const response = await axios.get('/api/admin/keys');
 
-      const formattedKeys = response.data.keys.map((key: any) => ({
+      interface ApiKey {
+        id: string;
+        key_value: string;
+        status: string;
+        created_by: string | null;
+        created_at: string;
+        expires_at: string | null;
+      }
+      
+      const formattedKeys = response.data.keys.map((key: ApiKey) => ({
         id: key.id,
         key: key.key_value, // 🔥 Ensure this matches DB field
         isUsed: key.status !== 'Available',
@@ -73,7 +83,7 @@ export default function AdminKeysPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/users');
+      const response = await axios.get(`${BACKEND_SERVER_URL}/api/users`);
       setUsers(response.data.users);
     } catch (error) {
       console.error('Error fetching users:', error);

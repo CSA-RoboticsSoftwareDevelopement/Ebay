@@ -56,7 +56,7 @@ const DeviceIllustration = () => {
 
       {/* App metrics */}
       <div className="bg-white rounded-lg p-4 shadow-md mb-4">
-        <div className="text-sm text-neutral-gray-600 mb-1">Today's Performance</div>
+        <div className="text-sm text-neutral-gray-600 mb-1">Today&apos;s Performance</div>
         <div className="text-lg text-primary-black font-bold mb-1">$2,458.32</div>
         <div className="flex items-center">
           <span className="text-sm text-green-500">↑ 12.5%</span>
@@ -574,7 +574,7 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="text-xl font-bold mb-2 text-primary-black">How do I sign up?</h3>
-              <p className="text-neutral-gray-600">You can sign up by clicking the 'Get Started' button and following the instructions.</p>
+              <p className="text-neutral-gray-600">You can sign up by clicking the &apos;Get Started&apos; button and following the instructions.</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="text-xl font-bold mb-2 text-primary-black">What payment methods do you accept?</h3>

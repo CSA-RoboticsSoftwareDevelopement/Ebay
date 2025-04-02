@@ -1,20 +1,9 @@
-/**
- * @type {import('next').NextConfig}
- */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-        pathname: '**',
-      },
-    ],
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-  },
+  webpack: (config) => {
+    config.resolve.extensions = ['.ts', '.tsx', '.js', '.json'];
+    return config;
+  }
 };
 
 export default nextConfig;

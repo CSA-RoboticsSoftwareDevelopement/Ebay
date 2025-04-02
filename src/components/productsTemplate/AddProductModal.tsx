@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import Swal from "sweetalert2"; // ✅ Import SweetAlert2
-
+import { Product } from "@/types/ProductTypes"; // ✅ Import Product type
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProduct: (newProduct: any) => void;
+  onAddProduct: (newProduct: Product) => void;
 }
+const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
-const API_URL = "http://localhost:5000/api/ebay/products/inventory/add"; // ✅ API Endpoint
+
+
+const API_URL = `${BACKEND_SERVER_URL}/api/ebay/products/inventory/add`; // ✅ API Endpoint
 
 const AddProductModal: React.FC<AddProductModalProps> = ({
   isOpen,
@@ -99,8 +102,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
       // ✅ Close modal after successful submission
       onClose();
-    } catch (err: any) {
-      setError(err.message || "Something went wrong!");
+    } catch (err: Error | unknown) {
+      const error = err as Error;
+      setError(error.message || "Something went wrong!");
     } finally {
       setLoading(false);
     }

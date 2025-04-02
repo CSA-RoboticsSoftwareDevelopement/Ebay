@@ -71,9 +71,10 @@ export default function SignupPage() {
 
       console.log('Signup successful:', response.data);
       window.location.href = '/login'; // Redirect to login page
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       console.error('Signup error:', err);
-      setError(err.response?.data?.message || 'An error occurred. Please try again later.');
+      const errorResponse = err as { response?: { data?: { message?: string } } };
+      setError(errorResponse.response?.data?.message || 'An error occurred. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -109,7 +110,7 @@ export default function SignupPage() {
               disabled={loading}
             />
             <p className="text-sm text-neutral-gray-500 mt-2">
-              Don't have a key? Contact your administrator or support.
+              Don&apos;t have a key? Contact your administrator or support.
             </p>
           </div>
 

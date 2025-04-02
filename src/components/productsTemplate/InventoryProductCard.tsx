@@ -2,7 +2,7 @@ import React from 'react';
 import { useState } from "react";
 import Image from 'next/image';
 import { formatCurrency } from '../../lib/formatters';
-import { Product } from './InventoryProductDetailModal';
+import { Product } from '@/types/ProductTypes';
 
 // Define the ProductCard props type
 export type ProductCardProps = {
@@ -29,8 +29,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
   };
 
   // Generate a placeholder image URL if none exists
- const imageUrlSrc = product.imageUrl || 
-  `https://placehold.co/400x300?text=${encodeURIComponent(product.title?.substring(0, 1) || product.title)}`;
+ // Generate placeholder image URL if needed in the useState below
 
   const [imgSrc, setImgSrc] = useState(product.imageUrl || `https://placehold.co/400x300?text=${encodeURIComponent(product.title?.substring(0, 1) || product.title)}`);
 
@@ -112,4 +111,4 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
   );
 };
 
-export default ProductCard; 
+export default ProductCard;

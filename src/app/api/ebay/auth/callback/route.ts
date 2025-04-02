@@ -87,10 +87,11 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error("❌ Error fetching eBay token:", (error as any).response?.data || (error as Error).message);
+    const apiError = error as { response?: { data?: unknown } };
+    console.error("❌ Error fetching eBay token:", apiError.response?.data || (error as Error).message);
     return NextResponse.json({ 
       error: "Failed to get access token", 
-      details: (error as any).response?.data 
+      details: apiError.response?.data 
     }, { status: 500 });
   }
 }

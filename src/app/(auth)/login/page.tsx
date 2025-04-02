@@ -20,7 +20,8 @@ export default function LoginPage() {
     setIsMounted(true);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // For line 55, replace 'any' with a proper type
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -52,9 +53,9 @@ export default function LoginPage() {
   
       // ✅ Redirect to dashboard after successful login
       router.push('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Login Error:', err);
-      setError(err.message || 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -118,10 +119,8 @@ export default function LoginPage() {
 
       <div className="mt-6 text-center">
         <p className="text-neutral-gray-600">
-          Don't have an account?{' '}
-          <Link href="/signup" className="text-primary-yellow font-medium">
-            Sign up
-          </Link>
+          {/* Don't have an account? */}
+          <p>Don&apos;t have an account? <Link href="/signup">Sign up</Link></p>
         </p>
       </div>
     </div>

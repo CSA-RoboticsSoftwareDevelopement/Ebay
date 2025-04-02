@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Swal from "sweetalert2"; // ✅ Import SweetAlert2
+import { Product } from "@/types/ProductTypes"; // ✅ Import Product type
 import {
   formatCurrency,
   formatPercentage,
   formatDate,
   formatDays,
 } from "../../lib/formatters";
+const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 // Type definitions based on the Prisma schema
 export type CompetitorData = {
@@ -22,30 +24,6 @@ export type CompetitorData = {
   lastUpdated: Date;
 };
 
-export type Product = {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  currency: string;
-  quantity: number;
-  quantitySold: number;
-  sellThroughRate?: number | null;
-  timeToSell?: number | null; // in days
-  costPrice?: number | null;
-  shipping?: number | null;
-  ebayFees?: number | null;
-  profit?: number | null;
-  profitMargin?: number | null;
-  roi?: number | null;
-  imageUrl?: string | null;
-  listingStatus?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  competitorData?: CompetitorData | null;
-  // Additional images for gallery view
-  additionalImages?: string[];
-};
 
 type ProductDetailModalProps = {
   product: Product;
@@ -80,7 +58,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const imageUrlSrc =
     product.imageUrl ||
     `https://placehold.co/400x300?text=${encodeURIComponent(
-      item.product.title
+      product.title
     )}`;
 
   const handleTabChange = (
@@ -151,7 +129,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/ebay/products/inventory/delete/${productId}`,
+        `${BACKEND_SERVER_URL}/api/ebay/products/inventory/delete/${productId}`,
         { method: "DELETE" }
       );
 

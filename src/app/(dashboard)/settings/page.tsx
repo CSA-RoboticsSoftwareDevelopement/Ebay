@@ -23,9 +23,10 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('account');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  // These state variables will be used in future implementation
+  // const [isModalOpen, setIsModalOpen] = useState(false);
+  // const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  // const [darkMode, setDarkMode] = useState(false);
 
 
   useEffect(() => {
@@ -61,7 +62,8 @@ export default function Settings() {
         console.log('✅ eBay Profile:', profileResponse.data);
       } catch (error) {
         console.error('❌ Failed to load eBay profile:', error);
-        setError(((error as any).response?.data?.error as string) || 'Failed to load eBay profile');
+        const apiError = error as { response?: { data?: { error?: string } } };
+        setError((apiError.response?.data?.error) || 'Failed to load eBay profile');
         setEbayProfile(null);
       } finally {
         setIsLoading(false);
@@ -69,6 +71,9 @@ export default function Settings() {
     };
 
     fetchEbayProfile();
+    if (error) {
+      console.error("Error:", error);
+    }
   }, [user, authToken]); // ✅ Depend on user and authToken
 
 

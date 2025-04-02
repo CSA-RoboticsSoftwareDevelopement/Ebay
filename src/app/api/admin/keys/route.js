@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { pool } from "@/config/database"; // ✅ Import database connection
-import { v4 as uuidv4 } from "uuid";
+import { pool } from "@/config/database"; // Import database connection
 
 // Generate a random signup key
 const generateRandomKey = () => {

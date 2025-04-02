@@ -57,7 +57,7 @@ const navigation: NavItem[] = [
 export default function Sidebar() {
   const { user, logout, checkAuth } = useAuth();
   const pathname = usePathname();
-  const isAdmin = user?.is_admin === 1; // ✅ Ensure correct admin check
+  // Admin check is used in the navigation filtering below
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -77,10 +77,10 @@ export default function Sidebar() {
     }
   };
 
-  // ✅ Ensure Sidebar updates after login
+  // Ensure Sidebar updates after login
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   return (
 

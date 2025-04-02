@@ -1,12 +1,10 @@
-"use client";
-
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
-// ✅ Define User Type
 type User = {
   id: string;
   email: string;
@@ -14,7 +12,6 @@ type User = {
   username: string;
 };
 
-// ✅ Define AuthContext Type
 type AuthContextType = {
   user: User | null;
   loading: boolean;
@@ -24,46 +21,43 @@ type AuthContextType = {
   checkAuth: () => Promise<void>;
 };
 
-// ✅ Create Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ✅ Auth Provider Component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null); // ✅ Store token
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false); // ✅ Fix hydration mismatch
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
   const getAuthTokenFromCookies = () => {
     const cookies = document.cookie.split(';').reduce((acc, cookie) => {
       const [key, value] = cookie.trim().split('=');
       acc[key] = value;
       return acc;
     }, {} as { [key: string]: string });
-  
+
     return cookies['auth_token'] || null;
   };
-  
-  const checkAuth = async () => {
+
+  // ✅ Wrap checkAuth in useCallback
+  const checkAuth = useCallback(async () => {
     try {
       setLoading(true);
-  
-      // ✅ Always get the token from cookies
       const storedToken = getAuthTokenFromCookies();
-  
       if (storedToken) {
         setAuthToken(storedToken);
       }
-  
+
       const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
         withCredentials: true,
         headers: storedToken ? { Authorization: `Bearer ${storedToken}` } : {},
       });
-  
+
       setUser(response.data.user);
       if (response.data.token) {
         setAuthToken(response.data.token);
@@ -78,27 +72,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
-  
-  // ✅ Run checkAuth() only once on mount
+  }, []); // ✅ Dependencies array ensures it's memoized properly
+
+  // ✅ Use checkAuth inside useEffect
   useEffect(() => {
     checkAuth();
-  }, []);
-  
+  }, [checkAuth]);
 
-  // ✅ Login Function
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
       const response = await axios.post(
-        `${BACKEND_SERVER_URL}}/api/auth/login`,
+        `${BACKEND_SERVER_URL}/api/auth/login`,
         { email, password },
         { withCredentials: true }
       );
 
       console.log("🔹 Login Success:", response.data.user);
       setUser(response.data.user);
-      setAuthToken(response.data.token); // ✅ Store token in state
+      setAuthToken(response.data.token);
       router.push("/dashboard");
     } catch (error) {
       console.error("❌ Login failed:", error);
@@ -108,16 +100,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ✅ Logout Function
   const logout = async () => {
     try {
-      await axios.post(
-        `${BACKEND_SERVER_URL}/api/auth/logout`,
-        {},
-        { withCredentials: true }
-      );
+      await axios.post(`${BACKEND_SERVER_URL}/api/auth/logout`, {}, { withCredentials: true });
       setUser(null);
-      setAuthToken(null); // ✅ Clear token on logout
+      setAuthToken(null);
       router.push("/login");
     } catch (error) {
       console.error("❌ Logout failed:", error);
@@ -125,18 +112,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (!isMounted) return null; // ✅ Fix hydration mismatch
+  if (!isMounted) return null;
 
   return (
-    <AuthContext.Provider
-      value={{ user, loading, authToken, login, logout, checkAuth }}
-    >
+    <AuthContext.Provider value={{ user, loading, authToken, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// ✅ Custom Hook to Use Auth
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

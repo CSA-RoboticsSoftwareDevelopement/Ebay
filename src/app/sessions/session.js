@@ -1,6 +1,6 @@
-const express = require('express');
-const db = require('../../config/db'); // ✅ Ensure correct DB path
-const jwt = require('jsonwebtoken');
+import express from 'express';
+import db from '../../config/db';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
@@ -12,10 +12,10 @@ router.get('/session', async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized. No session found.' });
     }
 
-    let decoded;
     try {
-      decoded = jwt.verify(auth_token, process.env.JWT_SECRET);
+      jwt.verify(auth_token, process.env.JWT_SECRET);
     } catch (error) {
+      console.error("JWT Verification Error:", error); // ✅ Logs the error
       return res.status(401).json({ message: 'Invalid or expired token.' });
     }
 
@@ -36,4 +36,4 @@ router.get('/session', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
