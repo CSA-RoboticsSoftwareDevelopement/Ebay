@@ -21,11 +21,7 @@ const db = mysql.createPool({
 });
 
 // ✅ CORS Configuration
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://ebay.csaappstore.com",
-  "http://127.0.0.1:58766",
-];
+const allowedOrigins = ['http://localhost:3000', 'https://ebay.csaappstore.com',  'http://127.0.0.1:3000','https://resale.csaappstore.com'];
 app.use(
   cors({
     origin: function (origin, callback) {
