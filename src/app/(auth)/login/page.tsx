@@ -24,7 +24,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+  
     try {
       const res = await fetch(`${BACKEND_SERVER_URL}/api/login`, {
         method: 'POST',
@@ -32,12 +32,24 @@ export default function LoginPage() {
         credentials: 'include', // ✅ Sends cookies with request
         body: JSON.stringify({ email, password }),
       });
-
+  
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
-
+  
       console.log('🔹 Login Success:', data.user);
-
+  
+      const token = data.auth_token;
+      if (token) {
+        // ✅ Store token in cookies
+        document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax${
+          window.location.protocol === 'https:' ? '; Secure' : ''
+        }`;
+  
+        console.log('🔐 Token stored in cookies');
+      } else {
+        console.warn('⚠️ No auth_token received from API');
+      }
+  
       // ✅ Redirect to dashboard after successful login
       router.push('/dashboard');
     } catch (err: any) {
@@ -47,6 +59,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+  
 
   if(useAuth().user) router.push('/dashboard');
 

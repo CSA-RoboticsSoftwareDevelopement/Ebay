@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-hot-toast';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 // ✅ Define User Type
@@ -38,29 +38,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  // ✅ Check Authentication Status
+  const getAuthTokenFromCookies = () => {
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {} as { [key: string]: string });
+  
+    return cookies['auth_token'] || null;
+  };
+  
   const checkAuth = async () => {
     try {
       setLoading(true);
+  
+      // ✅ Always get the token from cookies
+      const storedToken = getAuthTokenFromCookies();
+  
+      if (storedToken) {
+        setAuthToken(storedToken);
+      }
+  
       const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
         withCredentials: true,
+        headers: storedToken ? { Authorization: `Bearer ${storedToken}` } : {},
       });
-
+  
       setUser(response.data.user);
-      setAuthToken(response.data.token || null); // ✅ Store token if available
+      if (response.data.token) {
+        setAuthToken(response.data.token);
+        document.cookie = `auth_token=${response.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax${
+          window.location.protocol === 'https:' ? '; Secure' : ''
+        }`;
+      }
     } catch (error) {
+      console.error('❌ Authentication check failed:', error);
       setUser(null);
       setAuthToken(null);
     } finally {
       setLoading(false);
     }
   };
-
-  // ✅ Run checkAuth() when component mounts
+  
+  // ✅ Run checkAuth() only once on mount
   useEffect(() => {
     checkAuth();
   }, []);
+  
 
   // ✅ Login Function
   const login = async (email: string, password: string) => {
@@ -72,13 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         { withCredentials: true }
       );
 
-      console.log('🔹 Login Success:', response.data.user);
+      console.log("🔹 Login Success:", response.data.user);
       setUser(response.data.user);
       setAuthToken(response.data.token); // ✅ Store token in state
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (error) {
-      console.error('❌ Login failed:', error);
-      toast.error('Login failed. Try again.');
+      console.error("❌ Login failed:", error);
+      toast.error("Login failed. Try again.");
     } finally {
       setLoading(false);
     }
@@ -87,20 +111,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ✅ Logout Function
   const logout = async () => {
     try {
-      await axios.post(`${BACKEND_SERVER_URL}/api/auth/logout`, {}, { withCredentials: true });
+      await axios.post(
+        `${BACKEND_SERVER_URL}/api/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
       setUser(null);
       setAuthToken(null); // ✅ Clear token on logout
-      router.push('/login');
+      router.push("/login");
     } catch (error) {
-      console.error('❌ Logout failed:', error);
-      toast.error('Logout failed. Try again.');
+      console.error("❌ Logout failed:", error);
+      toast.error("Logout failed. Try again.");
     }
   };
 
   if (!isMounted) return null; // ✅ Fix hydration mismatch
 
   return (
-    <AuthContext.Provider value={{ user, loading, authToken, login, logout, checkAuth }}>
+    <AuthContext.Provider
+      value={{ user, loading, authToken, login, logout, checkAuth }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -110,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

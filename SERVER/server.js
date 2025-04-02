@@ -105,12 +105,6 @@ app.post("/api/login", async (req, res) => {
       [user.id, auth_token]
     );
 
-    res.cookie("auth_token", auth_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days expiration
-    });
 
     return res.json({ message: "Login successful", auth_token, user });
   } catch (err) {
@@ -121,25 +115,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// ✅ Get Cookies Endpoint
-app.get("/api/auth/get-cookies", (req, res) => {
-  try {
-    // Access cookies sent in the request
-    const cookies = req.cookies; // This will get all the cookies sent with the request
-
-    if (Object.keys(cookies).length === 0) {
-      return res.status(200).json({ message: "No cookies found" });
-    }
-
-    // Return cookies to the client
-    return res.json({ cookies });
-  } catch (err) {
-    console.error("❌ Error fetching cookies:", err);
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", error: err.toString() });
-  }
-});
 
 // ✅ Get All Logged-in Users (Debugging)
 app.get("/api/users", async (req, res) => {
