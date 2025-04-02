@@ -37,14 +37,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getAuthTokenFromCookies = () => {
     const cookies = document.cookie.split(';').reduce((acc, cookie) => {
       const [key, value] = cookie.trim().split('=');
-      acc[key] = value;
+      acc[key] = decodeURIComponent(value); // ✅ Properly decode the cookie
       return acc;
     }, {} as { [key: string]: string });
 
     return cookies['auth_token'] || null;
   };
 
-  // ✅ Wrap checkAuth in useCallback
   const checkAuth = useCallback(async () => {
     try {
       setLoading(true);
@@ -61,9 +60,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(response.data.user);
       if (response.data.token) {
         setAuthToken(response.data.token);
-        document.cookie = `auth_token=${response.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax${
-          window.location.protocol === 'https:' ? '; Secure' : ''
-        }`;
+        document.cookie = `auth_token=${encodeURIComponent(response.data.token)}; path=/; max-age=${
+          7 * 24 * 60 * 60
+        }; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
       }
     } catch (error) {
       console.error('❌ Authentication check failed:', error);
@@ -72,9 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []); // ✅ Dependencies array ensures it's memoized properly
+  }, [BACKEND_SERVER_URL]); // ✅ Added dependency
 
-  // ✅ Use checkAuth inside useEffect
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
@@ -91,6 +89,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("🔹 Login Success:", response.data.user);
       setUser(response.data.user);
       setAuthToken(response.data.token);
+
+      document.cookie = `auth_token=${encodeURIComponent(response.data.token)}; path=/; max-age=${
+        7 * 24 * 60 * 60
+      }; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+
       router.push("/dashboard");
     } catch (error) {
       console.error("❌ Login failed:", error);
@@ -102,9 +105,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await axios.post(`${BACKEND_SERVER_URL}/api/auth/logout`, {}, { withCredentials: true });
+      // Include the auth token in both cookies and Authorization header
+      await axios.post(
+        `${BACKEND_SERVER_URL}/api/auth/logout`, 
+        {}, 
+        { 
+          withCredentials: true,
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+        }
+      );
       setUser(null);
       setAuthToken(null);
+      document.cookie = "auth_token=; path=/; max-age=0"; // ✅ Clear cookie properly
       router.push("/login");
     } catch (error) {
       console.error("❌ Logout failed:", error);

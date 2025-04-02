@@ -238,7 +238,7 @@ app.post("/api/signup", async (req, res) => {
 // ✅ Logout API
 app.post("/api/auth/logout", async (req, res) => {
   try {
-    const auth_token = req.cookies.auth_token; // ✅ Get the auth token from cookies
+    const auth_token = req.cookies.auth_token || req.headers.authorization?.split(' ')[1]; // ✅ Get the auth token from cookies or Authorization header
 
     if (!auth_token) {
       return res.status(400).json({ message: "No active session found" });
