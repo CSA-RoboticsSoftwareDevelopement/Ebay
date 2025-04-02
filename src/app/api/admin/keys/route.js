@@ -19,7 +19,7 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Fetch the username from users table using userId
+    // ✅ Fetch the username from the users table using userId
     const [userResult] = await pool.execute(
       "SELECT username FROM users WHERE id = ?",
       [userId]
@@ -36,11 +36,11 @@ export async function POST(req) {
       Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000
     ).toISOString();
 
-    // ✅ Insert into database
+    // ✅ Insert into database (Now storing user_id as well)
     const [result] = await pool.execute(
-      `INSERT INTO admin_keys (key_value, status, created_by, created_at, expires_at) 
-         VALUES (?, 'Available', ?, ?, ?)`,
-      [key, createdBy, createdAt, expiresAt]
+      `INSERT INTO admin_keys (key_value, status, created_by, user_id, created_at, expires_at) 
+         VALUES (?, 'Available', ?, ?, ?, ?);`,
+      [key, createdBy, userId, createdAt, expiresAt]
     );
 
     return NextResponse.json({
@@ -49,7 +49,8 @@ export async function POST(req) {
         id: result.insertId,
         key,
         status: "Available",
-        createdBy, // ✅ Real username from users table
+        createdBy,
+        userId, // ✅ Now returning user_id too
         createdAt,
         expiresAt,
       },

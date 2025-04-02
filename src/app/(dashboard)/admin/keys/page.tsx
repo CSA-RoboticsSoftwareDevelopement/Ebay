@@ -16,14 +16,23 @@ type SignupKey = {
   createdBy: string | null;
 };
 
+type User = {
+  id: string;
+  username: string;
+};
+
 export default function AdminKeysPage() {
   const [keys, setKeys] = useState<SignupKey[]>([]);
-  const [searchQuery, setSearchQuery] = useState(''); // 🔍 Search state
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [expiresInDays, setExpiresInDays] = useState('30');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>('');
+
   const router = useRouter();
-  const { user } = useAuth(); 
+  const { user } = useAuth();
 
   // ✅ Redirect non-admin users
   useEffect(() => {
@@ -43,9 +52,8 @@ export default function AdminKeysPage() {
     try {
       setIsLoading(true);
       const response = await axios.get('/api/admin/keys');
-      
-      // ✅ Fix: Adjust mapping based on API response
-      const formattedKeys = response.data.keys.map((key: { id: any; key_value: any; status: string; created_by: any; created_at: any; expires_at: any; }) => ({
+
+      const formattedKeys = response.data.keys.map((key: any) => ({
         id: key.id,
         key: key.key_value, // 🔥 Ensure this matches DB field
         isUsed: key.status !== 'Available',
@@ -62,36 +70,56 @@ export default function AdminKeysPage() {
       setIsLoading(false);
     }
   };
-  
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/users');
+      setUsers(response.data.users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users.');
+    }
+  };
+
+  const openModal = () => {
+    setIsModalOpen(true);
+    fetchUsers(); // Fetch users when opening modal
+  };
 
   const generateKey = async () => {
-  if (!user || user.is_admin !== 1) {
-    toast.error("You are not authorized to generate keys.");
-    return;
-  }
-
-  try {
-    setIsGenerating(true);
-
-    const response = await axios.post('/api/admin/keys', {
-      expiresInDays: expiresInDays,
-      userId: user.id, // ✅ Send userId instead of createdBy
-    });
-    
-
-    if (response.data.success) {
-      setKeys((prevKeys) => [response.data.key, ...prevKeys]);
-      toast.success("Signup key generated successfully!");
-    } else {
-      toast.error("Failed to generate signup key.");
+    if (!user || user.is_admin !== 1) {
+      toast.error('You are not authorized to generate keys.');
+      return;
     }
-  } catch (error) {
-    console.error("Error generating key:", error);
-    toast.error("Failed to generate signup key.");
-  } finally {
-    setIsGenerating(false);
-  }
-};
+  
+    if (!selectedUser) {
+      toast.error('Please select a user.');
+      return;
+    }
+  
+    try {
+      setIsGenerating(true);
+  
+      const response = await axios.post('/api/admin/keys', {
+        expiresInDays: parseInt(expiresInDays),
+        userId: selectedUser, // ✅ Ensure user ID is sent correctly
+      });
+  
+      if (response.data.success) {
+        setKeys((prevKeys) => [response.data.key, ...prevKeys]);
+        toast.success('Signup key generated successfully!');
+        setIsModalOpen(false);
+      } else {
+        toast.error('Failed to generate signup key.');
+      }
+    } catch (error) {
+      console.error('Error generating key:', error);
+      toast.error('Failed to generate signup key.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
 
   
 
@@ -119,10 +147,9 @@ export default function AdminKeysPage() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  // 🔍 **Filter keys based on search query**
-const filteredKeys = keys.filter((key) =>
-  key?.key?.toLowerCase().includes(searchQuery.toLowerCase())
-);
+  const filteredKeys = keys.filter((key) =>
+    key?.key?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
 
   return (
@@ -142,15 +169,80 @@ const filteredKeys = keys.filter((key) =>
           />
 
           {/* Generate Key Button */}
+         
+<button
+            onClick={openModal}
+  className="bg-primary-yellow text-black hover:bg-black hover:text-white px-4 py-2 rounded-md transition"
+>
+  Generate Key
+</button>
+        </div>
+      </div>
+
+{/* Add this modal component before the closing div */}
+{isModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-6 w-96">
+      <h2 className="text-xl font-bold mb-4">Generate New Key</h2>
+      
+      <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select User
+                </label>
+                <select
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="">Select a user...</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.username}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expires In
+                </label>
+                <select
+                  value={expiresInDays}
+                  onChange={(e) => setExpiresInDays(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="7">7 days</option>
+                  <option value="30">30 days</option>
+                  <option value="60">60 days</option>
+                  <option value="90">90 days</option>
+                </select>
+              </div>
+
+        {/* Buttons */}
+        <div className="flex justify-end space-x-3 mt-6">
           <button
-            onClick={generateKey}
-            disabled={isGenerating}
-            className="bg-primary-yellow text-black hover:bg-black hover:text-white px-4 py-2 rounded-md transition"
+            onClick={() => setIsModalOpen(false)}
+            className="px-4 py-2 text-sm border rounded-md hover:bg-gray-50"
           >
-            {isGenerating ? 'Generating...' : 'Generate Key'}
+            Cancel
+          </button>
+          <button
+            
+                  onClick={generateKey}
+            
+            disabled={isGenerating}
+            className="bg-primary-yellow text-black hover:bg-black hover:text-white px-4 py-2 rounded-md transition text-sm"
+          >
+            {isGenerating ? 'Generating...' : 'Generate'}
           </button>
         </div>
       </div>
+    </div>
+  </div>
+)}
+   
 
       {isLoading ? (
         <div className="text-center py-8">
