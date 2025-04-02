@@ -130,26 +130,50 @@ app.get("/api/users", async (req, res) => {
 // ✅ Get Current Session
 app.get("/api/auth/session", async (req, res) => {
   try {
-    const auth_token = req.cookies.auth_token; // Get token from cookies
+    const auth_token = req.cookies.auth_token || req.headers.authorization?.split(' ')[1];
 
     if (!auth_token) {
-      return res.status(401).json({ message: "Unauthorized" });
+      console.log("No auth token found in request");
+      return res.status(401).json({ 
+        message: "No authentication token found",
+        isAuthenticated: false 
+      });
     }
 
-    // ✅ Retrieve user session from the database
+    // Verify the token first
+    const decoded = verifyToken(auth_token);
+    if (!decoded) {
+      console.log("Invalid or expired token");
+      return res.status(401).json({ 
+        message: "Invalid or expired token",
+        isAuthenticated: false 
+      });
+    }
+
+    // Retrieve user session from the database
     const [session] = await db.query(
-      "SELECT users.id, users.email, users.is_admin,users.username FROM users JOIN sessions ON users.id = sessions.user_id WHERE sessions.auth_token = ?",
+      "SELECT users.id, users.email, users.is_admin, users.username FROM users JOIN sessions ON users.id = sessions.user_id WHERE sessions.auth_token = ? AND sessions.expires_at > NOW()",
       [auth_token]
     );
 
     if (session.length === 0) {
-      return res.status(401).json({ message: "Invalid session" });
+      console.log("No valid session found in database");
+      return res.status(401).json({ 
+        message: "Session expired or not found",
+        isAuthenticated: false 
+      });
     }
 
-    return res.json({ user: session[0] });
+    return res.json({ 
+      user: session[0],
+      isAuthenticated: true 
+    });
   } catch (err) {
     console.error("❌ Session Error:", err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ 
+      message: "Internal Server Error",
+      isAuthenticated: false 
+    });
   }
 });
 
