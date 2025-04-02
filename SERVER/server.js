@@ -121,6 +121,26 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// ✅ Get Cookies Endpoint
+app.get("/api/auth/get-cookies", (req, res) => {
+  try {
+    // Access cookies sent in the request
+    const cookies = req.cookies; // This will get all the cookies sent with the request
+
+    if (Object.keys(cookies).length === 0) {
+      return res.status(200).json({ message: "No cookies found" });
+    }
+
+    // Return cookies to the client
+    return res.json({ cookies });
+  } catch (err) {
+    console.error("❌ Error fetching cookies:", err);
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: err.toString() });
+  }
+});
+
 // ✅ Get All Logged-in Users (Debugging)
 app.get("/api/users", async (req, res) => {
   try {
@@ -161,6 +181,8 @@ app.get("/api/auth/session", async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+// ✅ User Signup API
 app.post("/api/validate-key", async (req, res) => {
   try {
     console.log("Validate Key Request:", req.body);
