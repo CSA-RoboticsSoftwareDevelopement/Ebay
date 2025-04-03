@@ -8,6 +8,7 @@ const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 type User = {
   id: string;
   email: string;
+  password:string | number | unknown;
   is_admin: number;
   username: string;
 };
