@@ -10,7 +10,7 @@ const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 type SignupKey = {
   id: string;
   key: string;
-  isUsed: boolean;
+  status: 'Not Activated' | 'Activated' | 'De-Activated' | 'Expired';
   expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -57,7 +57,7 @@ export default function AdminKeysPage() {
       interface ApiKey {
         id: string;
         license_key : string;
-        status: string;
+        status: 'Not Activated' | 'Activated' | 'De-Activated' | 'Expired';
         created_by: string | null;
         created_at: string;
         expires_at: string | null;
@@ -66,7 +66,7 @@ export default function AdminKeysPage() {
       const formattedKeys = response.data.keys.map((key: ApiKey) => ({
         id: key.id,
         key: key.license_key , // 🔥 Ensure this matches DB field
-        isUsed: key.status !== 'Available',
+        status: key.status, 
         createdBy: key.created_by || "System",
         createdAt: key.created_at,
         expiresAt: key.expires_at
@@ -272,8 +272,8 @@ export default function AdminKeysPage() {
                   <p className="text-sm text-gray-500">Created At: {formatDate(key.createdAt)}</p>
                   <p className="text-sm text-gray-500">Expires At: {formatDate(key.expiresAt)}</p>
                   <div className="flex justify-between items-center mt-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${key.isUsed ? 'bg-gray-200 text-gray-800' : 'bg-green-100 text-green-800'}`}>
-                      {key.isUsed ? 'Used' : 'Available'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${key.status ? 'bg-gray-200 text-gray-800' : 'bg-green-100 text-green-800'}`}>
+                      {key.status }
                     </span>
                     <button
                       onClick={() => deleteKey(key.id)}
@@ -304,7 +304,7 @@ export default function AdminKeysPage() {
                 {filteredKeys.map((key) => (
                   <tr key={key.id}>
                     <td className="px-4 py-4 text-sm font-medium">{key.key}</td>
-                    <td className="px-4 py-4 text-sm">{key.isUsed ? 'Used' : 'Available'}</td>
+                    <td className="px-4 py-4 text-sm">{key.status }</td>
                     <td className="px-4 py-4 text-sm">{key.createdBy || 'System'}</td>
                     <td className="px-4 py-4 text-sm">{formatDate(key.createdAt)}</td>
                     <td className="px-4 py-4 text-sm">{formatDate(key.expiresAt)}</td>

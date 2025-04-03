@@ -208,13 +208,45 @@ app.post("/api/validate-key", async (req, res) => {
   }
 });
 
+// app.post("/api/signup", async (req, res) => {
+//   try {
+//     console.log(req.body); // Debugging: Check if request body is received
+//     console.log("Signup Request:", req.body);
+//     const { signupKey } = req.body;
+//     if (!signupKey) {
+//       return res.status(400).json({ message: "Signup key is required" });
+//     }
+
+//     // Check if signupKey exists in the database
+//     const [rows] = await db.execute(
+//       "SELECT user_id, created_by FROM admin_keys WHERE license_key = ?",
+//       [signupKey]
+//     );
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({ message: "Invalid Signup Key" });
+//     }
+
+//     // If key is found, return user_id and created_by
+//     return res.status(200).json({
+//       message: "Signup key valid",
+//       user_id: rows[0].user_id,
+//       created_by: rows[0].created_by,
+//     });
+//   } catch (error) {
+//     console.error("Error:", error);
+//     return res.status(500).json({ message: "Internal Server Error" });
+//   }
+// });
+
+// ✅ Logout API
 app.post("/api/signup", async (req, res) => {
   try {
-    console.log(req.body); // Debugging: Check if request body is received
     console.log("Signup Request:", req.body);
-    const { signupKey } = req.body;
-    if (!signupKey) {
-      return res.status(400).json({ message: "Signup key is required" });
+    const { signupKey, email, password, username } = req.body;
+
+    if (!signupKey || !email || !password || !username) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     // Check if signupKey exists in the database
@@ -227,19 +259,27 @@ app.post("/api/signup", async (req, res) => {
       return res.status(404).json({ message: "Invalid Signup Key" });
     }
 
-    // If key is found, return user_id and created_by
-    return res.status(200).json({
-      message: "Signup key valid",
-      user_id: rows[0].user_id,
-      created_by: rows[0].created_by,
+    // ✅ Hash Password before storing
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ Insert User into Database
+    const [insertResult] = await db.execute(
+      "INSERT INTO users (email, password, username, created_at) VALUES (?, ?, ?, NOW())",
+      [email, hashedPassword, username]
+    );
+
+    console.log("User Created:", insertResult);
+
+    return res.status(201).json({
+      message: "User created successfully",
+      userId: insertResult.insertId,
     });
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Signup Error:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-// ✅ Logout API
 app.post("/api/auth/logout", async (req, res) => {
   try {
     const auth_token =
