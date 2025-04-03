@@ -3,7 +3,7 @@ import { pool } from "@/config/database"; // Import database connection
 
 // Generate a random signup key
 const generateRandomKey = () => {
-  return `KEY-${Math.random().toString(36).substr(2, 15).toUpperCase()}`;
+  return `${Math.random().toString(36).substr(2, 15).toUpperCase()}`;
 };
 
 // ✅ Handle POST request (Generate Key)
@@ -37,8 +37,8 @@ export async function POST(req) {
 
     // ✅ Insert into database (Now storing user_id as well)
     const [result] = await pool.execute(
-      `INSERT INTO admin_keys (key_value, status, created_by, user_id, created_at, expires_at) 
-         VALUES (?, 'Available', ?, ?, ?, ?);`,
+      `INSERT INTO admin_keys (license_key , status, created_by, user_id, created_at, expires_at) 
+   VALUES (?, 'Not Activated', ?, ?, ?, ?);`,
       [key, createdBy, userId, createdAt, expiresAt]
     );
 
@@ -47,7 +47,7 @@ export async function POST(req) {
       key: {
         id: result.insertId,
         key,
-        status: "Available",
+        status: "Not Activated",
         createdBy,
         userId, // ✅ Now returning user_id too
         createdAt,
@@ -66,6 +66,12 @@ export async function POST(req) {
 // ✅ Handle GET request (Fetch Keys)
 export async function GET() {
   try {
+    // ✅ Automatically mark expired keys as "Expired"
+    await pool.execute(
+      "UPDATE admin_keys SET status = 'Expired' WHERE expires_at < NOW() AND status != 'Expired'"
+    );
+
+    // ✅ Fetch all keys after updating their status
     const [keys] = await pool.execute(
       "SELECT * FROM admin_keys ORDER BY created_at DESC"
     );
