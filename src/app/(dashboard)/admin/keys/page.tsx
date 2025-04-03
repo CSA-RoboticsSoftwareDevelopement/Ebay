@@ -56,7 +56,7 @@ export default function AdminKeysPage() {
 
       interface ApiKey {
         id: string;
-        key_value: string;
+        license_key : string;
         status: string;
         created_by: string | null;
         created_at: string;
@@ -65,7 +65,7 @@ export default function AdminKeysPage() {
       
       const formattedKeys = response.data.keys.map((key: ApiKey) => ({
         id: key.id,
-        key: key.key_value, // 🔥 Ensure this matches DB field
+        key: key.license_key , // 🔥 Ensure this matches DB field
         isUsed: key.status !== 'Available',
         createdBy: key.created_by || "System",
         createdAt: key.created_at,

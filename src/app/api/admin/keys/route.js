@@ -3,7 +3,7 @@ import { pool } from "@/config/database"; // Import database connection
 
 // Generate a random signup key
 const generateRandomKey = () => {
-  return `KEY-${Math.random().toString(36).substr(2, 15).toUpperCase()}`;
+  return `${Math.random().toString(36).substr(2, 15).toUpperCase()}`;
 };
 
 // ✅ Handle POST request (Generate Key)
@@ -37,7 +37,7 @@ export async function POST(req) {
 
     // ✅ Insert into database (Now storing user_id as well)
     const [result] = await pool.execute(
-      `INSERT INTO admin_keys (key_value, status, created_by, user_id, created_at, expires_at) 
+      `INSERT INTO admin_keys (license_key , status, created_by, user_id, created_at, expires_at) 
          VALUES (?, 'Available', ?, ?, ?, ?);`,
       [key, createdBy, userId, createdAt, expiresAt]
     );

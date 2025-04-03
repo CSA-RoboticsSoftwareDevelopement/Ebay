@@ -21,7 +21,12 @@ const db = mysql.createPool({
 });
 
 // ✅ CORS Configuration
-const allowedOrigins = ['http://localhost:3000', 'https://ebay.csaappstore.com',  'http://127.0.0.1:3000','https://resale.csaappstore.com'];
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://ebay.csaappstore.com",
+  "http://127.0.0.1:3000",
+  "https://resale.csaappstore.com",
+];
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -101,7 +106,6 @@ app.post("/api/login", async (req, res) => {
       [user.id, auth_token]
     );
 
-
     return res.json({ message: "Login successful", auth_token, user });
   } catch (err) {
     console.error("❌ Server Error:", err);
@@ -110,7 +114,6 @@ app.post("/api/login", async (req, res) => {
       .json({ message: "Internal Server Error", error: err.toString() });
   }
 });
-
 
 // ✅ Get All Logged-in Users (Debugging)
 app.get("/api/users", async (req, res) => {
@@ -130,13 +133,14 @@ app.get("/api/users", async (req, res) => {
 // ✅ Get Current Session
 app.get("/api/auth/session", async (req, res) => {
   try {
-    const auth_token = req.cookies.auth_token || req.headers.authorization?.split(' ')[1];
+    const auth_token =
+      req.cookies.auth_token || req.headers.authorization?.split(" ")[1];
 
     if (!auth_token) {
       console.log("No auth token found in request");
-      return res.status(401).json({ 
+      return res.status(401).json({
         message: "No authentication token found",
-        isAuthenticated: false 
+        isAuthenticated: false,
       });
     }
 
@@ -144,9 +148,9 @@ app.get("/api/auth/session", async (req, res) => {
     const decoded = verifyToken(auth_token);
     if (!decoded) {
       console.log("Invalid or expired token");
-      return res.status(401).json({ 
+      return res.status(401).json({
         message: "Invalid or expired token",
-        isAuthenticated: false 
+        isAuthenticated: false,
       });
     }
 
@@ -158,21 +162,21 @@ app.get("/api/auth/session", async (req, res) => {
 
     if (session.length === 0) {
       console.log("No valid session found in database");
-      return res.status(401).json({ 
+      return res.status(401).json({
         message: "Session expired or not found",
-        isAuthenticated: false 
+        isAuthenticated: false,
       });
     }
 
-    return res.json({ 
+    return res.json({
       user: session[0],
-      isAuthenticated: true 
+      isAuthenticated: true,
     });
   } catch (err) {
     console.error("❌ Session Error:", err);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: "Internal Server Error",
-      isAuthenticated: false 
+      isAuthenticated: false,
     });
   }
 });
@@ -187,7 +191,7 @@ app.post("/api/validate-key", async (req, res) => {
     }
 
     const [rows] = await db.execute(
-      "SELECT user_id FROM admin_keys WHERE key_value = ?",
+      "SELECT user_id FROM admin_keys WHERE license_key = ?",
       [signupKey]
     );
 
@@ -215,7 +219,7 @@ app.post("/api/signup", async (req, res) => {
 
     // Check if signupKey exists in the database
     const [rows] = await db.execute(
-      "SELECT user_id, created_by FROM admin_keys WHERE key_value = ?",
+      "SELECT user_id, created_by FROM admin_keys WHERE license_key = ?",
       [signupKey]
     );
 
@@ -238,7 +242,8 @@ app.post("/api/signup", async (req, res) => {
 // ✅ Logout API
 app.post("/api/auth/logout", async (req, res) => {
   try {
-    const auth_token = req.cookies.auth_token || req.headers.authorization?.split(' ')[1]; // ✅ Get the auth token from cookies or Authorization header
+    const auth_token =
+      req.cookies.auth_token || req.headers.authorization?.split(" ")[1]; // ✅ Get the auth token from cookies or Authorization header
 
     if (!auth_token) {
       return res.status(400).json({ message: "No active session found" });
