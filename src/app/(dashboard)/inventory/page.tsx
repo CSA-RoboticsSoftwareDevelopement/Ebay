@@ -1,97 +1,221 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import ProductCard from "../../../components/productsTemplate/InventoryProductCard";
 import ProductDetailModal from "../../../components/productsTemplate/InventoryProductDetailModal";
-import AddProductModal from "../../../components/productsTemplate/AddProductModal"; // ✅ Import AddProductModal
+import AddProductModal from "../../../components/productsTemplate/AddProductModal";
 import { Product } from "../../../types/ProductTypes";
-const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
-const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory`;
+
+// Mock data for prototype testing
+const mockProducts: Product[] = [
+  {
+    id: "prod001",
+    title: "Vintage Polaroid Camera",
+    description: "Original Polaroid camera from the 1970s in excellent condition",
+    price: 129.99,
+    currency: "USD",
+    quantity: 5,
+    quantitySold: 3,
+    sellThroughRate: 37.5,
+    timeToSell: 4.2,
+    costPrice: 65.00,
+    shipping: 12.99,
+    ebayFees: 15.49,
+    profit: 37.51,
+    profitMargin: 28.9,
+    roi: 57.7,
+    imageUrl: "https://placehold.co/400x300?text=Vintage+Camera",
+    listingStatus: "Active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    competitorData: {
+      id: "comp001",
+      avgPrice: 145.50,
+      avgShipping: 14.99,
+      lowestPrice: 115.00,
+      highestPrice: 199.99,
+      avgSellerFeedback: 4.7,
+      avgListingPosition: 3.2,
+      avgImageCount: 6,
+      competitorCount: 12,
+      lastUpdated: new Date(),
+    },
+  },
+  {
+    id: "prod002",
+    title: "Mechanical Keyboard - Cherry MX Blue",
+    description: "RGB backlit mechanical keyboard with Cherry MX Blue switches",
+    price: 89.99,
+    currency: "USD",
+    quantity: 12,
+    quantitySold: 8,
+    sellThroughRate: 40,
+    timeToSell: 3.5,
+    costPrice: 45.00,
+    shipping: 8.99,
+    ebayFees: 10.79,
+    profit: 25.21,
+    profitMargin: 28.0,
+    roi: 56.0,
+    imageUrl: "https://placehold.co/400x300?text=Mechanical+Keyboard",
+    listingStatus: "Active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    competitorData: {
+      id: "comp002",
+      avgPrice: 94.99,
+      avgShipping: 9.99,
+      lowestPrice: 79.99,
+      highestPrice: 129.99,
+      avgSellerFeedback: 4.5,
+      avgListingPosition: 5.1,
+      avgImageCount: 5,
+      competitorCount: 25,
+      lastUpdated: new Date(),
+    },
+  },
+  {
+    id: "prod003",
+    title: "Vintage Leather Messenger Bag",
+    description: "Handcrafted genuine leather messenger bag with brass hardware",
+    price: 149.99,
+    currency: "USD",
+    quantity: 3,
+    quantitySold: 7,
+    sellThroughRate: 70,
+    timeToSell: 2.1,
+    costPrice: 75.00,
+    shipping: 0,
+    ebayFees: 18.00,
+    profit: 56.99,
+    profitMargin: 38.0,
+    roi: 76.0,
+    imageUrl: "https://placehold.co/400x300?text=Leather+Bag",
+    listingStatus: "Active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    competitorData: {
+      id: "comp003",
+      avgPrice: 165.00,
+      avgShipping: 0,
+      lowestPrice: 129.99,
+      highestPrice: 199.99,
+      avgSellerFeedback: 4.9,
+      avgListingPosition: 2.4,
+      avgImageCount: 8,
+      competitorCount: 9,
+      lastUpdated: new Date(),
+    },
+  },
+  {
+    id: "prod004",
+    title: "Wireless Bluetooth Earbuds",
+    description: "True wireless earbuds with noise cancellation and 20-hour battery life",
+    price: 59.99,
+    currency: "USD",
+    quantity: 25,
+    quantitySold: 18,
+    sellThroughRate: 41.9,
+    timeToSell: 1.8,
+    costPrice: 28.00,
+    shipping: 3.99,
+    ebayFees: 7.20,
+    profit: 20.80,
+    profitMargin: 34.7,
+    roi: 74.3,
+    imageUrl: "https://placehold.co/400x300?text=Wireless+Earbuds",
+    listingStatus: "Active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    competitorData: {
+      id: "comp004",
+      avgPrice: 64.99,
+      avgShipping: 4.99,
+      lowestPrice: 49.99,
+      highestPrice: 89.99,
+      avgSellerFeedback: 4.3,
+      avgListingPosition: 6.7,
+      avgImageCount: 4,
+      competitorCount: 32,
+      lastUpdated: new Date(),
+    },
+  },
+  {
+    id: "prod005",
+    title: "Vintage Record Player",
+    description: "Restored 1960s record player with built-in speakers",
+    price: 199.99,
+    currency: "USD",
+    quantity: 2,
+    quantitySold: 4,
+    sellThroughRate: 66.7,
+    timeToSell: 5.3,
+    costPrice: 90.00,
+    shipping: 24.99,
+    ebayFees: 24.00,
+    profit: 61.00,
+    profitMargin: 30.5,
+    roi: 67.8,
+    imageUrl: "https://placehold.co/400x300?text=Record+Player",
+    listingStatus: "Out of Stock",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    competitorData: {
+      id: "comp005",
+      avgPrice: 215.00,
+      avgShipping: 29.99,
+      lowestPrice: 175.00,
+      highestPrice: 299.99,
+      avgSellerFeedback: 4.8,
+      avgListingPosition: 1.9,
+      avgImageCount: 9,
+      competitorCount: 7,
+      lastUpdated: new Date(),
+    },
+  },
+  {
+    id: "prod006",
+    title: "Smart Home Hub",
+    description: "Voice-controlled smart home hub compatible with major platforms",
+    price: 79.99,
+    currency: "USD",
+    quantity: 0,
+    quantitySold: 15,
+    sellThroughRate: 100,
+    timeToSell: 1.2,
+    costPrice: 42.00,
+    shipping: 7.99,
+    ebayFees: 9.60,
+    profit: 20.40,
+    profitMargin: 25.5,
+    roi: 48.6,
+    imageUrl: "https://placehold.co/400x300?text=Smart+Home+Hub",
+    listingStatus: "Out of Stock",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    competitorData: {
+      id: "comp006",
+      avgPrice: 84.99,
+      avgShipping: 8.99,
+      lowestPrice: 69.99,
+      highestPrice: 99.99,
+      avgSellerFeedback: 4.4,
+      avgListingPosition: 4.2,
+      avgImageCount: 5,
+      competitorCount: 19,
+      lastUpdated: new Date(),
+    },
+  },
+];
 
 export default function Products() {
-  const [productsData, setProductsData] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [productsData, setProductsData] = useState<Product[]>(mockProducts);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    null
-  );
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  // Fetch inventory data from API
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const response = await fetch(EBAY_INVENTORY_API);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch inventory: ${response.statusText}`);
-        }
-        const data = await response.json();
-        const inventoryItems = data["1"]?.inventoryItems || [];
-
-        // Transform API response to match previous structure
-        interface InventoryItem {
-          sku: string;
-          product: {
-            title: string;
-            description: string;
-            mpn: string;
-            imageUrls?: string[];
-          };
-          availability: {
-            shipToLocationAvailability: {
-              quantity: number;
-            };
-          };
-        }
-        
-        const formattedProducts = inventoryItems.map((item: InventoryItem) => ({
-          id: item.sku,
-          title: item.product?.title || "Untitled",
-          description: item.product?.description || "No description available",
-          price: !isNaN(parseFloat(item.product?.mpn || "0")) ? parseFloat(item.product?.mpn || "0") : 0,
-          currency: "USD",
-          quantity: item.availability.shipToLocationAvailability.quantity,
-          quantitySold: 0,
-          sellThroughRate: 0,
-          timeToSell: 0,
-          costPrice: 0,
-          shipping: 0,
-          ebayFees: 0,
-          profit: 0,
-          profitMargin: 0,
-          roi: 0,
-          imageUrl: item.product?.imageUrls?.[0] || `https://placehold.co/400x300?text=${encodeURIComponent(item.product?.title || "Untitled")}`,
-          listingStatus: "Active",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          competitorData: {
-            id: item.sku,
-            avgPrice: 0,
-            avgShipping: 0,
-            lowestPrice: 0,
-            highestPrice: 0,
-            avgSellerFeedback: 0,
-            avgListingPosition: 0,
-            avgImageCount: item.product?.imageUrls ? item.product.imageUrls.length : 0,
-            competitorCount: 0,
-            lastUpdated: new Date(),
-          },
-        }));
-
-        setProductsData(formattedProducts);
-        setLoading(false);
-      } catch (err: Error | unknown) {
-        const error = err as Error;
-        setError(error.message);
-        setLoading(false);
-      }
-    }
-
-    fetchProducts();
-  }, [refreshTrigger]);
 
   const handleAddProduct = (newProduct: Product) => {
     setProductsData((prevProducts) => {
@@ -110,10 +234,7 @@ export default function Products() {
   
       return [...prevProducts, updatedProduct];
     });
-  
-    setRefreshTrigger((prev) => prev + 1); // 🔹 Forces re-fetch
   };
-  
 
   // Find the selected product
   const selectedProduct = selectedProductId
@@ -137,8 +258,12 @@ export default function Products() {
     productId: string,
     updates: Partial<Product>
   ) => {
-    console.log("Updating product:", productId, updates);
-    alert(`Product ${productId} updated (simulated)`);
+    setProductsData(prevProducts => 
+      prevProducts.map(product => 
+        product.id === productId ? {...product, ...updates} : product
+      )
+    );
+    console.log("Updated product:", productId, updates);
   };
 
   // Get available statuses for filtering
@@ -157,7 +282,7 @@ export default function Products() {
         <h1 className="text-2xl font-bold">Inventory</h1>
         <button
           className="btn btn-primary"
-          onClick={() => setIsAddProductModalOpen(true)} // ✅ Open modal on click
+          onClick={() => setIsAddProductModalOpen(true)}
         >
           Add Product
         </button>{" "}
@@ -225,9 +350,9 @@ export default function Products() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product, index) => (
+        {filteredProducts.map((product) => (
           <ProductCard
-            key={product.id || `product-${index}`} // ✅ index is now defined
+            key={product.id}
             product={product}
             onClick={(id) => setSelectedProductId(id)}
           />
@@ -250,33 +375,28 @@ export default function Products() {
               d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <h3 className="mt-2 text-lg font-medium text-gray-900">
-            No products found
-          </h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Try adjusting your search or filter to find what you&apos;re looking
-            for.
+            Try adjusting your search or filter to find what you're looking for.
           </p>
         </div>
       )}
-      {/* ✅ Add Product Modal */}
-      <AddProductModal
-        isOpen={isAddProductModalOpen}
-        onClose={() => setIsAddProductModalOpen(false)}
-        onAddProduct={handleAddProduct}
-      />
 
       {/* Product Detail Modal */}
       {selectedProduct && (
         <ProductDetailModal
           product={selectedProduct}
-          onClose={() => {
-            setSelectedProductId(null);
-            setRefreshTrigger((prev) => prev + 1); // 🔹 Trigger re-fetch on modal close
-          }}
+          onClose={() => setSelectedProductId(null)}
           onUpdateProduct={handleUpdateProduct}
         />
       )}
+
+      {/* Add Product Modal */}
+      <AddProductModal
+        isOpen={isAddProductModalOpen}
+        onClose={() => setIsAddProductModalOpen(false)}
+        onAddProduct={handleAddProduct}
+      />
     </div>
   );
 }
