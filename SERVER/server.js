@@ -74,7 +74,10 @@ app.post("/api/login", async (req, res) => {
     }
 
     const [users] = await db.query(
-      "SELECT id, email, password, IFNULL(is_admin, 0) AS is_admin FROM users WHERE email = ?",
+      `SELECT u.id, u.email, u.password, IFNULL(u.is_admin, 0) AS is_admin, a.status AS licence_status
+       FROM users u
+       LEFT JOIN admin_keys a ON u.licence = a.license_key
+       WHERE u.email = ?`,
       [email]
     );
 
@@ -84,6 +87,13 @@ app.post("/api/login", async (req, res) => {
     }
 
     const user = users[0];
+
+    // Check license status
+    if (user.licence_status !== "Activated") {
+      console.log(`❌ Login blocked: License not activated for ${email}`);
+      return res.status(403).json({ message: `Your license is ${user.licence_status}` });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       console.log(`❌ Invalid password attempt for email: ${email}`);
@@ -98,7 +108,6 @@ app.post("/api/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // ✅ Insert or Update session to prevent duplicates
     await db.query(
       `INSERT INTO sessions (user_id, auth_token, expires_at)
        VALUES (?, ?, NOW() + INTERVAL 7 DAY)
@@ -107,6 +116,7 @@ app.post("/api/login", async (req, res) => {
     );
 
     return res.json({ message: "Login successful", auth_token, user });
+
   } catch (err) {
     console.error("❌ Server Error:", err);
     return res
@@ -114,6 +124,7 @@ app.post("/api/login", async (req, res) => {
       .json({ message: "Internal Server Error", error: err.toString() });
   }
 });
+
 
 // ✅ Get All Logged-in Users (Debugging)
 app.get("/api/users", async (req, res) => {
@@ -208,6 +219,33 @@ app.post("/api/validate-key", async (req, res) => {
   }
 });
 
+app.patch("/api/renew-key", async (req, res) => {
+  try {
+    const { keyId, paymentMode, paymentDate, newExpiryDate } = req.body;
+
+    if (!keyId || !paymentMode || !paymentDate || !newExpiryDate) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Update the key's expiration and payment info
+    await db.execute(
+      `UPDATE admin_keys
+       SET status = 'Activated',
+           expires_at = ?,
+           payment_mode = ?,
+           payment_date = ?
+       WHERE id = ?`,
+      [newExpiryDate, paymentMode, paymentDate, keyId]
+    );
+
+    return res.status(200).json({ message: "Key renewed successfully." });
+  } catch (err) {
+    console.error("Renew Error:", err);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+
 // app.post("/api/signup", async (req, res) => {
 //   try {
 //     console.log(req.body); // Debugging: Check if request body is received
@@ -243,42 +281,57 @@ app.post("/api/validate-key", async (req, res) => {
 app.post("/api/signup", async (req, res) => {
   try {
     console.log("Signup Request:", req.body);
-    const { signupKey, email, password, username } = req.body;
+    const { signupKey, email, password, name } = req.body;
 
-    if (!signupKey || !email || !password || !username) {
+    if (!signupKey || !email || !password || !name) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if signupKey exists in the database
-    const [rows] = await db.execute(
-      "SELECT user_id, created_by FROM admin_keys WHERE license_key = ?",
+    // 1. Validate key
+    const [keyRows] = await db.execute(
+      "SELECT id, status FROM admin_keys WHERE license_key = ?",
       [signupKey]
     );
 
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "Invalid Signup Key" });
+    if (keyRows.length === 0) {
+      return res.status(404).json({ message: "Invalid signup key." });
     }
 
-    // ✅ Hash Password before storing
+    const keyData = keyRows[0];
+
+    if (keyData.status !== "Not Activated") {
+      return res
+        .status(403)
+        .json({ message: "Signup key is already used or expired." });
+    }
+
+    // 2. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Insert User into Database
+    // 3. Insert user
     const [insertResult] = await db.execute(
-      "INSERT INTO users (email, password, username, created_at) VALUES (?, ?, ?, NOW())",
-      [email, hashedPassword, username]
+      "INSERT INTO users (email, password, username, created_at, licence) VALUES (?, ?, ?, NOW(), ?)",
+      [email, hashedPassword, name, signupKey]
     );
 
-    console.log("User Created:", insertResult);
+    const userId = insertResult.insertId;
+
+    // 4. Link user to the admin_key and activate it
+    await db.execute(
+      "UPDATE admin_keys SET user_id = ?, status = 'Activated' WHERE id = ?",
+      [userId, keyData.id]
+    );
 
     return res.status(201).json({
-      message: "User created successfully",
-      userId: insertResult.insertId,
+      message: "User created and key activated successfully",
+      userId,
     });
   } catch (error) {
     console.error("Signup Error:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
 
 app.post("/api/auth/logout", async (req, res) => {
   try {

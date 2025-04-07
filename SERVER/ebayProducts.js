@@ -145,52 +145,48 @@ module.exports = (db) => {
   // ✅ Route to fetch inventory from eBay API for all users
   router.get("/inventory", async (req, res) => {
     try {
-      // ✅ Fetch all users from database
-      const [users] = await db.query("SELECT `user_id` FROM `ebay_accounts`");
-
-      if (users.length === 0) {
-        return res.status(404).json({ error: "No eBay accounts found" });
+      const { user_id } = req.query;
+  
+      if (!user_id) {
+        return res.status(400).json({ error: "Missing user_id in query parameters" });
       }
-
-      let allInventories = {};
-
-      // ✅ Loop through all users and fetch their inventory
-      for (const { user_id } of users) {
-        const accessToken = await getValidAccessToken(user_id);
-        if (!accessToken) {
-          console.log(`❌ Skipping User ${user_id} due to invalid token.`);
-          continue;
-        }
-
-        const inventoryUrl = `${EBAY_API_URL}/sell/inventory/v1/inventory_item`;
-
-        console.log(`📦 Fetching eBay inventory for User ${user_id}:`, inventoryUrl);
-
-        try {
-          const response = await axios.get(inventoryUrl, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          allInventories[user_id] = response.data;
-        } catch (inventoryError) {
-          console.error(
-            `❌ Error fetching inventory for User ${user_id}:`,
-            inventoryError.response?.data || inventoryError.message
-          );
-          allInventories[user_id] = { error: "Failed to fetch inventory" };
-        }
+  
+      // ✅ Fetch user's token info
+      const [rows] = await db.query(
+        "SELECT `user_id` FROM `ebay_accounts` WHERE `user_id` = ?",
+        [user_id]
+      );
+  
+      if (rows.length === 0) {
+        return res.status(404).json({ error: `No eBay account found for user_id ${user_id}` });
       }
-
-      res.json(allInventories);
+  
+      const accessToken = await getValidAccessToken(user_id);
+      if (!accessToken) {
+        return res.status(401).json({ error: "Access token is expired or missing" });
+      }
+  
+      const inventoryUrl = `${EBAY_API_URL}/sell/inventory/v1/inventory_item`;
+  
+      console.log(`📦 Fetching eBay inventory for User ${user_id}:`, inventoryUrl);
+  
+      const response = await axios.get(inventoryUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+  
+      res.json({
+        user_id,
+        inventory: response.data,
+      });
     } catch (error) {
-      console.error("❌ Error fetching eBay inventory:", error.message);
+      console.error("❌ Error fetching eBay inventory:", error.response?.data || error.message);
       res.status(500).json({ error: "Failed to fetch inventory items" });
     }
   });
-
+  
   router.post("/inventory/add", async (req, res) => {
     try {
       // Extract required fields from request body
