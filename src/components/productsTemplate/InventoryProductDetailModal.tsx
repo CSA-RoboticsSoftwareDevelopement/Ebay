@@ -61,6 +61,32 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       product.title
     )}`;
 
+  // Get additional images from different possible sources
+  const getAdditionalImages = () => {
+    // First check additionalImages property
+    if (product.additionalImages && product.additionalImages.length > 0) {
+      return product.additionalImages;
+    }
+    
+    // Then check for imageUrls property (from cross-listing form)
+    // @ts-ignore - TypeScript doesn't know about this property
+    if (product.imageUrls && product.imageUrls.length > 1) {
+      // @ts-ignore
+      return product.imageUrls.slice(1);
+    }
+    
+    // Then check for images array property (from cross-listing form)
+    // @ts-ignore
+    if (product.images && product.images.length > 1) {
+      // @ts-ignore
+      return product.images.slice(1);
+    }
+    
+    return [];
+  };
+  
+  const additionalImages = getAdditionalImages();
+
   const handleTabChange = (
     tab:
       | "overview"
@@ -657,8 +683,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div>
                     <h3 className="text-lg font-medium mb-4">Product Images</h3>
 
-                    {product.additionalImages &&
-                    product.additionalImages.length > 0 ? (
+                    {additionalImages.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div className="relative aspect-square">
                           <Image
@@ -670,7 +695,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           />
                         </div>
 
-                        {product.additionalImages.map((imgUrl, index) => (
+                        {additionalImages.map((imgUrl, index) => (
                           <div key={index} className="relative aspect-square">
                             <Image
                               src={imgUrl}

@@ -28,6 +28,8 @@ const mockProducts: Product[] = [
     listingStatus: "Active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    condition: "USED",
+    category: "Cameras & Photography",
     competitorData: {
       id: "comp001",
       avgPrice: 145.50,
@@ -61,6 +63,8 @@ const mockProducts: Product[] = [
     listingStatus: "Active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    condition: "NEW",
+    category: "Computer Accessories",
     competitorData: {
       id: "comp002",
       avgPrice: 94.99,
@@ -94,6 +98,8 @@ const mockProducts: Product[] = [
     listingStatus: "Active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    condition: "USED",
+    category: "Bags & Accessories",
     competitorData: {
       id: "comp003",
       avgPrice: 165.00,
@@ -127,6 +133,8 @@ const mockProducts: Product[] = [
     listingStatus: "Active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    condition: "NEW",
+    category: "Electronics",
     competitorData: {
       id: "comp004",
       avgPrice: 64.99,
@@ -160,6 +168,8 @@ const mockProducts: Product[] = [
     listingStatus: "Out of Stock",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    condition: "REFURBISHED",
+    category: "Audio Equipment",
     competitorData: {
       id: "comp005",
       avgPrice: 215.00,
@@ -193,6 +203,8 @@ const mockProducts: Product[] = [
     listingStatus: "Out of Stock",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    condition: "NEW",
+    category: "Smart Home",
     competitorData: {
       id: "comp006",
       avgPrice: 84.99,
@@ -224,12 +236,64 @@ export default function Products() {
         return prevProducts;
       }
   
+      // Calculate financial metrics if not provided
+      const costPrice = newProduct.costPrice || 0;
+      const shippingCost = newProduct.shipping || 0;
+      const ebayFees = newProduct.ebayFees || (newProduct.price * 0.1); // Approximate eBay fees as 10% if not provided
+      const profit = Number(newProduct.price) - costPrice - shippingCost - ebayFees;
+      const profitMargin = newProduct.price ? (profit / Number(newProduct.price) * 100) : 0;
+      const roi = costPrice ? (profit / costPrice * 100) : 0;
+
+      // Handle image URL migration from the new cross-listing form
+      let imageUrl = newProduct.imageUrl;
+      // TypeScript doesn't know about these properties, but they might come from the form
+      // @ts-ignore 
+      if (!imageUrl && newProduct.imageUrls && newProduct.imageUrls.length > 0) {
+        // @ts-ignore
+        imageUrl = newProduct.imageUrls[0];
+      }
+      // @ts-ignore
+      if (!imageUrl && Array.isArray(newProduct.images) && newProduct.images.length > 0) {
+        // @ts-ignore
+        imageUrl = newProduct.images[0];
+      }
+      
+      // Create additional images array from any source
+      const additionalImages: string[] = [];
+      if (Array.isArray(newProduct.additionalImages)) {
+        additionalImages.push(...newProduct.additionalImages);
+      }
+      // @ts-ignore
+      if (Array.isArray(newProduct.imageUrls) && newProduct.imageUrls.length > 1) {
+        // @ts-ignore
+        additionalImages.push(...newProduct.imageUrls.slice(1));
+      }
+      // @ts-ignore
+      if (Array.isArray(newProduct.images) && newProduct.images.length > 1) {
+        // @ts-ignore
+        additionalImages.push(...newProduct.images.slice(1));
+      }
+  
       const updatedProduct: Product = {
         ...newProduct,
+        id: newProduct.id || `prod${Date.now()}`,
         currency: newProduct.currency || "USD",
         quantitySold: newProduct.quantitySold || 0,
+        sellThroughRate: 0, // Will be updated when sales occur
+        timeToSell: 0, // Will be updated when sales occur
+        costPrice: costPrice,
+        shipping: shippingCost,
+        ebayFees: ebayFees,
+        profit: profit,
+        profitMargin: profitMargin,
+        roi: roi,
+        imageUrl: imageUrl || `https://placehold.co/400x300?text=${encodeURIComponent(newProduct.title || "New Product")}`,
+        additionalImages: additionalImages.length > 0 ? additionalImages : undefined,
+        listingStatus: newProduct.listingStatus || "Active",
         createdAt: newProduct.createdAt || new Date().toISOString(),
         updatedAt: newProduct.updatedAt || new Date().toISOString(),
+        condition: newProduct.condition || "NEW",
+        category: newProduct.category || "Uncategorized",
       };
   
       return [...prevProducts, updatedProduct];
