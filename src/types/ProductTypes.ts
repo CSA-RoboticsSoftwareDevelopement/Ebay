@@ -31,5 +31,65 @@ export interface Product {
       competitorCount: number;
       lastUpdated: Date;
     };
+    // Cross-listing specific fields
+    condition: string;
+    category: string;
+    variations?: ProductVariation[];
+    platformData?: {
+      ebay?: EbaySpecificData;
+      amazon?: AmazonSpecificData;
+      etsy?: EtsySpecificData;
+    };
   }
+  
+export interface ProductVariation {
+  id: string;
+  name: string;
+  options: VariationOption[];
+}
+
+export interface VariationOption {
+  name: string;
+  quantity: number;
+  price?: number; // Optional price override
+}
+
+// Platform-specific types
+export interface EbaySpecificData {
+  conditionId: number;
+  itemSpecifics: Record<string, string>;
+  fulfillmentPolicyId?: string;
+  paymentPolicyId?: string;
+  returnPolicyId?: string;
+  listingFormat: 'FIXED_PRICE' | 'AUCTION';
+  subtitle?: string;
+  bestOffer: boolean;
+  secondaryCategory?: string;
+}
+
+export interface AmazonSpecificData {
+  asin?: string;
+  upc?: string;
+  ean?: string;
+  gtin?: string;
+  brand?: string;
+  manufacturer?: string;
+  mpn?: string;
+  bulletPoints?: string[];
+  searchKeywords?: string[];
+  fulfillmentChoice: 'FBA' | 'FBM';
+  shippingTemplateId?: string;
+}
+
+export interface EtsySpecificData {
+  whoMade: string;
+  whenMade: string;
+  isSupply: boolean;
+  shippingProfileId?: string;
+  tags?: string[];
+  materials?: string[];
+  shopSection?: string;
+  isPersonalizable: boolean;
+  sku?: string;
+}
   

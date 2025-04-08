@@ -16,6 +16,13 @@ type EbayProfile = {
   updated_at: Date;
 };
 
+// Predefined message type
+type PredefinedMessage = {
+  id: string;
+  title: string;
+  message: string;
+};
+
 export default function Settings() {
   const { user, authToken } = useAuth(); // ✅ Move useAuth() here (inside component)
   const [ebayProfile, setEbayProfile] = useState<EbayProfile | null>(null);
@@ -26,6 +33,25 @@ export default function Settings() {
   // const [isModalOpen, setIsModalOpen] = useState(false);
   // const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   // const [darkMode, setDarkMode] = useState(false);
+  
+  // Predefined messages state
+  const [predefinedMessages, setPredefinedMessages] = useState<PredefinedMessage[]>([]);
+  const [newMessageTitle, setNewMessageTitle] = useState("");
+  const [newMessageContent, setNewMessageContent] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  
+  // Load predefined messages from local storage on component mount
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('predefinedMessages');
+    if (savedMessages) {
+      setPredefinedMessages(JSON.parse(savedMessages));
+    }
+  }, []);
+  
+  // Save predefined messages to local storage whenever they change
+  useEffect(() => {
+    localStorage.setItem('predefinedMessages', JSON.stringify(predefinedMessages));
+  }, [predefinedMessages]);
 
   useEffect(() => {
     const fetchEbayProfile = async () => {
@@ -247,6 +273,80 @@ export default function Settings() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to add a new predefined message
+  const handleAddMessage = () => {
+    if (!newMessageTitle.trim() || !newMessageContent.trim()) {
+      toast.error("Please enter both title and message content");
+      return;
+    }
+    
+    const newMessage: PredefinedMessage = {
+      id: Date.now().toString(),
+      title: newMessageTitle,
+      message: newMessageContent
+    };
+    
+    setPredefinedMessages([...predefinedMessages, newMessage]);
+    setNewMessageTitle("");
+    setNewMessageContent("");
+    
+    toast.success("Message template added successfully");
+  };
+  
+  // Function to edit a predefined message
+  const handleEditMessage = (id: string) => {
+    const messageToEdit = predefinedMessages.find(msg => msg.id === id);
+    if (messageToEdit) {
+      setNewMessageTitle(messageToEdit.title);
+      setNewMessageContent(messageToEdit.message);
+      setEditingMessageId(id);
+    }
+  };
+  
+  // Function to update an edited message
+  const handleUpdateMessage = () => {
+    if (!editingMessageId) return;
+    
+    const updatedMessages = predefinedMessages.map(msg => 
+      msg.id === editingMessageId 
+        ? { ...msg, title: newMessageTitle, message: newMessageContent } 
+        : msg
+    );
+    
+    setPredefinedMessages(updatedMessages);
+    setNewMessageTitle("");
+    setNewMessageContent("");
+    setEditingMessageId(null);
+    
+    toast.success("Message template updated successfully");
+  };
+  
+  // Function to delete a predefined message
+  const handleDeleteMessage = (id: string) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updatedMessages = predefinedMessages.filter(msg => msg.id !== id);
+        setPredefinedMessages(updatedMessages);
+        
+        if (editingMessageId === id) {
+          setNewMessageTitle("");
+          setNewMessageContent("");
+          setEditingMessageId(null);
+        }
+        
+        toast.success("Message template deleted successfully");
+      }
+    });
   };
 
   return (
@@ -521,22 +621,115 @@ export default function Settings() {
 
         {/* Preferences Tab */}
         {activeTab === "preferences" && (
-          <div className="card p-4 bg-white shadow rounded-lg">
-            <h2 className="text-lg font-semibold mb-4">Preferences</h2>
-            <p className="text-gray-600">
-              Customize your application experience.
-            </p>
+          <div className="space-y-6">
+            <div className="card p-4 bg-white shadow rounded-lg">
+              <h2 className="text-lg font-semibold mb-4">Preferences</h2>
+              <p className="text-gray-600">
+                Customize your application experience.
+              </p>
 
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Theme
-              </label>
-              <select className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 cursor-not-allowed bg-gray-100">
-                <option value="light" selected>
-                  Light Mode
-                </option>
-                <option value="dark">Dark Mode</option>
-              </select>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Theme
+                </label>
+                <select className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 cursor-not-allowed bg-gray-100">
+                  <option value="light" selected>
+                    Light Mode
+                  </option>
+                  <option value="dark">Dark Mode</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Predefined Messages Card */}
+            <div className="card p-4 bg-white shadow rounded-lg">
+              <h2 className="text-lg font-semibold mb-4">Predefined Messages</h2>
+              <p className="text-gray-600 mb-4">
+                Create message templates to quickly respond to customers after they place an order.
+              </p>
+              
+              {/* Form to add/edit messages */}
+              <div className="space-y-4 mb-6 border-b pb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Message Title
+                  </label>
+                  <input
+                    type="text"
+                    value={newMessageTitle}
+                    onChange={(e) => setNewMessageTitle(e.target.value)}
+                    placeholder="e.g., Thank You, Shipping Update"
+                    className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-yellow focus:border-primary-yellow"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Message Content
+                  </label>
+                  <textarea
+                    value={newMessageContent}
+                    onChange={(e) => setNewMessageContent(e.target.value)}
+                    placeholder="Write your message here..."
+                    rows={4}
+                    className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-yellow focus:border-primary-yellow"
+                  />
+                </div>
+                
+                <button
+                  onClick={editingMessageId ? handleUpdateMessage : handleAddMessage}
+                  className="px-4 py-2 bg-primary-yellow text-primary-black font-medium rounded-md hover:bg-primary-black hover:text-white transition"
+                >
+                  {editingMessageId ? "Update Template" : "Add Template"}
+                </button>
+                
+                {editingMessageId && (
+                  <button
+                    onClick={() => {
+                      setNewMessageTitle("");
+                      setNewMessageContent("");
+                      setEditingMessageId(null);
+                    }}
+                    className="ml-3 px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition"
+                  >
+                    Cancel Editing
+                  </button>
+                )}
+              </div>
+              
+              {/* List of saved messages */}
+              <div>
+                <h3 className="font-medium text-gray-700 mb-3">Your Templates</h3>
+                
+                {predefinedMessages.length === 0 ? (
+                  <p className="text-gray-500 italic">No message templates saved yet.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {predefinedMessages.map((message) => (
+                      <li key={message.id} className="border rounded-md p-3 bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium text-primary-black">{message.title}</h4>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleEditMessage(message.id)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMessage(message.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-gray-700 text-sm whitespace-pre-line">{message.message}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         )}
