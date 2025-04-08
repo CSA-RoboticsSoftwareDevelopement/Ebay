@@ -7,7 +7,6 @@ import AddProductModal from "../../../components/productsTemplate/AddProductModa
 import { Product } from "../../../types/ProductTypes";
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
-import AddProductForm from "../inventory/AddProductForm";
 
 
 export default function Products() {
