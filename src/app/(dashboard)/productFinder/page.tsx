@@ -1,123 +1,206 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { FiGrid, FiList, FiFilter, FiX, FiArrowUp, FiArrowDown } from 'react-icons/fi';
-import { ProductFinderCard } from '@/components/ProductFinderCard';
-import ProductFinderDetailModal, { RecommendedProduct } from '@/components/ProductFinderDetailModal';
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import {
+  FiGrid,
+  FiList,
+  FiFilter,
+  FiX,
+  FiArrowUp,
+  FiArrowDown,
+} from "react-icons/fi";
+import { ProductFinderCard } from "@/components/ProductFinderCard";
+import ProductFinderDetailModal, {
+  RecommendedProduct,
+} from "@/components/ProductFinderDetailModal";
+import { useAuth } from "@/context/AuthContext";
 
 // Categories for product filtering
 const categories = [
-  'All Categories',
-  'Electronics',
-  'Home & Garden',
-  'Fashion',
-  'Collectibles',
-  'Sports',
-  'Beauty',
-  'Toys & Games',
-  'Automotive'
+  "All Categories",
+  "Electronics",
+  "Home & Garden",
+  "Fashion",
+  "Collectibles",
+  "Sports",
+  "Beauty",
+  "Toys & Games",
+  "Automotive",
 ];
+const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 // Mock data with enhanced fields for the product finder
 const generateMockProducts = (): RecommendedProduct[] => {
-  const categoryItems = categories.filter(c => c !== 'All Categories');
-  
+  const categoryItems = categories.filter((c) => c !== "All Categories");
+
   return Array.from({ length: 24 }, (_, i) => ({
     id: `prod-${i + 1}`,
     title: [
-      'Premium Wireless Earbuds with Noise Cancellation',
-      'Vintage Leather Journal with Handcrafted Paper',
-      'Smart Home Security Camera - 4K Ultra HD',
-      'Ergonomic Office Chair with Lumbar Support',
-      'Limited Edition Art Print - Hand Signed',
-      'Portable Bluetooth Speaker - Waterproof',
-      'Luxury Scented Candle Set - Natural Soy Wax',
-      'Professional Chef Knife Set with Block',
-      'Organic Skincare Gift Set - Vegan Formula',
-      'Handmade Ceramic Coffee Mug Set of 4',
-      'Ultra-Thin Wireless Charging Pad for Phones',
-      'Fitness Tracker with Heart Rate Monitor'
+      "Premium Wireless Earbuds with Noise Cancellation",
+      "Vintage Leather Journal with Handcrafted Paper",
+      "Smart Home Security Camera - 4K Ultra HD",
+      "Ergonomic Office Chair with Lumbar Support",
+      "Limited Edition Art Print - Hand Signed",
+      "Portable Bluetooth Speaker - Waterproof",
+      "Luxury Scented Candle Set - Natural Soy Wax",
+      "Professional Chef Knife Set with Block",
+      "Organic Skincare Gift Set - Vegan Formula",
+      "Handmade Ceramic Coffee Mug Set of 4",
+      "Ultra-Thin Wireless Charging Pad for Phones",
+      "Fitness Tracker with Heart Rate Monitor",
     ][i % 12],
-    description: "This product shows strong sales performance with high profit margins. Current market analysis indicates limited competition with steady demand.",
+    description:
+      "This product shows strong sales performance with high profit margins. Current market analysis indicates limited competition with steady demand.",
     price: (Math.random() * 150 + 20).toFixed(2),
-    currency: 'USD',
-    imageUrl: `https://placehold.co/600x600/f5f5f5/a3a3a3?text=Product+${i + 1}`,
-    platform: '',
+    currency: "USD",
+    imageUrl: `https://placehold.co/600x600/f5f5f5/a3a3a3?text=Product+${
+      i + 1
+    }`,
+    platform: "",
     category: categoryItems[Math.floor(Math.random() * categoryItems.length)],
-    condition: Math.random() > 0.2 ? 'New' : 'Used - Like New',
+    condition: Math.random() > 0.2 ? "New" : "Used - Like New",
     rating: Number((Math.random() * 2 + 3).toFixed(1)),
     opportunityScore: Math.floor(Math.random() * 10) + 1,
     competitorCount: Math.floor(Math.random() * 20) + 1,
     averagePrice: (Math.random() * 200 + 30).toFixed(2),
-    averageMargin: (Math.random() * 30 + 15).toFixed(0) + '%',
+    averageMargin: (Math.random() * 30 + 15).toFixed(0) + "%",
     estimatedMonthlyVolume: Math.floor(Math.random() * 500) + 20,
-    salesRank: Math.floor(Math.random() * 10000) + 1
+    salesRank: Math.floor(Math.random() * 10000) + 1,
   }));
 };
 
 const ProductFinder: React.FC = () => {
   const [productsData, setProductsData] = useState<RecommendedProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All Categories');
-  const [opportunityFilter, setOpportunityFilter] = useState<number | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [opportunityFilter, setOpportunityFilter] = useState<number | null>(
+    null
+  );
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null
+  );
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<'opportunityScore' | 'price' | 'rating'>('opportunityScore');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<"opportunityScore" | "price" | "rating">(
+    "opportunityScore"
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // Load mock data
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id;
+
   useEffect(() => {
-    setLoading(true);
-    // Simulate API call delay
-    setTimeout(() => {
-      setProductsData(generateMockProducts());
-      setLoading(false);
-    }, 800);
-  }, []);
+    if (!userId) return;
 
+    setLoading(true);
+
+    // Function to fetch plugin data
+    const fetchPluginData = async () => {
+      try {
+        const res = await fetch(`${BACKEND_SERVER_URL}/api/plugin/${user.id}`);
+
+        // Check if response status is OK (200)
+        if (!res.ok) {
+          console.error(`Failed to fetch plugins. Status: ${res.status}`);
+          setLoading(false); // Error occurred, stop loading
+          return;
+        }
+
+        const data = await res.json();
+
+        // Log the response data for debugging
+        console.log("Fetched plugin data:", data);
+
+        // Check if the plugin is installed (installed === 1)
+        if (
+          data.plugins &&
+          data.plugins.length > 0 &&
+          data.plugins[0].installed === 1
+        ) {
+          // Plugin is installed, proceed with loading the products
+          console.log("Plugin is installed. Loading products...");
+          setProductsData(generateMockProducts());
+        } else {
+          // No plugin installed, show access denied or message
+          window.history.back(); // Go back to the previous page
+          console.log("Plugin is not installed. Showing access denied...");
+          setLoading(false); // Stop loading when plugin is not installed
+        }
+
+        // Always stop loading after the plugin data is processed
+        setLoading(false); // Moved to the end, ensuring it's called after checking the plugin status
+      } catch (error) {
+        // Handle and log any fetch or JSON parsing errors
+        console.error("Error fetching plugin data:", error);
+        setLoading(false); // Stop loading in case of error
+      }
+    };
+
+    fetchPluginData();
+  }, [userId]);
+
+  if (authLoading) {
+    return <div className="text-center mt-10">Loading...</div>;
+  }
+
+  if (!userId) {
+    return (
+      <div className="text-center mt-10 text-red-600 font-semibold">
+        Access denied. Please log in to use Product Finder.
+      </div>
+    );
+  }
   // Find selected product
   const selectedProduct = selectedProductId
-    ? productsData.find(product => product.id === selectedProductId)
+    ? productsData.find((product) => product.id === selectedProductId)
     : null;
 
   // Filter and sort products
-  const filteredProducts = productsData.filter(product => {
-    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'All Categories' || product.category === categoryFilter;
-    const matchesOpportunity = opportunityFilter === null || 
-      (typeof product.opportunityScore === 'number' && product.opportunityScore >= opportunityFilter);
-    
+  const filteredProducts = productsData.filter((product) => {
+    const matchesSearch = product.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      categoryFilter === "All Categories" ||
+      product.category === categoryFilter;
+    const matchesOpportunity =
+      opportunityFilter === null ||
+      (typeof product.opportunityScore === "number" &&
+        product.opportunityScore >= opportunityFilter);
+
     return matchesSearch && matchesCategory && matchesOpportunity;
   });
 
   // Sort products
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     let aValue, bValue;
-    
-    if (sortBy === 'price') {
+
+    if (sortBy === "price") {
       aValue = parseFloat(a.price);
       bValue = parseFloat(b.price);
-    } else if (sortBy === 'rating') {
-      aValue = parseFloat(a.rating?.toString() || '0');
-      bValue = parseFloat(b.rating?.toString() || '0');
-    } else { // opportunityScore
+    } else if (sortBy === "rating") {
+      aValue = parseFloat(a.rating?.toString() || "0");
+      bValue = parseFloat(b.rating?.toString() || "0");
+    } else {
+      // opportunityScore
       aValue = a.opportunityScore || 0;
       bValue = b.opportunityScore || 0;
     }
-    
-    return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+
+    return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
   });
 
   // Handler for toggling sort
-  const handleSortChange = (sortField: 'opportunityScore' | 'price' | 'rating') => {
+  const handleSortChange = (
+    sortField: "opportunityScore" | "price" | "rating"
+  ) => {
     if (sortBy === sortField) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortBy(sortField);
-      setSortDirection('desc');
+      setSortDirection("desc");
     }
   };
 
@@ -126,19 +209,29 @@ const ProductFinder: React.FC = () => {
       {/* Header Section with Actions */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-neutral-gray-900">Product Finder</h1>
-          
+          <h1 className="text-2xl font-bold text-neutral-gray-900">
+            Product Finder
+          </h1>
+
           <div className="flex items-center gap-2">
             <button
-              className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-primary-yellow text-black' : 'bg-neutral-gray-100 text-neutral-gray-600 hover:bg-neutral-gray-200'}`}
-              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === "grid"
+                  ? "bg-primary-yellow text-black"
+                  : "bg-neutral-gray-100 text-neutral-gray-600 hover:bg-neutral-gray-200"
+              }`}
+              onClick={() => setViewMode("grid")}
               aria-label="Grid View"
             >
               <FiGrid />
             </button>
             <button
-              className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-primary-yellow text-black' : 'bg-neutral-gray-100 text-neutral-gray-600 hover:bg-neutral-gray-200'}`}
-              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === "list"
+                  ? "bg-primary-yellow text-black"
+                  : "bg-neutral-gray-100 text-neutral-gray-600 hover:bg-neutral-gray-200"
+              }`}
+              onClick={() => setViewMode("list")}
               aria-label="List View"
             >
               <FiList />
@@ -156,13 +249,13 @@ const ProductFinder: React.FC = () => {
         {/* Categories Pills */}
         <div className="mb-6 overflow-x-auto pb-2 hide-scrollbar">
           <div className="flex gap-2 min-w-max">
-            {categories.map(category => (
+            {categories.map((category) => (
               <button
                 key={category}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  categoryFilter === category 
-                    ? 'bg-primary-yellow text-black' 
-                    : 'bg-neutral-gray-100 text-neutral-gray-700 hover:bg-neutral-gray-200'
+                  categoryFilter === category
+                    ? "bg-primary-yellow text-black"
+                    : "bg-neutral-gray-100 text-neutral-gray-700 hover:bg-neutral-gray-200"
                 }`}
                 onClick={() => setCategoryFilter(category)}
               >
@@ -178,11 +271,16 @@ const ProductFinder: React.FC = () => {
         {/* Filters Panel - Desktop */}
         <div className="hidden lg:block lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm p-5 border border-neutral-gray-100 sticky top-4">
-            <h2 className="font-semibold text-lg mb-4 text-neutral-gray-900">Filters</h2>
-            
+            <h2 className="font-semibold text-lg mb-4 text-neutral-gray-900">
+              Filters
+            </h2>
+
             {/* Search */}
             <div className="mb-5">
-              <label htmlFor="search" className="block text-sm font-medium text-neutral-gray-700 mb-1">
+              <label
+                htmlFor="search"
+                className="block text-sm font-medium text-neutral-gray-700 mb-1"
+              >
                 Search Products
               </label>
               <div className="relative">
@@ -199,18 +297,27 @@ const ProductFinder: React.FC = () => {
 
             {/* Opportunity Score Filter */}
             <div className="mb-5">
-              <label htmlFor="opportunity" className="block text-sm font-medium text-neutral-gray-700 mb-1">
+              <label
+                htmlFor="opportunity"
+                className="block text-sm font-medium text-neutral-gray-700 mb-1"
+              >
                 Minimum Opportunity Score
               </label>
               <select
                 id="opportunity"
                 className="block w-full rounded-lg border-neutral-gray-200 focus:ring-primary-yellow focus:border-primary-yellow px-3 py-2 text-sm"
-                value={opportunityFilter === null ? '' : opportunityFilter}
-                onChange={(e) => setOpportunityFilter(e.target.value === '' ? null : Number(e.target.value))}
+                value={opportunityFilter === null ? "" : opportunityFilter}
+                onChange={(e) =>
+                  setOpportunityFilter(
+                    e.target.value === "" ? null : Number(e.target.value)
+                  )
+                }
               >
                 <option value="">Any Score</option>
-                {[8, 7, 6, 5, 4].map(score => (
-                  <option key={score} value={score}>{score}+ Score</option>
+                {[8, 7, 6, 5, 4].map((score) => (
+                  <option key={score} value={score}>
+                    {score}+ Score
+                  </option>
                 ))}
               </select>
             </div>
@@ -221,38 +328,53 @@ const ProductFinder: React.FC = () => {
                 Sort By
               </label>
               <div className="space-y-2">
-                <button 
+                <button
                   className={`flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg ${
-                    sortBy === 'opportunityScore' ? 'bg-neutral-gray-100' : 'hover:bg-neutral-gray-50'
+                    sortBy === "opportunityScore"
+                      ? "bg-neutral-gray-100"
+                      : "hover:bg-neutral-gray-50"
                   }`}
-                  onClick={() => handleSortChange('opportunityScore')}
+                  onClick={() => handleSortChange("opportunityScore")}
                 >
                   <span>Opportunity Score</span>
-                  {sortBy === 'opportunityScore' && (
-                    sortDirection === 'desc' ? <FiArrowDown /> : <FiArrowUp />
-                  )}
+                  {sortBy === "opportunityScore" &&
+                    (sortDirection === "desc" ? (
+                      <FiArrowDown />
+                    ) : (
+                      <FiArrowUp />
+                    ))}
                 </button>
-                <button 
+                <button
                   className={`flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg ${
-                    sortBy === 'price' ? 'bg-neutral-gray-100' : 'hover:bg-neutral-gray-50'
+                    sortBy === "price"
+                      ? "bg-neutral-gray-100"
+                      : "hover:bg-neutral-gray-50"
                   }`}
-                  onClick={() => handleSortChange('price')}
+                  onClick={() => handleSortChange("price")}
                 >
                   <span>Price</span>
-                  {sortBy === 'price' && (
-                    sortDirection === 'desc' ? <FiArrowDown /> : <FiArrowUp />
-                  )}
+                  {sortBy === "price" &&
+                    (sortDirection === "desc" ? (
+                      <FiArrowDown />
+                    ) : (
+                      <FiArrowUp />
+                    ))}
                 </button>
-                <button 
+                <button
                   className={`flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg ${
-                    sortBy === 'rating' ? 'bg-neutral-gray-100' : 'hover:bg-neutral-gray-50'
+                    sortBy === "rating"
+                      ? "bg-neutral-gray-100"
+                      : "hover:bg-neutral-gray-50"
                   }`}
-                  onClick={() => handleSortChange('rating')}
+                  onClick={() => handleSortChange("rating")}
                 >
                   <span>Rating</span>
-                  {sortBy === 'rating' && (
-                    sortDirection === 'desc' ? <FiArrowDown /> : <FiArrowUp />
-                  )}
+                  {sortBy === "rating" &&
+                    (sortDirection === "desc" ? (
+                      <FiArrowDown />
+                    ) : (
+                      <FiArrowUp />
+                    ))}
                 </button>
               </div>
             </div>
@@ -261,9 +383,9 @@ const ProductFinder: React.FC = () => {
             <button
               className="w-full py-2 text-sm text-neutral-gray-600 hover:text-neutral-gray-900 transition-colors"
               onClick={() => {
-                setCategoryFilter('All Categories');
+                setCategoryFilter("All Categories");
                 setOpportunityFilter(null);
-                setSearchQuery('');
+                setSearchQuery("");
               }}
             >
               Clear All Filters
@@ -288,7 +410,10 @@ const ProductFinder: React.FC = () => {
             <div className="space-y-5">
               {/* Search */}
               <div>
-                <label htmlFor="mobile-search" className="block text-sm font-medium text-neutral-gray-700 mb-1">
+                <label
+                  htmlFor="mobile-search"
+                  className="block text-sm font-medium text-neutral-gray-700 mb-1"
+                >
                   Search Products
                 </label>
                 <input
@@ -307,13 +432,13 @@ const ProductFinder: React.FC = () => {
                   Category
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {categories.map(category => (
+                  {categories.map((category) => (
                     <button
                       key={category}
                       className={`px-3 py-1 rounded-full text-sm ${
-                        categoryFilter === category 
-                          ? 'bg-primary-yellow text-black' 
-                          : 'bg-neutral-gray-100 text-neutral-gray-700'
+                        categoryFilter === category
+                          ? "bg-primary-yellow text-black"
+                          : "bg-neutral-gray-100 text-neutral-gray-700"
                       }`}
                       onClick={() => setCategoryFilter(category)}
                     >
@@ -325,18 +450,27 @@ const ProductFinder: React.FC = () => {
 
               {/* Opportunity Score Filter */}
               <div>
-                <label htmlFor="mobile-opportunity" className="block text-sm font-medium text-neutral-gray-700 mb-1">
+                <label
+                  htmlFor="mobile-opportunity"
+                  className="block text-sm font-medium text-neutral-gray-700 mb-1"
+                >
                   Minimum Opportunity Score
                 </label>
                 <select
                   id="mobile-opportunity"
                   className="block w-full rounded-lg border-neutral-gray-200 focus:ring-primary-yellow focus:border-primary-yellow px-3 py-2"
-                  value={opportunityFilter === null ? '' : opportunityFilter}
-                  onChange={(e) => setOpportunityFilter(e.target.value === '' ? null : Number(e.target.value))}
+                  value={opportunityFilter === null ? "" : opportunityFilter}
+                  onChange={(e) =>
+                    setOpportunityFilter(
+                      e.target.value === "" ? null : Number(e.target.value)
+                    )
+                  }
                 >
                   <option value="">Any Score</option>
-                  {[8, 7, 6, 5, 4].map(score => (
-                    <option key={score} value={score}>{score}+ Score</option>
+                  {[8, 7, 6, 5, 4].map((score) => (
+                    <option key={score} value={score}>
+                      {score}+ Score
+                    </option>
                   ))}
                 </select>
               </div>
@@ -346,9 +480,9 @@ const ProductFinder: React.FC = () => {
                 <button
                   className="flex-1 py-3 bg-neutral-gray-100 text-neutral-gray-700 font-medium rounded-lg"
                   onClick={() => {
-                    setCategoryFilter('All Categories');
+                    setCategoryFilter("All Categories");
                     setOpportunityFilter(null);
-                    setSearchQuery('');
+                    setSearchQuery("");
                   }}
                 >
                   Clear All
@@ -369,18 +503,26 @@ const ProductFinder: React.FC = () => {
           {/* Results Summary */}
           <div className="mb-5 flex justify-between items-center">
             <p className="text-sm text-neutral-gray-500">
-              Showing {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''}
+              Showing {sortedProducts.length} product
+              {sortedProducts.length !== 1 ? "s" : ""}
             </p>
             <div className="flex items-center gap-2 lg:hidden">
-              <label htmlFor="mobile-sort" className="text-sm text-neutral-gray-500">Sort:</label>
+              <label
+                htmlFor="mobile-sort"
+                className="text-sm text-neutral-gray-500"
+              >
+                Sort:
+              </label>
               <select
                 id="mobile-sort"
                 className="text-sm border-0 focus:ring-0 p-0 bg-transparent"
                 value={`${sortBy}-${sortDirection}`}
                 onChange={(e) => {
-                  const [newSortBy, newSortDirection] = e.target.value.split('-') as [
-                    'opportunityScore' | 'price' | 'rating',
-                    'asc' | 'desc'
+                  const [newSortBy, newSortDirection] = e.target.value.split(
+                    "-"
+                  ) as [
+                    "opportunityScore" | "price" | "rating",
+                    "asc" | "desc"
                   ];
                   setSortBy(newSortBy);
                   setSortDirection(newSortDirection);
@@ -398,7 +540,10 @@ const ProductFinder: React.FC = () => {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse">
+                <div
+                  key={i}
+                  className="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse"
+                >
                   <div className="aspect-[4/3] bg-neutral-gray-200"></div>
                   <div className="p-4 space-y-3">
                     <div className="h-5 bg-neutral-gray-200 rounded w-3/4"></div>
@@ -411,7 +556,7 @@ const ProductFinder: React.FC = () => {
           ) : (
             <>
               {/* Grid View */}
-              {viewMode === 'grid' && (
+              {viewMode === "grid" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {sortedProducts.map((product) => (
                     <ProductFinderCard
@@ -422,9 +567,12 @@ const ProductFinder: React.FC = () => {
                         price: product.price,
                         currency: product.currency,
                         imageUrl: product.imageUrl,
-                        rating: typeof product.rating === 'string' ? parseFloat(product.rating) : product.rating,
+                        rating:
+                          typeof product.rating === "string"
+                            ? parseFloat(product.rating)
+                            : product.rating,
                         category: product.category,
-                        condition: product.condition
+                        condition: product.condition,
                       }}
                       onClick={(id) => setSelectedProductId(id)}
                     />
@@ -433,7 +581,7 @@ const ProductFinder: React.FC = () => {
               )}
 
               {/* List View */}
-              {viewMode === 'list' && (
+              {viewMode === "list" && (
                 <div className="space-y-4">
                   {sortedProducts.map((product) => (
                     <div
@@ -444,7 +592,12 @@ const ProductFinder: React.FC = () => {
                       <div className="sm:w-1/4 relative">
                         <div className="w-full aspect-video sm:h-full relative">
                           <Image
-                            src={product.imageUrl || `https://placehold.co/300x300?text=${encodeURIComponent(product.title)}`}
+                            src={
+                              product.imageUrl ||
+                              `https://placehold.co/300x300?text=${encodeURIComponent(
+                                product.title
+                              )}`
+                            }
                             alt={product.title}
                             className="object-cover"
                             fill
@@ -461,8 +614,12 @@ const ProductFinder: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <h3 className="font-semibold text-lg mb-1">{product.title}</h3>
-                          <p className="text-neutral-gray-500 text-sm line-clamp-2 mb-2">{product.description}</p>
+                          <h3 className="font-semibold text-lg mb-1">
+                            {product.title}
+                          </h3>
+                          <p className="text-neutral-gray-500 text-sm line-clamp-2 mb-2">
+                            {product.description}
+                          </p>
                         </div>
                         <div className="mt-auto flex flex-wrap justify-between items-center">
                           <div>
@@ -471,14 +628,16 @@ const ProductFinder: React.FC = () => {
                             </p>
                           </div>
                           <div className="flex items-center gap-4">
-                            {typeof product.opportunityScore === 'number' && (
-                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                product.opportunityScore >= 8 
-                                  ? 'bg-success/10 text-success' 
-                                  : product.opportunityScore >= 6 
-                                  ? 'bg-primary-yellow/10 text-primary-yellow' 
-                                  : 'bg-neutral-gray-100 text-neutral-gray-500'
-                              }`}>
+                            {typeof product.opportunityScore === "number" && (
+                              <div
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  product.opportunityScore >= 8
+                                    ? "bg-success/10 text-success"
+                                    : product.opportunityScore >= 6
+                                    ? "bg-primary-yellow/10 text-primary-yellow"
+                                    : "bg-neutral-gray-100 text-neutral-gray-500"
+                                }`}
+                              >
                                 {product.opportunityScore}/10 Opportunity
                               </div>
                             )}
@@ -505,15 +664,18 @@ const ProductFinder: React.FC = () => {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-gray-100 mb-4">
                     <FiFilter className="w-8 h-8 text-neutral-gray-400" />
                   </div>
-                  <h3 className="text-lg font-medium text-neutral-gray-900 mb-1">No products found</h3>
+                  <h3 className="text-lg font-medium text-neutral-gray-900 mb-1">
+                    No products found
+                  </h3>
                   <p className="text-neutral-gray-500 mb-4">
-                    Try adjusting your search or filters to find what you're looking for.
+                    Try adjusting your search or filters to find what you're
+                    looking for.
                   </p>
                   <button
                     className="text-primary-yellow hover:underline font-medium"
                     onClick={() => {
-                      setSearchQuery('');
-                      setCategoryFilter('All Categories');
+                      setSearchQuery("");
+                      setCategoryFilter("All Categories");
                       setOpportunityFilter(null);
                     }}
                   >

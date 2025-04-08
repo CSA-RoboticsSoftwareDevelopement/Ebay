@@ -6,6 +6,8 @@ const cookieParser = require("cookie-parser");
 const mysql = require("mysql2/promise");
 const ebayRoutes = require("./ebayOperations"); // ✅ Import eBay API routes
 const ebayProducts = require("./ebayProducts");
+const ebayPlugin  = require("./plugin");
+const ebayPlans =  require("./plans");
 require("dotenv").config();
 
 const app = express();
@@ -363,6 +365,8 @@ app.post("/api/auth/logout", async (req, res) => {
 app.use("/api/ebay", ebayRoutes(db));
 // ✅ Use eBay Products API Routes
 app.use("/api/ebay/products", ebayProducts(db));
+app.use("/api/plugin",ebayPlugin(db));
+app.use("/api/plans", ebayPlans(db));
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;

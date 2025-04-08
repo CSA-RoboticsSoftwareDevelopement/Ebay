@@ -3,6 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 // Simulated plans
 const plans = [
@@ -41,6 +42,9 @@ export default function PricingPlans() {
   const [selectedPlan, setSelectedPlan] = useState<null | typeof plans[number]>(null);
   const [editablePlan, setEditablePlan] = useState<null | typeof plans[number]>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [allPlans, setAllPlans] = useState([]); // Add this line to store plans from the backend
+  const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     if (selectedPlan) {
@@ -56,12 +60,66 @@ export default function PricingPlans() {
     }));
   };
 
-  const handleSave = () => {
-    console.log("Saved Plan:", editablePlan);
-    setSelectedPlan(null);
-    setEditablePlan(null);
-    setIsEditing(false);
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/plans/allplans`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch plans");
+        }
+        const data = await response.json();
+        setAllPlans(data); // Store the fetched plans in the state
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+      }
+    };
+  
+    fetchPlans();
+  }, [BACKEND_SERVER_URL]);
+  
+  const handleSave = async () => {
+    // Check if there are changes to the plan before sending the request
+    if (!editablePlan) return;
+    if (!user) return;
+  
+    try {
+      const response = await fetch(`${BACKEND_SERVER_URL}/api/plans/addplans`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan_type: editablePlan.name,
+          inventory: editablePlan.inventory,
+          product_finder: editablePlan.productFinder,
+          platform: JSON.stringify(editablePlan.platform.split(',')), // Convert platform to JSON array
+          find_seller: editablePlan.findSeller,
+          product_optimization: editablePlan.productOptimization,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to save the plan');
+      }
+  
+      const data = await response.json();
+  
+      // Log the response (you can display a success message here or handle errors)
+      console.log('Saved Plan:', data);
+      alert('Plan saved successfully!');
+  
+      // Reset states and close modal after saving
+      setSelectedPlan(null);
+      setEditablePlan(null);
+      setIsEditing(false);
+  
+    } catch (error) {
+      console.error('❌ Error saving plan:', error);
+      alert('There was an error saving the plan.');
+    }
   };
+  
+  
 
   return (
     <div className="p-8 bg-white min-h-screen relative">
