@@ -97,6 +97,27 @@ const productFinderIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
   </svg>
 );
 
+
+const PricingIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className={className}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 6v12m0-12a4 4 0 100 8 4 4 0 100-8z"
+    />
+  </svg>
+);
+
+
+
+
 const OrdersIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -126,6 +147,7 @@ const navigation: NavItem[] = [
   { name: "Orders", href: "/orders", icon: OrdersIcon },
   { name: "Inventory", href: "/inventory", icon: InventoryIcon },
   { name: "Products Finder", href: "/productFinder", icon: productFinderIcon },
+  { name: "Pricing", href: "/admin/keys/pricing", icon: PricingIcon },
   { name: "Admin Keys", href: "/admin/keys", icon: AdminIcon, adminOnly: true },
   { name: "Settings", href: "/settings", icon: SettingsIcon },
 ];
