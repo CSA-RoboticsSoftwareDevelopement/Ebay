@@ -61,17 +61,16 @@ const SettingsIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
 );
 const PricingIcon = ({ className = "w-5 h-5 mr-3 text-current" }) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    className={className}
     viewBox="0 0 24 24"
     fill="none"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    className={className}
+    xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M12 6v12m0-12a4 4 0 100 8 4 4 0 100-8z"
+      d="M6 16C6 18.2091 7.79086 20 10 20H14C16.2091 20 18 18.2091 18 16C18 13.7909 16.2091 12 14 12H10C7.79086 12 6 10.2091 6 8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8M12 2V22"
+      stroke="currentColor"
     />
   </svg>
 );
@@ -156,10 +155,15 @@ const navigation: NavItem[] = [
   { name: "Orders", href: "/orders", icon: OrdersIcon },
   { name: "Inventory", href: "/inventory", icon: InventoryIcon },
   { name: "Products Finder", href: "/productFinder", icon: productFinderIcon },
-  { name: "Admin Keys", href: "/admin/keys", icon: AdminIcon, adminOnly: true },
+  {
+    name: "Licence Keys",
+    href: "/admin/keys",
+    icon: AdminIcon,
+    adminOnly: true,
+  },
   { name: "Settings", href: "/settings", icon: SettingsIcon },
   { name: "Plugin", href: "/plugin", icon: PluginIcon }, // 👈 replaced SettingsIcon
-  { name: "Pricing", href: "/admin/keys/pricing", icon: PricingIcon },
+  { name: "Plans", href: "/admin/keys/pricing", icon: PricingIcon },
 ];
 
 export default function Sidebar() {

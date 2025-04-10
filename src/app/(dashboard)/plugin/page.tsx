@@ -5,6 +5,22 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 import { FiPlus, FiTrash2 } from "react-icons/fi";
+import Swal from "sweetalert2";
+import { FiZap, FiSearch, FiPackage, FiStar } from "react-icons/fi";
+
+const getPluginIcon = (name: string) => {
+  switch (name.toLowerCase()) {
+    case "product finder":
+      return <FiSearch className="text-yellow-400 text-xl" />;
+    case "product optimization":
+      return <FiStar className="text-yellow-400 text-xl" />;
+    case "find seller":
+      return <FiPackage className="text-yellow-400 text-xl" />;
+    default:
+      return <FiZap className="text-yellow-400 text-xl" />;
+  }
+};
+
 
 console.log(BACKEND_SERVER_URL);
 type Plugin = {
@@ -22,13 +38,13 @@ const pluginList: Plugin[] = [
     description: "Easily find high-demand products to sell in your store.",
     price: "$0",
   },
-  {
-    id: 2,
-    name: "Find Seller",
-    description: "Discover top sellers and analyze their strategies.",
-    price: "$14.99", // still shown as "—" due to comingSoon
-    comingSoon: true,
-  },
+  // {
+  //   id: 2,
+  //   name: "Find Seller",
+  //   description: "Discover top sellers and analyze their strategies.",
+  //   price: "$14.99", // still shown as "—" due to comingSoon
+  //   comingSoon: true,
+  // },
   {
     id: 3,
     name: "Product Optimization",
@@ -101,7 +117,7 @@ export default function PluginPage() {
     if (!plugin || plugin.comingSoon) return;
 
     const install = !installed.includes(id);
-    if (!fromModal) setLoadingPluginId(id); // 👈 only show loading state on card if not from modal
+    if (!fromModal) setLoadingPluginId(id);
 
     try {
       const res = await fetch(`${BACKEND_SERVER_URL}/api/plugin/toggle`, {
@@ -120,10 +136,18 @@ export default function PluginPage() {
       const result = await res.json();
       if (!res.ok) {
         console.error("Error toggling plugin:", result.error);
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: result.error || "Failed to toggle plugin",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
         return;
       }
 
-      // 👇 Delay for 1s
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setInstalled((prev) =>
@@ -131,10 +155,39 @@ export default function PluginPage() {
       );
 
       window.dispatchEvent(new Event("plugin-toggled"));
+
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: `${plugin.name} ${install ? "installed" : "uninstalled"}`,
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+        background: "#000",
+        color: "#fff",
+        customClass: {
+          popup: "swal2-toast-dark",
+        },
+      });
     } catch (error) {
       console.error("❌ Toggle failed:", error);
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "error",
+        title: "Something went wrong",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: "#000",
+        color: "#fff",
+        customClass: {
+          popup: "swal2-toast-dark",
+        },
+      });
     } finally {
-      if (!fromModal) setLoadingPluginId(null); // 👈 reset only if needed
+      if (!fromModal) setLoadingPluginId(null);
     }
   };
 
@@ -143,7 +196,7 @@ export default function PluginPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="">
       <h1 className="text-2xl font-bold mb-2 text-left">Plugin Marketplace</h1>
       <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -191,7 +244,7 @@ export default function PluginPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4">
+      <div className=" mt-5 flex flex-wrap gap-4 ">
         {pluginList
           .filter((plugin) => {
             const matchesSearch =
@@ -220,57 +273,94 @@ export default function PluginPage() {
 
             return (
               <div
-                key={plugin.id}
-                className={`relative max-w-sm w-full rounded-lg shadow-md p-6 flex flex-col transition-shadow ${
-                  plugin.comingSoon
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-white hover:shadow-lg"
-                }`}
-              >
-                {/* 👇 Badge for Installed */}
-                {isInstalled && (
-                  <span className="absolute top-2 right-2 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
-                    Installed
-                  </span>
-                )}
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">{plugin.name}</h2>
-                  <p className="mb-2">{plugin.description}</p>
-                  <p className="mb-4 font-medium text-sm text-gray-700">
-                    Price: {plugin.price}
-                  </p>
+              key={plugin.id}
+              className={`relative group w-full max-w-xs rounded-2xl p-4 border transition-all duration-300 overflow-hidden shadow-sm ${
+                plugin.comingSoon
+                  ? "bg-gradient-to-br from-gray-200 to-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
+                  : "bg-gradient-to-br from-white via-gray-50 to-white hover:shadow-lg hover:scale-[1.01]"
+              }`}
+              style={{
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+              }}
+            >
+              {/* Shine effect */}
+              {!plugin.comingSoon && (
+                <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition duration-300">
+                  <div className="absolute -top-1/2 left-1/2 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-10 transform rotate-12 blur-2xl animate-pulse"></div>
                 </div>
-
+              )}
+            
+              {/* Installed badge */}
+              {isInstalled && (
+                <span className="absolute top-2 right-2 bg-green-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow">
+                  Installed
+                </span>
+              )}
+            
+              {/* Card content */}
+              <div className="space-y-3 z-10 relative">
+                <div className="flex items-center gap-2 text-base font-semibold text-gray-800">
+                  {getPluginIcon(plugin.name)}
+                  <span className="truncate">{plugin.name}</span>
+                </div>
+            
+                <p className="text-sm text-gray-600 leading-snug line-clamp-3">
+                  {plugin.description}
+                </p>
+            
+                <div className="flex items-center gap-2 text-xs">
+                  <span
+                    className={`inline-block font-medium px-2 py-0.5 rounded-full ${
+                      plugin.price === "$0"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {plugin.price === "$0" ? "Free" : plugin.price}
+                  </span>
+            
+                  {plugin.comingSoon && (
+                    <span className="text-gray-400 font-medium">Coming Soon</span>
+                  )}
+                </div>
+              </div>
+            
+              {/* Action button */}
+              <div className="mt-4 z-10 relative">
                 {plugin.comingSoon ? (
                   <button
                     disabled
-                    className="px-4 py-2 rounded-xl bg-gray-300 text-gray-500 font-medium"
+                    className="w-full py-1.5 text-sm rounded-xl bg-gray-300 text-gray-500 font-medium cursor-not-allowed"
                   >
                     Coming Soon
                   </button>
                 ) : (
                   <button
                     onClick={() => setSelectedPlugin(plugin)}
-                    className={`px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 ${
-                      installed.includes(plugin.id)
+                    className={`w-full py-1.5 text-sm rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-200 ${
+                      isInstalled
                         ? "bg-red-600 text-white hover:bg-red-700"
-                        : "bg-yellow-400 hover:bg-yellow-500"
+                        : "bg-yellow-400 text-black hover:bg-yellow-500"
                     }`}
                   >
-                    {installed.includes(plugin.id) ? (
+                    {isInstalled ? (
                       <>
-                        <FiTrash2 className="text-lg" />
+                        <FiTrash2 className="text-sm" />
                         Uninstall
                       </>
                     ) : (
                       <>
-                        <FiPlus className="text-lg" />
-                        Get
+                        <FiPlus className="text-base" />
+                        Install
                       </>
                     )}
                   </button>
                 )}
               </div>
+            </div>
+            
+            
             );
           })}
       </div>

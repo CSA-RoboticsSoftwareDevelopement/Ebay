@@ -9,16 +9,14 @@ const generateRandomKey = () => {
 // ✅ Handle POST request (Generate Key)
 export async function POST(req) {
   try {
-    const { expiresInDays, userId } = await req.json();
+    const { expiresInDays, payment_mode, payment_date } = await req.json();
 
-    if (!expiresInDays || !userId) {
+    if (!expiresInDays || !payment_mode || !payment_date) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
       );
     }
-
-
 
     const key = generateRandomKey();
     const createdAt = new Date().toISOString();
@@ -26,11 +24,10 @@ export async function POST(req) {
       Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000
     ).toISOString();
 
-    // ✅ Insert into database (Now storing user_id as well)
     const [result] = await pool.execute(
-      `INSERT INTO admin_keys (license_key , status, user_id, created_at, expires_at) 
-   VALUES (?, 'Not Activated', ?, ?, ?);`,
-      [key, userId, createdAt, expiresAt]
+      `INSERT INTO license_key (license_key, status, payment_mode, payment_date, created_at, expires_at)
+       VALUES (?, 'Not Activated', ?, ?,  ?, ?)`,
+      [key, payment_mode, payment_date, createdAt, expiresAt]
     );
 
     return NextResponse.json({
@@ -39,7 +36,8 @@ export async function POST(req) {
         id: result.insertId,
         key,
         status: "Not Activated",
-        userId, // ✅ Now returning user_id too
+        payment_mode,
+        payment_date,
         createdAt,
         expiresAt,
       },
@@ -53,17 +51,18 @@ export async function POST(req) {
   }
 }
 
+
 // ✅ Handle GET request (Fetch Keys)
 export async function GET() {
   try {
     // ✅ Automatically mark expired keys as "Expired"
     await pool.execute(
-      "UPDATE admin_keys SET status = 'Expired' WHERE expires_at < NOW() AND status != 'Expired'"
+      "UPDATE license_key SET status = 'Expired' WHERE expires_at < NOW() AND status != 'Expired'"
     );
 
     // ✅ Fetch all keys after updating their status
     const [keys] = await pool.execute(
-      "SELECT * FROM admin_keys ORDER BY created_at DESC"
+      "SELECT * FROM license_key ORDER BY created_at DESC"
     );
 
     return NextResponse.json({ keys });
@@ -85,7 +84,7 @@ export async function DELETE(req) {
     }
 
     // ✅ Delete from database
-    const [result] = await pool.execute("DELETE FROM admin_keys WHERE id = ?", [
+    const [result] = await pool.execute("DELETE FROM license_key WHERE id = ?", [
       id,
     ]);
 

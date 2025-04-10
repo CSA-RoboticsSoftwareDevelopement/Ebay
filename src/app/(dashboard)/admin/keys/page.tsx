@@ -82,7 +82,12 @@ export default function AdminKeysPage() {
         payment_date: key.payment_date ?? "N/A", // ✅ And this line
       }));
 
-      setKeys(formattedKeys);
+      setKeys(
+        formattedKeys.sort(
+          (b, a) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      );
     } catch (error) {
       console.error("Error fetching keys:", error);
       toast.error("Failed to fetch signup keys.");
@@ -116,25 +121,28 @@ export default function AdminKeysPage() {
 
       const response = await axios.post("/api/admin/keys", {
         expiresInDays: parseInt(expiresInDays),
-        userId: user.id, // ✅ Ensure user ID is sent correctly
+        payment_mode: paymentMode, // ✅ fixed
+        payment_date: paymentDate, // ✅ fixed
       });
 
       if (response.data.success) {
-        setKeys((prevKeys) => [response.data.key, ...prevKeys]);
+        setKeys((prevKeys) => [...prevKeys, response.data.key]);
         Swal.fire({
           icon: "success",
           title: "Success!",
           text: "Signup key generated successfully!",
           confirmButtonText: "OK",
-          confirmButtonColor: "#ffc300", // Yellow background
+          confirmButtonColor: "#ffc300",
           didOpen: () => {
             const confirmBtn = Swal.getConfirmButton();
             if (confirmBtn) {
-              confirmBtn.style.color = "#000"; // Black text
+              confirmBtn.style.color = "#000";
             }
           },
         });
         setIsModalOpen(false);
+        setPaymentMode("");
+        setPaymentDate("");
       } else {
         toast.error("Failed to generate signup key.");
       }
@@ -187,12 +195,32 @@ export default function AdminKeysPage() {
     });
   };
 
-  const filteredKeys = keys.filter((key) =>
-    key?.key?.toLowerCase().includes(searchQuery.toLowerCase())
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Adjust as needed
+
+  // Filtered keys based on search
+  const filteredKeys = keys.filter((key) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      key.key.toLowerCase().includes(query) ||
+      key.status.toLowerCase().includes(query) ||
+      key.payment_mode?.toLowerCase().includes(query) ||
+      key.payment_date?.toString().toLowerCase().includes(query) ||
+      key.createdAt.toLowerCase().includes(query) ||
+      key.expiresAt?.toLowerCase().includes(query) ||
+      key.createdBy?.toLowerCase().includes(query)
+    );
+  });
+
+  // Paginated keys to show on current page
+  const paginatedKeys = filteredKeys.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
+
   // for keys update
   const [showRenewForm, setShowRenewForm] = useState(false);
-  const [selectedKey, setSelectedKey] = useState(null);
+  const [selectedKey, setSelectedKey] = useState<SignupKey | null>(null);
 
   const openRenewForm = (key) => {
     setSelectedKey(key);
@@ -215,7 +243,7 @@ export default function AdminKeysPage() {
       const response = await axios.patch(
         `${BACKEND_SERVER_URL}/api/renew-key`,
         {
-          keyId: selectedKey.id,
+          keyId: selectedKey?.id,
           paymentMode,
           paymentDate,
           newExpiryDate,
@@ -249,7 +277,7 @@ export default function AdminKeysPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <h1 className="text-2xl font-bold">
-          Signup Keys ({filteredKeys.length})
+          Licence Keys ({filteredKeys.length})
         </h1>
 
         <div className="flex items-center space-x-4 mt-4 md:mt-0">
@@ -268,7 +296,7 @@ export default function AdminKeysPage() {
             onClick={openModal}
             className="bg-primary-yellow text-black hover:bg-black hover:text-white px-4 py-2 rounded-md transition"
           >
-            Generate Key
+            New Key
           </button>
         </div>
       </div>
@@ -277,9 +305,10 @@ export default function AdminKeysPage() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96">
-            <h2 className="text-xl font-bold mb-4">Generate New Key</h2>
+            <h2 className="text-xl font-bold mb-4">New Key</h2>
 
             <div className="space-y-4">
+              {/* Expires In */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Expires In
@@ -294,6 +323,33 @@ export default function AdminKeysPage() {
                   <option value="60">60 days</option>
                   <option value="90">90 days</option>
                 </select>
+              </div>
+
+              {/* Payment Mode */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Mode
+                </label>
+                <input
+                  type="text"
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                  placeholder="e.g. UPI, Credit Card"
+                />
+              </div>
+
+              {/* Payment Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Date
+                </label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                />
               </div>
 
               {/* Buttons */}
@@ -328,7 +384,7 @@ export default function AdminKeysPage() {
             {filteredKeys.length === 0 ? (
               <p className="text-center text-gray-500">No signup keys found.</p>
             ) : (
-              filteredKeys.map((key) => (
+              paginatedKeys.map((key) => (
                 <div key={key.id} className="bg-white rounded-lg shadow p-4">
                   <p className="text-lg font-semibold break-all">{key.key}</p>
                   <p className="text-sm text-gray-500">
@@ -336,6 +392,15 @@ export default function AdminKeysPage() {
                   </p>
                   <p className="text-sm text-gray-500">
                     Expires At: {formatDate(key.expiresAt)}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Payment Mode: {key.payment_mode}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Payment Date:{" "}
+                    {formatDate(
+                      key.payment_date ? key.payment_date.toString() : null
+                    )}
                   </p>
                   <div className="flex justify-between items-center mt-4">
                     <span
@@ -381,6 +446,9 @@ export default function AdminKeysPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    S.NO
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Key
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -404,15 +472,21 @@ export default function AdminKeysPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredKeys.map((key) => (
+                {paginatedKeys.map((key, index) => (
                   <tr key={key.id}>
+                    <td className="px-4 py-4 text-sm font-medium">
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </td>
+
                     <td className="px-4 py-4 text-sm font-medium">{key.key}</td>
                     <td className="px-4 py-4 text-sm">{key.status}</td>
                     <td className="px-4 py-4 text-sm">
                       {key.payment_mode ?? "N/A"}
                     </td>
                     <td className="px-4 py-4 text-sm">
-                      {formatDate(key.payment_date) ?? "N/A"}
+                      {formatDate(
+                        key.payment_date ? key.payment_date.toString() : null
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm">
                       {formatDate(key.createdAt)}
@@ -448,6 +522,24 @@ export default function AdminKeysPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="flex justify-end mt-6  space-x-2">
+            {Array.from(
+              { length: Math.ceil(filteredKeys.length / itemsPerPage) },
+              (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-3 py-1 border rounded ${
+                    currentPage === i + 1
+                      ? "bg-black text-white"
+                      : "bg-white text-black"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              )
+            )}
           </div>
 
           {showRenewForm && selectedKey && (

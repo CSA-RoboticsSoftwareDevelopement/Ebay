@@ -75,11 +75,9 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ message: "Please enter all fields" });
     }
 
+    // Fetch user info (without licence column)
     const [users] = await db.query(
-      `SELECT u.id, u.email, u.password, IFNULL(u.is_admin, 0) AS is_admin, a.status AS licence_status
-       FROM users u
-       LEFT JOIN admin_keys a ON u.licence = a.license_key
-       WHERE u.email = ?`,
+      `SELECT id, email, password, IFNULL(is_admin, 0) AS is_admin FROM users WHERE email = ?`,
       [email]
     );
 
@@ -90,10 +88,17 @@ app.post("/api/login", async (req, res) => {
 
     const user = users[0];
 
-    // Check license status
-    if (user.licence_status !== "Activated") {
+    // Now check license status based on user_id from license_key
+    const [licenseRows] = await db.query(
+      `SELECT status FROM license_key WHERE user_id = ?`,
+      [user.id]
+    );
+
+    const licenseStatus = licenseRows[0]?.status || "Not Found";
+
+    if (licenseStatus !== "Activated") {
       console.log(`❌ Login blocked: License not activated for ${email}`);
-      return res.status(403).json({ message: `Your license is ${user.licence_status}` });
+      return res.status(403).json({ message: `Your license is ${licenseStatus}` });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -126,6 +131,7 @@ app.post("/api/login", async (req, res) => {
       .json({ message: "Internal Server Error", error: err.toString() });
   }
 });
+
 
 
 // ✅ Get All Logged-in Users (Debugging)
@@ -204,7 +210,7 @@ app.post("/api/validate-key", async (req, res) => {
     }
 
     const [rows] = await db.execute(
-      "SELECT user_id FROM admin_keys WHERE license_key = ?",
+      "SELECT user_id FROM license_key WHERE license_key = ?",
       [signupKey]
     );
 
@@ -231,7 +237,7 @@ app.patch("/api/renew-key", async (req, res) => {
 
     // Update the key's expiration and payment info
     await db.execute(
-      `UPDATE admin_keys
+      `UPDATE license_key
        SET status = 'Activated',
            expires_at = ?,
            payment_mode = ?,
@@ -259,7 +265,7 @@ app.patch("/api/renew-key", async (req, res) => {
 
 //     // Check if signupKey exists in the database
 //     const [rows] = await db.execute(
-//       "SELECT user_id, created_by FROM admin_keys WHERE license_key = ?",
+//       "SELECT user_id, created_by FROM license_key WHERE license_key = ?",
 //       [signupKey]
 //     );
 
@@ -291,7 +297,7 @@ app.post("/api/signup", async (req, res) => {
 
     // 1. Validate key
     const [keyRows] = await db.execute(
-      "SELECT id, status FROM admin_keys WHERE license_key = ?",
+      "SELECT id, status FROM license_key WHERE license_key = ?",
       [signupKey]
     );
 
@@ -312,15 +318,15 @@ app.post("/api/signup", async (req, res) => {
 
     // 3. Insert user
     const [insertResult] = await db.execute(
-      "INSERT INTO users (email, password, username, created_at, licence) VALUES (?, ?, ?, NOW(), ?)",
-      [email, hashedPassword, name, signupKey]
+      "INSERT INTO users (email, password, username, created_at) VALUES (?, ?, ?, NOW())",
+      [email, hashedPassword, name]
     );
 
     const userId = insertResult.insertId;
 
     // 4. Link user to the admin_key and activate it
     await db.execute(
-      "UPDATE admin_keys SET user_id = ?, status = 'Activated' WHERE id = ?",
+      "UPDATE license_key SET user_id = ?, status = 'Activated' WHERE id = ?",
       [userId, keyData.id]
     );
 
