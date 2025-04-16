@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Swal from "sweetalert2"; // ✅ Import SweetAlert2
 import { Product } from "@/types/ProductTypes"; // ✅ Import Product type
@@ -8,6 +8,7 @@ import {
   formatDate,
   formatDays,
 } from "../../lib/formatters";
+import axios from "axios"; // Ensure you import axios
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 // Type definitions based on the Prisma schema
@@ -24,6 +25,27 @@ export type CompetitorData = {
   lastUpdated: Date;
 };
 
+// Example of the formatPercentage function
+
+// Function to calculate eBay fee
+const calculateEbayFee = (price) => {
+  const fixedFee = 0.3; // $0.30 fixed fee
+  let variableFee = 0;
+
+  // Ensure valid price
+  if (price <= 1000) {
+    variableFee = price * 0.134; // 13.4% for items <= $1,000
+  } else {
+    // 13.4% for the first $1,000
+    variableFee = 1000 * 0.134 + (price - 1000) * 0.0275; // 2.75% for the amount above $1,000
+  }
+
+  // Total eBay fee calculation
+  const ebayFee = fixedFee + variableFee;
+
+  // Round the total fee to 2 decimal places
+  return parseFloat(ebayFee.toFixed(2));
+};
 
 type ProductDetailModalProps = {
   product: Product;
@@ -37,47 +59,158 @@ type ProductDetailModalProps = {
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   onClose,
-  onUpdateProduct,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    | "overview"
-    | "performance"
-    | "competitors"
-    | "images"
-    | "settings"
-    | "description"
+    "overview" | "performance" | "images" | "settings"
   >("overview");
+
   const [isEditing, setIsEditing] = useState(false);
-  const [editedValues, setEditedValues] = useState({
+  const [editedValues, setEditedValues] = useState<{
+    costPrice: number;
+    salesPrice: number;
+    ebayFees: number;
+    profit?: number;
+    profitMargin?: number;
+    roi?: number;
+  }>({
     costPrice: product.costPrice,
-    shipping: product.shipping,
-    ebayFees: product.ebayFees,
+    salesPrice: product.price,
+    ebayFees: calculateEbayFee(product.price),
   });
 
   // Generate a placeholder image URL if none exists
   const imageUrlSrc =
     product.imageUrl ||
-    `https://placehold.co/400x300?text=${encodeURIComponent(
-      product.title
-    )}`;
+    `https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`;
+
+  const [productData, setProductData] = useState(null); // State to store fetched product data
+
+  const fetchProductData = async () => {
+    try {
+      const response = await axios.get(
+        `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
+      );
+      console.log("Fetched Product Data:", response.data); // Print to console
+      setProductData(response.data); // Store in the state
+
+      // Assuming the response contains an array of products and each product has 'costPrice'
+      // Update the edited values with the fetched 'costPrice' for the first product
+      if (
+        response.data &&
+        Array.isArray(response.data.data) &&
+        response.data.data.length > 0
+      ) {
+        const fetchedProduct = response.data.data.find(
+          (item) => item.sku === product.id
+        );
+
+        const costPrice = fetchedProduct
+          ? parseFloat(fetchedProduct.cost_price ?? "0")
+          : 0;
+        const ebayFees =
+          fetchedProduct && fetchedProduct.ebay_fees != null
+            ? parseFloat(fetchedProduct.ebay_fees)
+            : calculateEbayFee(product.price);
+
+        console.log("Resolved Cost Price:", costPrice);
+        console.log("Resolved eBay Fee:", ebayFees);
+
+        setEditedValues((prevState) => {
+          const profit = prevState.salesPrice - costPrice - ebayFees;
+
+          const profitMargin =
+            prevState.salesPrice > 0
+              ? (profit / prevState.salesPrice) * 100
+              : 0;
+
+          const roi = costPrice > 0 ? profit / costPrice : 0;
+
+
+          return {
+            ...prevState,
+            costPrice,
+            ebayFees,
+            profit,
+            profitMargin,
+            roi,
+          };
+        });
+      }
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    fetchProductData(); // Call the function to fetch data on component mount
+  }, []); // Empty dependency array to run once when component mounts
 
   const handleTabChange = (
-    tab:
-      | "overview"
-      | "performance"
-      | "competitors"
-      | "images"
-      | "settings"
-      | "description"
+    tab: "overview" | "performance" | "images" | "settings"
   ) => {
     setActiveTab(tab);
   };
+  const handleSaveChanges = async () => {
+    // Recalculate the eBay fee based on the sales price
+    const ebayFee = calculateEbayFee(editedValues.salesPrice);
 
-  const handleSaveChanges = () => {
-    if (onUpdateProduct) {
-      onUpdateProduct(product.id, editedValues);
+    // Prepare the data to be saved
+    const productData = {
+      sku: product.id, // Ensure SKU is sent
+      cost_price: editedValues.costPrice, // Ensure costPrice is sent
+      ebay_fees: editedValues.ebayFees, // Send calculated ebay fee
+      salesPrice: editedValues.salesPrice, // Send salesPrice
+      updated_at: new Date().toISOString(), // Add updated_at timestamp
+    };
+
+    // Log the product data for debugging
+    console.log("Product Data being sent:", productData);
+
+    try {
+      // Check if we are updating an existing product
+      const isUpdate = product.id != null;
+
+      // Send the data to the server using fetch
+      const response = await fetch(
+        `${BACKEND_SERVER_URL}/api/ebay/products/products/insert`,
+        {
+          method: isUpdate ? "POST" : "POST", // POST for both insert and update (you could make this conditional if using PUT or PATCH)
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(productData),
+        }
+      );
+
+      // If the response is not OK, throw an error
+      if (!response.ok) {
+        const errorResponse = await response.json();
+        console.error("Error response from server:", errorResponse);
+        throw new Error("Failed to save product");
+      }
+
+      // Parse the response if it's successful
+      const responseData = await response.json();
+
+      // If the save was successful, show a success message
+      if (responseData.success) {
+        await Swal.fire(
+          "Success",
+          "Product details saved successfully!",
+          "success"
+        );
+
+        // Close the edit mode
+        setIsEditing(false);
+      } else {
+        throw new Error("Failed to save product");
+      }
+    } catch (error) {
+      console.error("Error saving product details:", error);
+      Swal.fire(
+        "Error",
+        "Failed to save product details. Please try again.",
+        "error"
+      );
     }
-    setIsEditing(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,13 +351,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div>
                   <p className="text-gray-600">ROI</p>
                   <p className="font-semibold">
-                    {formatPercentage(product.roi)}
+                    {editedValues.roi != null
+                      ? `${(editedValues.roi / 10).toFixed(2)}%`
+                      : "N/A"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Margin</p>
+                  <p className="text-gray-600">Profit Margin</p>
                   <p className="font-semibold">
-                    {formatPercentage(product.profitMargin)}
+                    {formatPercentage((editedValues.profitMargin ?? 0) / 100)}
+                    {/* Use editedValues.profitMargin */}
                   </p>
                 </div>
               </div>
@@ -254,26 +390,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 >
                   Performance
                 </button>
-                <button
-                  className={`px-4 py-2 text-sm font-medium ${
-                    activeTab === "description"
-                      ? "text-primary-yellow border-b-2 border-primary-yellow"
-                      : "text-gray-500"
-                  }`}
-                  onClick={() => handleTabChange("description")}
-                >
-                  Description
-                </button>
-                <button
-                  className={`px-4 py-2 text-sm font-medium ${
-                    activeTab === "competitors"
-                      ? "text-primary-yellow border-b-2 border-primary-yellow"
-                      : "text-gray-500"
-                  }`}
-                  onClick={() => handleTabChange("competitors")}
-                >
-                  Competitors
-                </button>
+
                 <button
                   className={`px-4 py-2 text-sm font-medium ${
                     activeTab === "images"
@@ -338,34 +455,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               step="0.01"
                             />
                           ) : (
-                            <p>
-                              {formatCurrency(
-                                product.costPrice,
-                                product.currency
-                              )}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm text-gray-600 mb-1">
-                            Shipping Cost
-                          </label>
-                          {isEditing ? (
-                            <input
-                              type="number"
-                              name="shipping"
-                              value={editedValues.shipping || ""}
-                              onChange={handleInputChange}
-                              className="border rounded w-full p-2"
-                              step="0.01"
-                            />
-                          ) : (
-                            <p>
-                              {formatCurrency(
-                                product.shipping,
-                                product.currency
-                              )}
-                            </p>
+                            <p>{formatCurrency(editedValues.costPrice)}</p>
                           )}
                         </div>
                         <div>
@@ -373,23 +463,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             eBay Fees
                           </label>
                           {isEditing ? (
+                            // When editing, show the input field for eBay fees
                             <input
                               type="number"
                               name="ebayFees"
-                              value={editedValues.ebayFees || ""}
-                              onChange={handleInputChange}
+                              value={editedValues.ebayFees || ""} // Bind to edited value
+                              onChange={handleInputChange} // Update on change
                               className="border rounded w-full p-2"
                               step="0.01"
                             />
                           ) : (
+                            // When not editing, show the formatted eBay fee as currency
                             <p>
                               {formatCurrency(
-                                product.ebayFees,
+                                editedValues.ebayFees || product.ebayFees,
                                 product.currency
                               )}
                             </p>
                           )}
                         </div>
+
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">
                             Sale Price
@@ -407,7 +500,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               Profit
                             </label>
                             <p className="font-semibold">
-                              {formatCurrency(product.profit, product.currency)}
+                              {formatCurrency(
+                                editedValues.profit,
+                                product.currency
+                              )}{" "}
+                              {/* Use editedValues.profit */}
                             </p>
                           </div>
                           <div>
@@ -415,7 +512,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               ROI
                             </label>
                             <p className="font-semibold">
-                              {formatPercentage(product.roi)}
+                              {editedValues.roi != null
+                                ? `${(editedValues.roi / 10).toFixed(2)}%`
+                                : "N/A"}
                             </p>
                           </div>
                           <div>
@@ -423,22 +522,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               Profit Margin
                             </label>
                             <p className="font-semibold">
-                              {formatPercentage(product.profitMargin)}
+                              {formatPercentage(
+                                (editedValues.profitMargin ?? 0) / 100
+                              )}
+
+                              {/* Use editedValues.profitMargin */}
                             </p>
                           </div>
                         </div>
-                      </div>
-
-                      <div className="border-t pt-4">
-                        <h4 className="font-medium mb-2">Listing Details</h4>
-                        <p>
-                          <span className="text-gray-600">Listed on:</span>{" "}
-                          {formatDate(product.createdAt)}
-                        </p>
-                        <p>
-                          <span className="text-gray-600">Last updated:</span>{" "}
-                          {formatDate(product.updatedAt)}
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -481,174 +572,36 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               Total Profit
                             </p>
                             <p className="font-bold">
-                              {formatCurrency(product.profit, product.currency)}
+                              {formatCurrency(
+                                editedValues.profit ?? 0,
+                                product.currency
+                              )}
                             </p>
                           </div>
+
                           <div>
                             <p className="text-sm text-gray-600">ROI</p>
-                            <p className="font-bold">
-                              {formatPercentage(product.roi)}
+                            <p className="font-semibold">
+                              {editedValues.roi != null
+                                ? `${(editedValues.roi / 10).toFixed(2)}%`
+                                : "N/A"}
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Margin</p>
-                            <p className="font-bold">
-                              {formatPercentage(product.profitMargin)}
+                            <p className="text-sm text-gray-600">
+                              Profit Margin
+                            </p>
+                            <p className="font-semibold">
+                              {formatPercentage(
+                                (editedValues.profitMargin ?? 0) / 100
+                              )}
+
+                              {/* Use editedValues.profitMargin */}
                             </p>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {/* Description Tab */}
-                {activeTab === "description" && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">
-                      Product Description
-                    </h3>
-                    <p className="max-h-64 overflow-y-auto overflow-x-hidden">
-                      {product.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Competitors Tab */}
-                {activeTab === "competitors" && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">
-                      Competitor Analysis
-                    </h3>
-
-                    {product.competitorData ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-gray-100 p-4 rounded">
-                            <h4 className="font-medium mb-2">
-                              Price Comparison
-                            </h4>
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Your Price:
-                                </span>
-                                <span className="font-semibold">
-                                  {formatCurrency(
-                                    product.price,
-                                    product.currency
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Avg. Competitor Price:
-                                </span>
-                                <span className="font-semibold">
-                                  {formatCurrency(
-                                    product.competitorData.avgPrice,
-                                    product.currency
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Lowest Price:
-                                </span>
-                                <span className="font-semibold">
-                                  {formatCurrency(
-                                    product.competitorData.lowestPrice,
-                                    product.currency
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Highest Price:
-                                </span>
-                                <span className="font-semibold">
-                                  {formatCurrency(
-                                    product.competitorData.highestPrice,
-                                    product.currency
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Avg. Shipping:
-                                </span>
-                                <span className="font-semibold">
-                                  {formatCurrency(
-                                    product.competitorData.avgShipping,
-                                    product.currency
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="bg-gray-100 p-4 rounded">
-                            <h4 className="font-medium mb-2">
-                              Listing Quality
-                            </h4>
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Avg. Listing Position:
-                                </span>
-                                <span className="font-semibold">
-                                  {product.competitorData.avgListingPosition?.toFixed(
-                                    1
-                                  ) || "N/A"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Avg. Image Count:
-                                </span>
-                                <span className="font-semibold">
-                                  {product.competitorData.avgImageCount?.toFixed(
-                                    1
-                                  ) || "N/A"}{" "}
-                                  images
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Avg. Seller Feedback:
-                                </span>
-                                <span className="font-semibold">
-                                  {product.competitorData.avgSellerFeedback?.toFixed(
-                                    1
-                                  ) || "N/A"}
-                                  %
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Competitors Analyzed:
-                                </span>
-                                <span className="font-semibold">
-                                  {product.competitorData.competitorCount || 0}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-sm text-gray-600 italic">
-                          Last updated:{" "}
-                          {formatDate(product.competitorData.lastUpdated)}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-gray-100 p-4 rounded text-center">
-                        <p>No competitor data available for this product.</p>
-                        <button className="mt-2 bg-primary-yellow text-black px-4 py-2 rounded text-sm">
-                          Analyze Competitors
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
 
