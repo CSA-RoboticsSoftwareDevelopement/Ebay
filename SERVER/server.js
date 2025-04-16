@@ -8,6 +8,10 @@ const ebayRoutes = require("./ebayOperations"); // ✅ Import eBay API routes
 const ebayProducts = require("./ebayProducts");
 const ebayPlugin  = require("./plugin");
 const ebayPlans =  require("./plans");
+const productFinder = require('./productFinder');
+const path = require("path");
+const fs = require("fs"); // ✅ Add this line
+
 require("dotenv").config();
 
 const app = express();
@@ -254,36 +258,6 @@ app.patch("/api/renew-key", async (req, res) => {
 });
 
 
-// app.post("/api/signup", async (req, res) => {
-//   try {
-//     console.log(req.body); // Debugging: Check if request body is received
-//     console.log("Signup Request:", req.body);
-//     const { signupKey } = req.body;
-//     if (!signupKey) {
-//       return res.status(400).json({ message: "Signup key is required" });
-//     }
-
-//     // Check if signupKey exists in the database
-//     const [rows] = await db.execute(
-//       "SELECT user_id, created_by FROM license_key WHERE license_key = ?",
-//       [signupKey]
-//     );
-
-//     if (rows.length === 0) {
-//       return res.status(404).json({ message: "Invalid Signup Key" });
-//     }
-
-//     // If key is found, return user_id and created_by
-//     return res.status(200).json({
-//       message: "Signup key valid",
-//       user_id: rows[0].user_id,
-//       created_by: rows[0].created_by,
-//     });
-//   } catch (error) {
-//     console.error("Error:", error);
-//     return res.status(500).json({ message: "Internal Server Error" });
-//   }
-// });
 
 // ✅ Logout API
 app.post("/api/signup", async (req, res) => {
@@ -374,6 +348,66 @@ app.use("/api/ebay/products", ebayProducts(db));
 app.use("/api/plugin",ebayPlugin(db));
 app.use("/api/plans", ebayPlans(db));
 
+
+
+// Get all product details from JSON files in productfinder/<category> folders
+app.get('/api/product-finder/all-products', async (req, res) => {
+  try {
+    const baseDir = path.join(__dirname, "productfinder");
+    const allProducts = [];
+
+    if (!fs.existsSync(baseDir)) {
+      return res.status(404).json({ success: false, message: "productfinder directory not found" });
+    }
+
+    const categories = fs.readdirSync(baseDir).filter(folder =>
+      fs.statSync(path.join(baseDir, folder)).isDirectory()
+    );
+
+    for (const category of categories) {
+      const categoryPath = path.join(baseDir, category);
+      const files = fs.readdirSync(categoryPath);
+
+      for (const file of files) {
+        if (file.endsWith("_product_details.json")) {
+          const filePath = path.join(categoryPath, file);
+          try {
+            const data = fs.readFileSync(filePath, "utf-8");
+            const parsed = JSON.parse(data);
+            allProducts.push({
+              category,
+              fileName: file,
+              productDetails: parsed.productDetails || []
+            });
+          } catch (err) {
+            console.error(`❌ Error parsing JSON from ${file}:`, err.message);
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      totalFiles: allProducts.length,
+      data: allProducts
+    });
+  } catch (error) {
+    console.error("❌ Failed to load product details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+});
+
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    // Start product finder after server starts
+    productFinder.main().catch(error => {
+        console.error('Product Finder Error:', error);
+    });
+});
+
