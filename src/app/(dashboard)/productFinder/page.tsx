@@ -1,5 +1,5 @@
 "use client";
-
+import { useRef } from "react";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
@@ -20,56 +20,32 @@ import { useAuth } from "@/context/AuthContext";
 const categories = [
   "All Categories",
   "Electronics",
-  "Home & Garden",
+  "Books",
+  "Clothing, Shoes & Jewelry",
+  "Home & Kitchen",
+  "Automotive",
+  "Toys & Games",
   "Fashion",
   "Collectibles",
   "Sports",
-  "Beauty",
-  "Toys & Games",
-  "Automotive",
+  "Beauty Personal Care ",
+  
+ 
 ];
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 // Mock data with enhanced fields for the product finder
-const generateMockProducts = (): RecommendedProduct[] => {
-  const categoryItems = categories.filter((c) => c !== "All Categories");
 
-  return Array.from({ length: 24 }, (_, i) => ({
-    id: `prod-${i + 1}`,
-    title: [
-      "Premium Wireless Earbuds with Noise Cancellation",
-      "Vintage Leather Journal with Handcrafted Paper",
-      "Smart Home Security Camera - 4K Ultra HD",
-      "Ergonomic Office Chair with Lumbar Support",
-      "Limited Edition Art Print - Hand Signed",
-      "Portable Bluetooth Speaker - Waterproof",
-      "Luxury Scented Candle Set - Natural Soy Wax",
-      "Professional Chef Knife Set with Block",
-      "Organic Skincare Gift Set - Vegan Formula",
-      "Handmade Ceramic Coffee Mug Set of 4",
-      "Ultra-Thin Wireless Charging Pad for Phones",
-      "Fitness Tracker with Heart Rate Monitor",
-    ][i % 12],
-    description:
-      "This product shows strong sales performance with high profit margins. Current market analysis indicates limited competition with steady demand.",
-    price: (Math.random() * 150 + 20).toFixed(2),
-    currency: "USD",
-    imageUrl: `https://placehold.co/600x600/f5f5f5/a3a3a3?text=Product+${
-      i + 1
-    }`,
-    platform: "",
-    category: categoryItems[Math.floor(Math.random() * categoryItems.length)],
-    condition: Math.random() > 0.2 ? "New" : "Used - Like New",
-    rating: Number((Math.random() * 2 + 3).toFixed(1)),
-    opportunityScore: Math.floor(Math.random() * 10) + 1,
-    competitorCount: Math.floor(Math.random() * 20) + 1,
-    averagePrice: (Math.random() * 200 + 30).toFixed(2),
-    averageMargin: (Math.random() * 30 + 15).toFixed(0) + "%",
-    estimatedMonthlyVolume: Math.floor(Math.random() * 500) + 20,
-    salesRank: Math.floor(Math.random() * 10000) + 1,
-  }));
-};
+const CategoryPills = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (scrollRef.current) {
+      // Scroll horizontally based on vertical wheel
+      scrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+}
 const ProductFinder: React.FC = () => {
   const [productsData, setProductsData] = useState<RecommendedProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,54 +68,42 @@ const ProductFinder: React.FC = () => {
   const userId = user?.id;
 
   useEffect(() => {
-    if (!userId) return;
-
-    setLoading(true);
-
-    // Function to fetch plugin data
-    const fetchPluginData = async () => {
+    const fetchProducts = async () => {
       try {
-        const res = await fetch(`${BACKEND_SERVER_URL}/api/plugin/${user.id}`);
-
-        // Check if response status is OK (200)
-        if (!res.ok) {
-          console.error(`Failed to fetch plugins. Status: ${res.status}`);
-          setLoading(false); // Error occurred, stop loading
-          return;
+        const res = await fetch(`${BACKEND_SERVER_URL}/api/product-finder/all-products`);
+        const json = await res.json();
+  
+        if (json.success) {
+          const allProducts: RecommendedProduct[] = json.data.flatMap((file: any) =>
+            file.productDetails.map((p: any, idx: number) => ({
+              id: `${p.asin}-${file.category}-${idx}`, // This ensures uniqueness
+              title: p.title,
+              price: p.price || "0.00",
+              currency: p.currency || "$",
+              imagecsv: p.imagesCSV,
+              rating: p.rating || Math.floor(Math.random() * 5) + 1,
+              category: p.category || file.category,
+              condition: p.condition || "New",
+              opportunityScore: p.opportunityScore || 0,
+            }))
+            
+          );
+  
+          setProductsData(allProducts);
+  
+          // Optional: derive categories dynamically if needed
+          // setCategories([...new Set(["All Categories", ...allProducts.map(p => p.category)])]);
         }
-
-        const data = await res.json();
-
-        // Log the response data for debugging
-        console.log("Fetched plugin data:", data);
-
-        // Check if the plugin is installed (installed === 1)
-        if (
-          data.plugins &&
-          data.plugins.length > 0 &&
-          data.plugins[0].installed === 1
-        ) {
-          // Plugin is installed, proceed with loading the products
-          console.log("Plugin is installed. Loading products...");
-          setProductsData(generateMockProducts());
-        } else {
-          // No plugin installed, show access denied or message
-          window.history.back(); // Go back to the previous page
-          console.log("Plugin is not installed. Showing access denied...");
-          setLoading(false); // Stop loading when plugin is not installed
-        }
-
-        // Always stop loading after the plugin data is processed
-        setLoading(false); // Moved to the end, ensuring it's called after checking the plugin status
-      } catch (error) {
-        // Handle and log any fetch or JSON parsing errors
-        console.error("Error fetching plugin data:", error);
-        setLoading(false); // Stop loading in case of error
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+      } finally {
+        setLoading(false);
       }
     };
-
-    fetchPluginData();
-  }, [userId]);
+  
+    fetchProducts();
+  }, []);
+  
 
   if (authLoading) {
     return <div className="text-center mt-10">Loading...</div>;
@@ -556,7 +520,25 @@ const ProductFinder: React.FC = () => {
           ) : (
             <>
               {/* Grid View */}
-              {viewMode === "grid" && (
+              <div className={`grid ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}`}>
+  {sortedProducts.map((product) => (
+    <ProductFinderCard
+    
+      key={product.id}
+      product={product}
+      onClick={(id) => setSelectedProductId(id)}
+    />
+    
+  ))}
+   {selectedProduct && (
+      <ProductFinderDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProductId(null)}
+      />
+    )}
+</div>
+
+              {/* {viewMode === "grid" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {sortedProducts.map((product) => (
                     <ProductFinderCard
@@ -566,7 +548,7 @@ const ProductFinder: React.FC = () => {
                         title: product.title,
                         price: product.price,
                         currency: product.currency,
-                        imageUrl: product.imageUrl,
+                        imageUrl: product.imagesCSV,
                         rating:
                           typeof product.rating === "string"
                             ? parseFloat(product.rating)
@@ -578,7 +560,7 @@ const ProductFinder: React.FC = () => {
                     />
                   ))}
                 </div>
-              )}
+              )} */}
 
               {/* List View */}
               {viewMode === "list" && (
@@ -593,7 +575,7 @@ const ProductFinder: React.FC = () => {
                         <div className="w-full aspect-video sm:h-full relative">
                           <Image
                             src={
-                              product.imageUrl ||
+                              product.imagecsv ||
                               `https://placehold.co/300x300?text=${encodeURIComponent(
                                 product.title
                               )}`

@@ -9,7 +9,7 @@ export type RecommendedProduct = {
   description: string;
   price: string;
   currency: string;
-  imageUrl?: string;
+  imagecsv?: string;
   platform?: string;
   category?: string;
   condition?: string;
@@ -75,7 +75,7 @@ export const ProductFinderDetailModal: React.FC<ProductFinderDetailModalProps> =
   const [activeTab, setActiveTab] = useState<"overview" | "priceHistory" | "details">("overview");
   
   // Generate a placeholder image URL if none exists
-  const imageUrlSrc = product.imageUrl || `https://placehold.co/600x400?text=${encodeURIComponent(product.title)}`;
+  const imageUrlSrc = product.imagecsv || `https://placehold.co/600x400?text=${encodeURIComponent(product.title)}`;
   
   // Default rating if not provided
   const productRating = product.rating || 4.5;
