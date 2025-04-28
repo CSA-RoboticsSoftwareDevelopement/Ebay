@@ -520,23 +520,30 @@ const ProductFinder: React.FC = () => {
           ) : (
             <>
               {/* Grid View */}
-              <div className={`grid ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}`}>
+              <div
+  className={`${
+    viewMode === "grid"
+      ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6"
+      : "flex flex-col gap-4"
+  }`}
+>
   {sortedProducts.map((product) => (
     <ProductFinderCard
-    
       key={product.id}
       product={product}
+      viewMode={viewMode} // 👈 Don't forget this
       onClick={(id) => setSelectedProductId(id)}
     />
-    
   ))}
-   {selectedProduct && (
-      <ProductFinderDetailModal
-        product={selectedProduct}
-        onClose={() => setSelectedProductId(null)}
-      />
-    )}
+
+  {selectedProduct && (
+    <ProductFinderDetailModal
+      product={selectedProduct}
+      onClose={() => setSelectedProductId(null)}
+    />
+  )}
 </div>
+
 
               {/* {viewMode === "grid" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
