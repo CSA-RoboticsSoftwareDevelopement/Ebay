@@ -1,5 +1,5 @@
 'use client';
-
+import Link from 'next/link'; // Ensure you're using Next.js
 import React, { useState, useEffect } from 'react';
 import { Order, orderStatusColors } from '@/types/OrderTypes';
 import { formatDate } from '@/lib/formatters';
@@ -257,39 +257,49 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-4">
+            {/* ✅ Breadcrumb Navigation */}
+            <nav className="text-sm text-gray-400 mb-2">
+              <ol className="list-reset flex">
+                <li>
+                  <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
+                </li>
+                <li><span className="mx-2">/</span></li>
+                <li className="text-white">Orders</li>
+              </ol>
+            </nav>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Orders</h1>
+        <h1 className="text-2xl font-bold text-white">Orders</h1>
       </div>
       
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
+            <div className="flex-1">
             <label htmlFor="search" className="sr-only">Search</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                </svg>
+              <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
               </div>
               <input
-                id="search"
-                name="search"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm"
-                placeholder="Search by order #, product, or customer"
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+              id="search"
+              name="search"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-black text-gray-200 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm"
+              placeholder="Search by order #, product, or customer"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-          </div>
+            </div>
 
-          <div className="w-full md:w-48">
+            <div className="w-full md:w-48">
             <label htmlFor="status" className="sr-only">Status</label>
             <select
               id="status"
               name="status"
-              className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm rounded-md"
+              className="block w-full pl-3 pr-10 py-2 text-base border border-gray-700 bg-black text-gray-200 focus:outline-none focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm rounded-md"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -301,7 +311,7 @@ export default function OrdersPage() {
               <option value="cancelled">Cancelled</option>
               <option value="returned">Returned</option>
             </select>
-          </div>
+            </div>
         </div>
       </div>
       
@@ -311,162 +321,165 @@ export default function OrdersPage() {
       </div>
       
       {/* Orders Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-black rounded-lg shadow-md overflow-hidden border border-gray-700">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Shipping</th>
-                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-900">{order.orderNumber}</div>
-                    <div className="text-xs text-gray-500">{order.platform} • {formatDateString(order.createdAt)}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 flex-shrink-0 relative bg-gray-100 rounded-md">
-                        <Image
-                          src={order.productImage}
-                          alt={order.productName}
-                          fill
-                          className="object-cover rounded-md"
-                        />
-                      </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900 truncate max-w-[180px]">{order.productName}</div>
-                        <div className="text-xs text-gray-500">Qty: {order.quantity}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
-                    ${order.totalPrice.toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3">
-                    {getStatusBadge(order.status)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {/* Show Ship button only for pending/processing orders */}
-                    {(order.status === 'pending' || order.status === 'processing') && (
-                      <>
-                        {shippingModal === order.id ? (
-                          <div className="flex flex-col space-y-2">
-                            <div className="flex space-x-2">
-                              <input
-                                type="text"
-                                placeholder="Tracking #"
-                                className="block w-28 px-2 py-1 text-sm border border-gray-300 rounded"
-                                value={trackingNumbers[order.id] || ''}
-                                onChange={(e) => handleTrackingNumberChange(order.id, e.target.value)}
-                              />
-                              <button
-                                onClick={() => markAsShipped(order.id, true)}
-                                disabled={!trackingNumbers[order.id]}
-                                className={`px-2 py-1 text-xs rounded ${trackingNumbers[order.id] ? 'bg-primary-yellow text-black hover:bg-yellow-500' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
-                              >
-                                Ship
-                              </button>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <button
-                                onClick={() => markAsShipped(order.id, false)}
-                                className="text-gray-500 hover:text-primary-yellow"
-                              >
-                                Ship without tracking
-                              </button>
-                              <button 
-                                onClick={() => toggleShippingModal(null)}
-                                className="text-gray-500 hover:text-primary-yellow"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => toggleShippingModal(order.id)}
-                            className="px-3 py-1 rounded bg-primary-yellow text-black text-xs hover:bg-yellow-500"
-                          >
-                            Ship
-                          </button>
-                        )}
-                      </>
-                    )}
-                    
-                    {/* Show tracking information for shipped/delivered orders */}
-                    {(order.status === 'shipped' || order.status === 'delivered') && (
-                      <div className="flex flex-col items-center">
-                        {order.trackingNumber ? (
-                          <>
-                            <div className="text-xs font-medium text-gray-900">{order.trackingNumber}</div>
-                            <div className="w-full flex items-center justify-between text-xs mt-2">
-                              <div className="flex flex-col items-center">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <span className="text-[10px] mt-1">Shipped</span>
-                              </div>
-                              <div className="h-[2px] flex-1 bg-gray-300 mx-1"></div>
-                              <div className="flex flex-col items-center">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <span className="text-[10px] mt-1">In Transit</span>
-                              </div>
-                              <div className="h-[2px] flex-1 bg-gray-300 mx-1"></div>
-                              <div className="flex flex-col items-center">
-                                <div className={`w-3 h-3 ${order.status === 'delivered' ? 'bg-green-500' : 'bg-gray-300'} rounded-full`}></div>
-                                <span className="text-[10px] mt-1">Delivered</span>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <span className="text-xs text-gray-500">Shipped without tracking</span>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* For returned orders */}
-                    {order.status === 'returned' && order.trackingNumber && (
-                      <div className="flex flex-col items-center">
-                        <div className="text-xs font-medium text-gray-900">{order.trackingNumber}</div>
-                        <span className="text-xs text-red-500 mt-1">Returned to sender</span>
-                      </div>
-                    )}
-                    
-                    {/* For cancelled orders */}
-                    {order.status === 'cancelled' && (
-                      <span className="text-xs text-gray-500">Order cancelled</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm font-medium">
-                    <button 
-                      className="text-primary-yellow hover:text-yellow-600"
-                      onClick={() => setSelectedOrderId(order.id)}
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+          <table className="min-w-full divide-y divide-gray-700">
+        <thead className="bg-gray-800">
+          <tr>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Order</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Product</th>
+            <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-200 uppercase tracking-wider">Total</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Status</th>
+            <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">Shipping</th>
+            <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-200 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="bg-black divide-y divide-gray-700">
+          {filteredOrders.map((order) => (
+            <tr 
+          key={order.id} 
+          className="hover:bg-black hover:border-l-4 hover:border-primary-yellow transition-all duration-200"
+            >
+          <td className="px-4 py-3">
+            <div className="text-sm font-medium text-gray-200">{order.orderNumber}</div>
+            <div className="text-xs text-gray-400">{order.platform} • {formatDateString(order.createdAt)}</div>
+          </td>
+          <td className="px-4 py-3">
+            <div className="flex items-center">
+              <div className="h-10 w-10 flex-shrink-0 relative bg-gray-100 rounded-md">
+            <Image
+              src={order.productImage}
+              alt={order.productName}
+              fill
+              className="object-cover rounded-md"
+            />
+              </div>
+              <div className="ml-3">
+            <div className="text-sm font-medium text-gray-200 truncate max-w-[180px]">{order.productName}</div>
+            <div className="text-xs text-gray-400">Qty: {order.quantity}</div>
+              </div>
+            </div>
+          </td>
+          <td className="px-4 py-3 text-sm text-gray-200 text-right font-medium">
+            ${order.totalPrice.toFixed(2)}
+          </td>
+          <td className="px-4 py-3">
+            {getStatusBadge(order.status)}
+          </td>
+          <td className="px-4 py-3 text-center">
+            {/* Show Ship button only for pending/processing orders */}
+            {(order.status === 'pending' || order.status === 'processing') && (
+              <>
+            {shippingModal === order.id ? (
+              <div className="flex flex-col space-y-2">
+                <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Tracking #"
+                className="block w-28 px-2 py-1 text-sm border border-gray-300 rounded"
+                value={trackingNumbers[order.id] || ''}
+                onChange={(e) => handleTrackingNumberChange(order.id, e.target.value)}
+              />
+              <button
+                onClick={() => markAsShipped(order.id, true)}
+                disabled={!trackingNumbers[order.id]}
+                className={`px-2 py-1 text-xs rounded ${trackingNumbers[order.id] ? 'bg-primary-yellow text-black hover:bg-yellow-500' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+              >
+                Ship
+              </button>
+                </div>
+                <div className="flex justify-between text-xs">
+              <button
+                onClick={() => markAsShipped(order.id, false)}
+                className="text-gray-500 hover:text-primary-yellow"
+              >
+                Ship without tracking
+              </button>
+              <button 
+                onClick={() => toggleShippingModal(null)}
+                className="text-gray-500 hover:text-primary-yellow"
+              >
+                Cancel
+              </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => toggleShippingModal(order.id)}
+                className="px-3 py-1 rounded bg-primary-yellow text-black text-xs hover:bg-yellow-500"
+              >
+                Ship
+              </button>
+            )}
+              </>
+            )}
+            
+            {/* Show tracking information for shipped/delivered orders */}
+            {(order.status === 'shipped' || order.status === 'delivered') && (
+              <div className="flex flex-col items-center">
+            {order.trackingNumber ? (
+              <>
+                <div className="text-xs font-medium text-gray-200">{order.trackingNumber}</div>
+                <div className="w-full flex items-center justify-between text-xs mt-2">
+              <div className="flex flex-col items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-[10px] mt-1 text-gray-200">Shipped</span>
+              </div>
+              <div className="h-[2px] flex-1 bg-gray-300 mx-1"></div>
+              <div className="flex flex-col items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-[10px] mt-1 text-gray-200">In Transit</span>
+              </div>
+              <div className="h-[2px] flex-1 bg-gray-300 mx-1"></div>
+              <div className="flex flex-col items-center">
+                <div className={`w-3 h-3 ${order.status === 'delivered' ? 'bg-green-500' : 'bg-gray-300'} rounded-full`}></div>
+                <span className="text-[10px] mt-1 text-gray-200">Delivered</span>
+              </div>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-gray-400">Shipped without tracking</span>
+            )}
+              </div>
+            )}
+            
+            {/* For returned orders */}
+            {order.status === 'returned' && order.trackingNumber && (
+              <div className="flex flex-col items-center">
+            <div className="text-xs font-medium text-gray-200">{order.trackingNumber}</div>
+            <span className="text-xs text-red-500 mt-1">Returned to sender</span>
+              </div>
+            )}
+            
+            {/* For cancelled orders */}
+            {order.status === 'cancelled' && (
+              <span className="text-xs text-gray-400">Order cancelled</span>
+            )}
+          </td>
+          <td className="px-4 py-3 text-right text-sm font-medium">
+            <button 
+              className="text-primary-yellow hover:text-yellow-600"
+              onClick={() => setSelectedOrderId(order.id)}
+            >
+              View
+            </button>
+          </td>
+            </tr>
+          ))}
+        </tbody>
           </table>
         </div>
         
         {/* Empty state */}
         {filteredOrders.length === 0 && (
           <div className="text-center py-10">
-            <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your search or filter to find what you're looking for.
-            </p>
+        <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 className="mt-2 text-sm font-medium text-gray-200">No orders found</h3>
+        <p className="mt-1 text-sm text-gray-400">
+          Try adjusting your search or filter to find what you're looking for.
+        </p>
           </div>
         )}
       </div>

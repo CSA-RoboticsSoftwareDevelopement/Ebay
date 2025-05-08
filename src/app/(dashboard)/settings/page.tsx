@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from 'next/link'; // Ensure you're using Next.js
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -351,12 +352,22 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
+                  <nav className="text-sm text-gray-400 mb-2">
+                    <ol className="list-reset flex">
+                      <li>
+                        <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
+                      </li>
+                      <li><span className="mx-2">/</span></li>
+                      <li className="text-white">Settings</li>
+                    </ol>
+                  </nav>
+
+      <h1 className="text-2xl font-bold text-white">Settings</h1>
 
       {/* Tabs */}
       <div className="border-b">
-        <nav className="flex overflow-x-auto scrollbar-hide -mb-px">
-          <div className="flex min-w-full space-x-8 px-4">
+        <nav className="flex overflow-x-auto -mb-px">
+            <div className="flex min-w-full space-x-8 px-4 text-white">
             {["account", "notifications", "integrations", "preferences"].map(
               (tab) => (
                 <button
@@ -381,114 +392,114 @@ export default function Settings() {
         {activeTab === "account" && (
           <div className="space-y-6">
             {/* Profile section */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-lg font-medium mb-4">Profile Information</h2>
+            <div className="bg-black border border-gray-200 rounded-lg p-6 shadow-sm hover:border-primary-yellow transition-colors">
+              <h2 className="text-lg font-medium mb-4 text-white">Profile Information</h2>
               <form className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleUpdateProfile}
-                  disabled={!isChanged} // ✅ Disable when no changes
-                  className={`px-4 py-2 rounded-md text-white ${
-                    isChanged
-                      ? "bg-blue-500 hover:bg-blue-600"
-                      : "bg-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  Save Changes
-                </button>
+              <div>
+              <label
+              htmlFor="name"
+              className="block text-sm font-medium text-white"
+              >
+              Name
+              </label>
+              <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              </div>
+              <div>
+              <label
+              htmlFor="email"
+              className="block text-sm font-medium text-white"
+              >
+              Email
+              </label>
+              <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              </div>
+              <button
+              type="button"
+              onClick={handleUpdateProfile}
+              disabled={!isChanged} // ✅ Disable when no changes
+              className={`px-4 py-2 rounded-md text-white ${
+              isChanged
+                ? "bg-blue-500 hover:bg-blue-600"
+                : "bg-gray-400 cursor-not-allowed"
+              }`}
+              >
+              Save Changes
+              </button>
               </form>
             </div>
 
             {/* Password section */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-lg font-medium mb-4">Change Password</h2>
+            <div className="bg-black border border-white rounded-lg p-6 shadow-sm hover:border-primary-yellow transition-colors">
+              <h2 className="text-lg font-medium mb-4 text-white">Change Password</h2>
               <form className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="currentPassword"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Current Password
-                  </label>
-                  <input
-                    type="password"
-                    id="currentPassword"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="newPassword"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    id="newPassword"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleChangePassword}
-                  className={`px-4 py-2 rounded-md ${
-                    isPasswordValid
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-400 text-white cursor-not-allowed"
-                  }`}
-                >
-                  Change Password
-                </button>
+              <div>
+              <label
+              htmlFor="currentPassword"
+              className="block text-sm font-medium text-white"
+              >
+              Current Password
+              </label>
+              <input
+              type="password"
+              id="currentPassword"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              </div>
+              <div>
+              <label
+              htmlFor="newPassword"
+              className="block text-sm font-medium text-white"
+              >
+              New Password
+              </label>
+              <input
+              type="password"
+              id="newPassword"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              </div>
+              <div>
+              <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-white"
+              >
+              Confirm New Password
+              </label>
+              <input
+              type="password"
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              </div>
+              <button
+              type="button"
+              onClick={handleChangePassword}
+              className={`px-4 py-2 rounded-md ${
+              isPasswordValid
+                ? "bg-blue-500 text-white"
+                : "bg-gray-400 text-white cursor-not-allowed"
+              }`}
+              >
+              Change Password
+              </button>
               </form>
             </div>
           </div>
@@ -496,85 +507,85 @@ export default function Settings() {
 
         {/* Notifications Settings Tab */}
         {activeTab === "notifications" && (
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h2 className="text-lg font-medium mb-4">
+          <div className="bg-black border border-white rounded-lg p-6 shadow-sm">
+            <h2 className="text-lg font-medium mb-4 text-white">
               Notification Preferences
             </h2>
             <div className="space-y-4">
               {/* Order Updates */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700">
-                    Order Updates
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Receive notifications about order updates
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="bg-primary-yellow relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                  disabled
-                >
-                  <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
-                </button>
+          <div>
+            <h3 className="text-sm font-medium text-white">
+              Order Updates
+            </h3>
+            <p className="text-sm text-gray-400">
+              Receive notifications about order updates
+            </p>
+          </div>
+          <button
+            type="button"
+            className="bg-yellow-500 relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+            disabled
+          >
+            <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+          </button>
               </div>
 
               {/* Promotions */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700">
-                    Promotions
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Receive notifications about promotions
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="bg-gray-200 relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                  disabled
-                >
-                  <span className="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
-                </button>
+          <div>
+            <h3 className="text-sm font-medium text-white">
+              Promotions
+            </h3>
+            <p className="text-sm text-gray-400">
+              Receive notifications about promotions
+            </p>
+          </div>
+          <button
+            type="button"
+            className="bg-gray-700 relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+            disabled
+          >
+            <span className="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+          </button>
               </div>
 
               {/* Security Alerts */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700">
-                    Security Alerts
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Receive notifications about security issues
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="bg-primary-yellow relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                  disabled
-                >
-                  <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
-                </button>
+          <div>
+            <h3 className="text-sm font-medium text-white">
+              Security Alerts
+            </h3>
+            <p className="text-sm text-gray-400">
+              Receive notifications about security issues
+            </p>
+          </div>
+          <button
+            type="button"
+            className="bg-primary-yellow relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+            disabled
+          >
+            <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+          </button>
               </div>
 
               {/* New Features */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700">
-                    New Features
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Receive notifications about new features
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="bg-gray-200 relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                  disabled
-                >
-                  <span className="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
-                </button>
+          <div>
+            <h3 className="text-sm font-medium text-white">
+              New Features
+            </h3>
+            <p className="text-sm text-gray-400">
+              Receive notifications about new features
+            </p>
+          </div>
+          <button
+            type="button"
+            className="bg-gray-700 relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+            disabled
+          >
+            <span className="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+          </button>
               </div>
             </div>
           </div>

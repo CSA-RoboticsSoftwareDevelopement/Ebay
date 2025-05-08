@@ -2,6 +2,8 @@
 import { useRef } from "react";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+
+import Link from 'next/link'; // Ensure you're using Next.js
 import {
   FiGrid,
   FiList,
@@ -170,12 +172,26 @@ const ProductFinder: React.FC = () => {
 
   return (
     <div className="min-h-screen">
+
+      
       {/* Header Section with Actions */}
       <div className="mb-6">
+
+       <nav className="text-sm text-gray-400 mb-2">
+         <ol className="list-reset flex">
+           <li>
+             <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
+           </li>
+           <li><span className="mx-2">/</span></li>
+           <li className="text-white">Product Finder </li>
+         </ol>
+       </nav>
+
+
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-neutral-gray-900">
+            <h1 className="text-2xl font-bold text-white">
             Product Finder
-          </h1>
+            </h1>
 
           <div className="flex items-center gap-2">
             <button
@@ -267,16 +283,16 @@ const ProductFinder: React.FC = () => {
               >
                 Minimum Opportunity Score
               </label>
-              <select
+                <select
                 id="opportunity"
-                className="block w-full rounded-lg border-neutral-gray-200 focus:ring-primary-yellow focus:border-primary-yellow px-3 py-2 text-sm"
+                className="block w-full rounded-lg border-neutral-gray-200 focus:ring-primary-yellow focus:border-primary-yellow px-3 py-2 text-sm text-black"
                 value={opportunityFilter === null ? "" : opportunityFilter}
                 onChange={(e) =>
                   setOpportunityFilter(
-                    e.target.value === "" ? null : Number(e.target.value)
+                  e.target.value === "" ? null : Number(e.target.value)
                   )
                 }
-              >
+                >
                 <option value="">Any Score</option>
                 {[8, 7, 6, 5, 4].map((score) => (
                   <option key={score} value={score}>
@@ -288,25 +304,25 @@ const ProductFinder: React.FC = () => {
 
             {/* Sort Order */}
             <div className="mb-5">
-              <label className="block text-sm font-medium text-neutral-gray-700 mb-1">
+                <label className="block text-sm font-medium text-black mb-1">
                 Sort By
-              </label>
+                </label>
               <div className="space-y-2">
                 <button
-                  className={`flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg ${
-                    sortBy === "opportunityScore"
-                      ? "bg-neutral-gray-100"
-                      : "hover:bg-neutral-gray-50"
+                  className={`flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg text-black ${
+                  sortBy === "opportunityScore"
+                    ? "bg-neutral-gray-300"
+                    : "hover:bg-neutral-gray-50"
                   }`}
                   onClick={() => handleSortChange("opportunityScore")}
                 >
                   <span>Opportunity Score</span>
                   {sortBy === "opportunityScore" &&
-                    (sortDirection === "desc" ? (
-                      <FiArrowDown />
-                    ) : (
-                      <FiArrowUp />
-                    ))}
+                  (sortDirection === "desc" ? (
+                    <FiArrowDown />
+                  ) : (
+                    <FiArrowUp />
+                  ))}
                 </button>
                 <button
                   className={`flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg ${
@@ -316,7 +332,7 @@ const ProductFinder: React.FC = () => {
                   }`}
                   onClick={() => handleSortChange("price")}
                 >
-                  <span>Price</span>
+                    <span className="text-black">Price</span>
                   {sortBy === "price" &&
                     (sortDirection === "desc" ? (
                       <FiArrowDown />
@@ -332,7 +348,7 @@ const ProductFinder: React.FC = () => {
                   }`}
                   onClick={() => handleSortChange("rating")}
                 >
-                  <span>Rating</span>
+                  <span className="text-black">Rating</span>
                   {sortBy === "rating" &&
                     (sortDirection === "desc" ? (
                       <FiArrowDown />

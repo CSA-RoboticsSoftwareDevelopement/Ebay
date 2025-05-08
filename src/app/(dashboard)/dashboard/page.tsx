@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import Link from 'next/link'; // Ensure you're using Next.js
 
-// Updated metrics data for the requested metrics
 const metrics = [
   {
     name: 'Total Profit',
@@ -19,7 +19,7 @@ const metrics = [
       { name: 'May', value: 4800 },
       { name: 'Jun', value: 5100 },
       { name: 'Jul', value: 5874 },
-    ]
+    ],
   },
   {
     name: 'Average Profit Margin',
@@ -35,7 +35,7 @@ const metrics = [
       { name: 'May', value: 33 },
       { name: 'Jun', value: 35 },
       { name: 'Jul', value: 34.7 },
-    ]
+    ],
   },
   {
     name: '# of Orders',
@@ -51,7 +51,7 @@ const metrics = [
       { name: 'May', value: 70 },
       { name: 'Jun', value: 75 },
       { name: 'Jul', value: 83 },
-    ]
+    ],
   },
   {
     name: '# of Products',
@@ -67,11 +67,10 @@ const metrics = [
       { name: 'May', value: 118 },
       { name: 'Jun', value: 120 },
       { name: 'Jul', value: 127 },
-    ]
+    ],
   },
 ];
 
-// Enhanced product data with comprehensive stats
 const topProducts = [
   {
     id: '1',
@@ -125,14 +124,12 @@ const topProducts = [
   },
 ];
 
-// Enhanced marketplace data
 const marketplaceData = [
   { name: 'eBay', revenue: '$5,987.45', profit: '$2,275.23', items: 45 },
   { name: 'Amazon', revenue: '$1,893.68', profit: '$682.72', items: 12 },
   { name: 'Etsy', revenue: '$594.10', profit: '$261.87', items: 6 },
 ];
 
-// Improved ShadCN-inspired metric card component
 const MetricCard = ({ metric }) => {
   return (
     <div className="bg-black rounded-lg p-4 shadow-lg overflow-hidden border border-zinc-800 hover:border-primary-yellow/50 transition-all">
@@ -170,10 +167,22 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      
+      {/* ✅ Breadcrumb Navigation */}
+      <nav className="text-sm text-gray-400 mb-2">
+        <ol className="list-reset flex">
+          <li>
+            <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
+          </li>
+          <li><span className="mx-2">/</span></li>
+          <li className="text-white">Dashboard</li>
+        </ol>
+      </nav>
+
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+        <h1 className="text-2xl font-bold text-white">Dashboard Overview</h1>
         <div>
-          <select 
+          <select
             className="input py-1 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-yellow focus:border-primary-yellow"
             value={timeframe}
             onChange={(e) => setTimeframe(e.target.value)}
@@ -186,38 +195,38 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Updated Metrics Grid with improved styling */}
+      {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {metrics.map((metric) => (
           <MetricCard key={metric.name} metric={metric} />
         ))}
       </div>
 
-      {/* Top Selling Products */}
-      <div className="card bg-white rounded-lg shadow-md p-6">
+      {/* Top Products */}
+      <div className="bg-black rounded-lg p-6 shadow-lg overflow-hidden border border-zinc-800 hover:border-primary-yellow/50 transition-all">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold">Top Selling Products</h2>
+          <h2 className="text-lg font-semibold text-gray-400">Top Selling Products</h2>
           <button className="text-primary-yellow hover:underline text-sm">View All</button>
         </div>
         <div className="overflow-x-auto -mx-6">
           <table className="w-full">
             <thead>
               <tr className="border-b border-neutral-gray-200">
-                <th className="py-3 px-6 text-left text-sm font-medium text-neutral-gray-500">Product</th>
-                <th className="py-3 px-6 text-right text-sm font-medium text-neutral-gray-500">Units Sold</th>
-                <th className="py-3 px-6 text-right text-sm font-medium text-neutral-gray-500">Revenue</th>
-                <th className="py-3 px-6 text-right text-sm font-medium text-neutral-gray-500">Profit</th>
-                <th className="py-3 px-6 text-right text-sm font-medium text-neutral-gray-500">Margin</th>
+                <th className="py-3 px-6 text-left text-sm font-medium text-gray-400">Product</th>
+                <th className="py-3 px-6 text-right text-sm font-medium text-gray-400">Units Sold</th>
+                <th className="py-3 px-6 text-right text-sm font-medium text-gray-400">Revenue</th>
+                <th className="py-3 px-6 text-right text-sm font-medium text-gray-400">Profit</th>
+                <th className="py-3 px-6 text-right text-sm font-medium text-gray-400">Margin</th>
               </tr>
             </thead>
             <tbody>
               {topProducts.map((product) => (
-                <tr key={product.id} className="border-b border-neutral-gray-200 hover:bg-neutral-gray-50">
-                  <td className="py-4 px-6 text-sm">{product.name}</td>
-                  <td className="py-4 px-6 text-sm text-right">{product.sold}</td>
-                  <td className="py-4 px-6 text-sm text-right">{product.revenue}</td>
-                  <td className="py-4 px-6 text-sm text-right font-medium text-green-600">{product.profit}</td>
-                  <td className="py-4 px-6 text-sm text-right">{product.margin}</td>
+                <tr key={product.id} className="border-b border-neutral-gray-200 hover:bg-neutral-gray-800">
+                  <td className="py-4 px-6 text-sm text-white">{product.name}</td>
+                  <td className="py-4 px-6 text-sm text-right text-white">{product.sold}</td>
+                  <td className="py-4 px-6 text-sm text-right text-white">{product.revenue}</td>
+                  <td className="py-4 px-6 text-sm text-right font-medium text-green-500">{product.profit}</td>
+                  <td className="py-4 px-6 text-sm text-right text-white">{product.margin}</td>
                 </tr>
               ))}
             </tbody>
@@ -226,35 +235,29 @@ export default function Dashboard() {
       </div>
 
       {/* Marketplace Performance */}
-      <div className="card bg-white rounded-lg shadow-md p-6">
+      <div className="bg-black rounded-lg p-6 shadow-lg overflow-hidden border border-zinc-800 hover:border-primary-yellow/50 transition-all">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold">Marketplace Performance</h2>
+          <h2 className="text-lg font-semibold text-gray-400">Marketplace Performance</h2>
         </div>
         <div className="overflow-x-auto -mx-6">
           <table className="w-full">
             <thead>
               <tr className="border-b border-neutral-gray-200">
-                <th className="py-3 px-6 text-left text-sm font-medium text-neutral-gray-500">Marketplace</th>
-                <th className="py-3 px-6 text-right text-sm font-medium text-neutral-gray-500">Revenue</th>
-                <th className="py-3 px-6 text-right text-sm font-medium text-neutral-gray-500">Profit</th>
-                <th className="py-3 px-6 text-right text-sm font-medium text-neutral-gray-500">Active Items</th>
-                <th className="py-3 px-6 text-center text-sm font-medium text-neutral-gray-500">Status</th>
+                <th className="py-3 px-6 text-left text-sm font-medium text-gray-400">Marketplace</th>
+                <th className="py-3 px-6 text-right text-sm font-medium text-gray-400">Revenue</th>
+                <th className="py-3 px-6 text-right text-sm font-medium text-gray-400">Profit</th>
+                <th className="py-3 px-6 text-right text-sm font-medium text-gray-400">Active Items</th>
+                <th className="py-3 px-6 text-center text-sm font-medium text-gray-400">Status</th>
               </tr>
             </thead>
             <tbody>
               {marketplaceData.map((marketplace) => (
-                <tr key={marketplace.name} className="border-b border-neutral-gray-200 hover:bg-neutral-gray-50">
-                  <td className="py-4 px-6 text-sm font-medium">{marketplace.name}</td>
-                  <td className="py-4 px-6 text-sm text-right">{marketplace.revenue}</td>
-                  <td className="py-4 px-6 text-sm text-right font-medium text-green-600">{marketplace.profit}</td>
-                  <td className="py-4 px-6 text-sm text-right">{marketplace.items}</td>
-                  <td className="py-4 px-6 text-sm text-center">
-                    <span className={`py-1 px-2 rounded-full text-xs font-medium ${
-                      marketplace.name === 'eBay' ? 'bg-green-100 text-green-600' : 'bg-neutral-gray-100 text-neutral-gray-500'
-                    }`}>
-                      {marketplace.name === 'eBay' ? 'Connected' : 'Inactive'}
-                    </span>
-                  </td>
+                <tr key={marketplace.name} className="border-b border-neutral-gray-800 hover:bg-neutral-gray-800">
+                  <td className="py-4 px-6 text-sm text-white">{marketplace.name}</td>
+                  <td className="py-4 px-6 text-sm text-right text-white">{marketplace.revenue}</td>
+                  <td className="py-4 px-6 text-sm text-right font-medium text-green-500">{marketplace.profit}</td>
+                  <td className="py-4 px-6 text-sm text-right text-white">{marketplace.items}</td>
+                  <td className="py-4 px-6 text-sm text-center text-white">✔️</td>
                 </tr>
               ))}
             </tbody>
@@ -263,4 +266,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-} 
+}

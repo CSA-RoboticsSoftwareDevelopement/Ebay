@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from 'next/link'; // Ensure you're using Next.js
 import ProductCard from "../../../components/productsTemplate/InventoryProductCard";
 import ProductDetailModal from "../../../components/productsTemplate/InventoryProductDetailModal";
 import AddProductModal from "../../../components/productsTemplate/AddProductModal"; // ✅ Import AddProductModal
@@ -180,9 +181,17 @@ export default function Products() {
   return (
     
     <div className="">
-      
+                  <nav className="text-sm text-gray-400 mb-2">
+                    <ol className="list-reset flex">
+                      <li>
+                        <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
+                      </li>
+                      <li><span className="mx-2">/</span></li>
+                      <li className="text-white">Inventory</li>
+                    </ol>
+                  </nav>
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Inventory</h1>
+        <h1 className="text-2xl font-bold text-white">Inventory</h1>
         <button
           className="btn btn-primary"
           onClick={() => setIsAddProductModalOpen(true)} // ✅ Open modal on click

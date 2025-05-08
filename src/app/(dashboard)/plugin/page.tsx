@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import Link from 'next/link'; // Ensure you're using Next.js
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import Swal from "sweetalert2";
@@ -194,12 +195,23 @@ export default function PluginPage() {
   if (loading || loadingPlugins) {
     return <p className="text-center mt-10">Loading...</p>;
   }
+  
 
   return (
     <div className="">
-      <h1 className="text-2xl font-bold mb-2 text-left">Plugin Marketplace</h1>
-      <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <nav className="text-sm text-gray-400 mb-4">
+                  <ol className="list-reset flex">
+                  <li>
+                    <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
+                  </li>
+                  <li><span className="mx-2">/</span></li>
+                  <li className="text-white">Marketplace</li>
+                  </ol>
+                </nav>
+
+              <h1 className="text-2xl font-bold mb-6 text-left text-white">Plugin Marketplace</h1>
+              <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Search Bar */}
           <div className="relative w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

@@ -1,217 +1,180 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext';
-import Swal from 'sweetalert2';
-import { useRouter } from 'next/navigation';
+import * as React from "react"
+import { usePathname } from "next/navigation"
 
-export default function Header() {
-  const router = useRouter(); // ✅ Move useRouter inside the function
+import { motion } from "framer-motion"
+import { ChevronRight, HelpCircle, Search, Settings } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useMediaQuery } from "hooks/use-media-query"
 
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'New user registered', time: '2 min ago', read: false },
-    { id: 3, message: 'Backup completed successfully', time: '30 min ago', read: false },
-    { id: 4, message: 'New support ticket received', time: '1 hour ago', read: false },
-    { id: 5, message: 'Scheduled maintenance in 24 hours', time: '3 hours ago', read: false },
-    { id: 6, message: 'Subscription renewal reminder', time: '1 day ago', read: false },
-    { id: 7, message: 'API rate limit exceeded', time: '2 days ago', read: false },
-  ]);
+interface HeaderProps {
+  className?: string
+  breadcrumbs?: {
+    title: string
+    href: string
+    current?: boolean
+  }[]
+  title?: string
+  subtitle?: string
+}
 
-  const { user, logout } = useAuth();
-  const username = user?.username || 'User Name';
+export function Header({ className, breadcrumbs, title, subtitle }: HeaderProps) {
+  const pathname = usePathname()
+  const isMobile = useMediaQuery("(max-width: 768px)")
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false)
 
-  const handleLogout = async () => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'You will be logged out of your account.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#ffc300',
-      confirmButtonText: 'Yes, log me out',
-      cancelButtonText: 'Cancel',
-    });
-
-    if (result.isConfirmed) {
-      if (user) {
-        logout();
-      } else {
-        router.push('/'); // ✅ Ensure router is properly used
-      }
-    }
-  };
-
-  // Mark notification as read
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(notification =>
-      notification.id === id ? { ...notification, read: true } : notification
-    ));
-  };
-
-  // Delete a notification
-  const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter(notification => notification.id !== id));
-  };
-
-  // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notification => ({ ...notification, read: true })));
-    setIsNotificationOpen(false);
-  };
+  // Get last breadcrumb title as the dynamic page title
+  const lastCrumbTitle = breadcrumbs?.length
+    ? breadcrumbs[breadcrumbs.length - 1].title
+    : title || "Welcome"
 
   return (
-    <header className="bg-white border-b border-neutral-gray-200 h-16">
-      <div className="h-full px-4 flex items-center justify-between ">
-         {/* Left Section - Adds space for Sidebar Button */}
-         <div className="flex-1 flex items-center">
-          <h1 className="text-xl font-semibold text-center mt-2 ml-12 md:ml-0">Dashboard</h1> {/* ✅ Added margin to avoid overlap */}
-        </div>
-        <div className="flex items-center space-x-4">
-          {/* Notification Bell */}
-          <div className="relative">
-            <button
-              type="button"
-              className="p-2 text-neutral-gray-500 hover:text-primary-black rounded-full hover:bg-neutral-gray-100 relative"
-              aria-label="Notifications"
-              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-                />
-              </svg>
-              {/* Unread Notification Indicator */}
-              {notifications.some(n => !n.read) && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                  {notifications.filter(n => !n.read).length}
-                </span>
-              )}
-            </button>
+    <TooltipProvider delayDuration={0}>
+      <header
+      
+        className={cn(
+          "sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-white/[0.01] bg-[#09090B] px-4 backdrop-blur-md",
+          className,
+        )}
+      >
+        {/* Left section: Breadcrumbs */}
+        <div className="flex items-center gap-2">
+          {breadcrumbs && breadcrumbs.length > 0 && !isSearchOpen && (
+            <nav className="flex" aria-label="Breadcrumb">
+              <ol className="flex items-center space-x-1 text-sm">
+                {breadcrumbs.map((crumb, index) => {
+                  const isLast = index === breadcrumbs.length - 1
+                  return (
+                    <li key={crumb.title} className="flex items-center">
+                      {index > 0 && <ChevronRight className="mx-1 h-4 w-4 text-gray-500" />}
+                      {isLast ? (
+                        <span className="font-medium text-white">{crumb.title}</span>
+                      ) : (
+                        <a href={crumb.href} className="text-gray-400 transition-colors hover:text-[#FFC300]">
+                          {crumb.title}
+                        </a>
+                      )}
+                    </li>
+                  )
+                })}
+              </ol>
+            </nav>
+          )}
 
-            {/* Notification Dropdown */}
-            {isNotificationOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-2 z-10 border border-neutral-gray-200">
-                <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b flex justify-between">
-                  <span>Notifications</span>
-                  {notifications.length > 0 && (
-                    <button onClick={markAllAsRead} className="text-primary-black text-xs hover:underline">
-                      Mark all as read
-                    </button>
-                  )}
+          {/* Mobile/Tablet Search Input */}
+          {isSearchOpen && (
+            <motion.div
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: "100%" }}
+              exit={{ opacity: 0, width: 0 }}
+              className="relative flex-1"
+            >
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="h-10 w-full rounded-xl bg-white/5 pl-10 pr-4 text-sm text-white placeholder-gray-500 border border-white/5 focus:border-[#FFC300]/50 focus:outline-none focus:ring-1 focus:ring-[#FFC300]/50"
+                autoFocus
+                onBlur={() => setIsSearchOpen(false)}
+              />
+            </motion.div>
+          )}
+
+          {/* Fallback title if no breadcrumbs and not searching */}
+          {!breadcrumbs?.length && !isSearchOpen && (
+            <div>
+              <h1 className="text-lg font-semibold text-white">{lastCrumbTitle}</h1>
+              {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Right section: Actions */}
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Search button (mobile/tablet) */}
+          {isMobile && !isSearchOpen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-gray-400 hover:text-white"
+              onClick={() => setIsSearchOpen(true)}
+            >
+              <Search className="h-5 w-5" />
+              <span className="sr-only">Search</span>
+            </Button>
+          )}
+
+          {/* Desktop Search */}
+          {!isMobile && (
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="h-9 w-[180px] rounded-full bg-white/5 pl-10 pr-4 text-sm text-white placeholder-gray-500 border border-white/5 focus:border-[#FFC300]/50 focus:outline-none focus:ring-1 focus:ring-[#FFC300]/50 focus:w-[240px] transition-all duration-300"
+              />
+            </div>
+          )}
+
+          {/* Help */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-gray-400 hover:text-white">
+                <HelpCircle className="h-5 w-5" />
+                <span className="sr-only">Help</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Help & Resources</TooltipContent>
+          </Tooltip>
+
+          {/* User menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full hover:bg-white/10">
+                <Avatar className="h-9 w-9 border border-white/10">
+                  <AvatarImage src="/vibrant-street-market.png" alt="User" />
+                  <AvatarFallback className="bg-gradient-to-br from-[#FFC300] to-[#FF9500] text-[#09090B]">
+                    AM
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-[#121214] border-white/10 text-white">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Alex Morgan</p>
+                  <p className="text-xs text-gray-400">alex@tezra.com</p>
                 </div>
-
-                {notifications.length > 0 ? (
-                  notifications.map((notification) => (
-                    <div key={notification.id} className={`px-4 py-2 text-sm flex justify-between items-center ${notification.read ? 'text-gray-500' : 'text-black font-semibold'}`}>
-                      <div className="flex flex-col">
-                        <span>{notification.message}</span>
-                        <span className="text-xs text-gray-400">{notification.time}</span>
-                      </div>
-                      <div className="flex space-x-4">
-                        {!notification.read && (
-                          <button
-                            className="text-primary-yellow hover:text-blue-700"
-                            onClick={() => markAsRead(notification.id)}
-                            aria-label="Mark as read"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth={1.5}
-                              stroke="currentColor"
-                              className="w-4 h-4"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                            </svg>
-                          </button>
-                        )}
-                        <button
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => deleteNotification(notification.id)}
-                          aria-label="Delete notification"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={1.5}
-                            stroke="currentColor"
-                            className="w-4 h-4"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-2 text-sm text-gray-500">No new notifications</div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* User Profile Dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              className="flex items-center space-x-2"
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              aria-label="User menu"
-              aria-expanded={isProfileOpen}
-            >
-              <div className="w-8 h-8 rounded-full bg-neutral-gray-200 flex items-center justify-center text-sm font-medium">
-                U
-              </div>
-              <span className="hidden md:block text-sm font-medium">{username}</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-4 h-4 text-neutral-gray-500"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-              </svg>
-            </button>
-            {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-gray-200">
-                <Link href="/settings" className="block px-4 py-2 text-sm text-neutral-gray-700 hover:bg-neutral-gray-100" onClick={() => setIsProfileOpen(false)}>Your Profile</Link>
-                <Link href="/settings" className="block px-4 py-2 text-sm text-neutral-gray-700 hover:bg-neutral-gray-100" onClick={() => setIsProfileOpen(false)}>Settings</Link>
-                <div className="border-t border-neutral-gray-200 my-1"></div>
-                <button className="block w-full text-left px-4 py-2 text-sm text-neutral-gray-700 hover:bg-neutral-gray-100" onClick={handleLogout}>Sign out</button>
-              </div>
-            )}
-          </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="hover:bg-white/5 focus:bg-white/5 cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="hover:bg-white/5 focus:bg-white/5 cursor-pointer">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                <span>Help & Support</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="hover:bg-white/5 focus:bg-white/5 cursor-pointer">
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </div>
-    </header>
-  );
+      </header>
+    </TooltipProvider>
+  )
 }
