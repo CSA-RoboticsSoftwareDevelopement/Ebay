@@ -1,7 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import Navbar from '@/components/Navbar';
+import VideoModal from '@/components/VideoModal';
+import { Play } from 'lucide-react';
+import BentoGrid from '@/components/BentoGrid';
 
 // Chart Line Icon SVG component
 const ChartLineIcon = ({ className = "w-6 h-6" }) => (
@@ -14,8 +19,6 @@ const ChartLineIcon = ({ className = "w-6 h-6" }) => (
     <path d="M384 160c-17.7 0-32-14.3-32-32s14.3-32 32-32H544c17.7 0 32 14.3 32 32V288c0 17.7-14.3 32-32 32s-32-14.3-32-32V205.3L342.6 374.6c-12.5 12.5-32.8 12.5-45.3 0L192 269.3 54.6 406.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l160-160c12.5-12.5 32.8-12.5 45.3 0L320 306.7 466.7 160H384z" />
   </svg>
 );
-
-
 
 const Sphere = ({ className = "", size = 80, opacity = 0.2, color = "bg-primary-yellow" }) => (
   <div
@@ -265,7 +268,6 @@ const DeviceIllustration = () => {
   );
 };
 
-
 const scrollToSection = (id: string) => {
   const element = document.getElementById(id);
   if (element) {
@@ -273,354 +275,403 @@ const scrollToSection = (id: string) => {
   }
 };
 
-
-
 export default function Home() {
-  // Animation states
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen bg-neutral-gray-100 text-primary-black">
-      {/* Navigation - Pill Style Navbar */}
-      <div className="w-full pt-6 pb-4 px-4 sm:px-6 lg:px-8 fixed top-0 z-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-full shadow-md px-6 py-4 flex items-center justify-between transition-all duration-300">
-            {/* Logo */}
-            <div className="flex items-center flex-shrink-0">
-              <div className="w-10 h-10 bg-primary-black rounded-full flex items-center justify-center">
-                <ChartLineIcon className="w-6 h-6 text-primary-yellow" />
-              </div>
-            </div>
+    <div className="flex flex-col min-h-screen bg-primary-black">
+      {/* Navbar */}
+      <Navbar />
 
-            <nav className="hidden md:flex space-x-6">
-              {['benefits', 'about', 'pricing', 'contact', 'faq'].map((section) => (
-                <button key={section} onClick={() => scrollToSection(section)} className="text-neutral-gray-800 hover:text-primary-yellow transition-colors font-medium">
-                  {section.charAt(0).toUpperCase() + section.slice(1)}
-                </button>
-              ))}
-            </nav>
+      {/* Hero Section with Video Thumbnail */}
+      <section className="relative w-full min-h-screen">
+        {/* Dark overlay for better text visibility */}
+        <div className="absolute inset-0 bg-primary-black/30 z-10"></div>
 
-
-            {/* Call to action */}
-            <div className="flex-shrink-0">
-              <Link href="/dashboard" className="bg-primary-black text-white py-2 px-6 rounded-full font-medium hover:bg-primary-black/90 transition-colors">
-                Demo
-              </Link>
-            </div>
+        {/* Video Thumbnail Image - Full screen background */}
+        <div className="absolute inset-0">
+          <div className="w-full h-full relative">
+            {imageError ? (
+              // Fallback gradient background if image fails to load
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-black via-neutral-gray-100 to-neutral-gray-200"></div>
+            ) : (
+              <Image 
+                src="/assets/TezraDigitalBoard.jpg" 
+                alt="Tezra Digital Billboard" 
+                fill 
+                priority
+                quality={100}
+                className="object-cover"
+                onError={() => setImageError(true)}
+              />
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Spacer for fixed navbar */}
-      <div className="h-24"></div>
+        {/* Content Overlay - Mobile-first approach with desktop original positioning */}
+        <div className="absolute inset-0 z-20">
+          {/* Mobile layout (flex layout for small screens) */}
+          <div className="block md:hidden h-full flex flex-col justify-end pb-16">
+            <div className="container mx-auto px-4">
+              <div className="flex flex-col items-start justify-between">
+                {/* Main headlines */}
+                <div className="mb-8">
+                  <h1 className="text-5xl sm:text-6xl font-extrabold text-white leading-none">
+                    Sell more.
+                  </h1>
+                  <h1 className="text-5xl sm:text-6xl font-extrabold text-primary-yellow leading-none">
+                    Work less.
+                  </h1>
+                </div>
 
-      {/* Hero Section with 3D geometric elements */}
-      <section className="py-20 bg-neutral-gray-100 relative overflow-hidden">
-        {/* 3D Geometric Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none perspective-1000">
-          <Sphere
-            className="top-[15%] right-[10%] animate-float-slow"
-            size={100}
-            opacity={0.15}
-          />
-          <Sphere
-            className="bottom-[20%] left-[5%] animate-float-medium"
-            size={60}
-            opacity={0.1}
-          />
-          <Sphere
-            className="top-[40%] left-[15%] animate-float-fast"
-            size={40}
-            opacity={0.2}
-          />
-          <Triangle
-            className="bottom-[30%] right-[20%] animate-float-medium"
-            size={80}
-            opacity={0.1}
-          />
-          <Triangle
-            className="top-[60%] right-[35%] animate-float-slow rotate-45"
-            size={40}
-            opacity={0.15}
-          />
-        </div>
+                {/* Description and call to action */}
+                <div className="max-w-xs">
+                  <p className="text-white text-base sm:text-lg mb-5 font-medium">
+                    Our app automates and grows your <span className="whitespace-nowrap">e-commerce business</span>
+                  </p>
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-300 via-primary-yellow to-amber-500 rounded-full opacity-70 group-hover:opacity-100 blur group-hover:blur-md transition-all duration-500"></div>
+                    <Link href="/signup" className="relative block">
+                      <button className="relative w-full bg-primary-yellow text-primary-black rounded-full px-8 py-3 text-base font-semibold hover:bg-primary-yellow/90 transition-all duration-300 hover:shadow-lg">
+                        Try us for free
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="flex flex-col md:flex-row items-center">
-            {/* Text content */}
-            <div className="md:w-1/2 mb-12 md:mb-0 z-10">
-              <p
-                className={`text-neutral-gray-600 text-lg mb-4 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-              >
-                The One-Stop Platform to Skyrocket Your Profits
-              </p>
-
-              <h1
-                className={`text-7xl md:text-9xl font-extrabold tracking-tighter leading-none mb-10 text-primary-black transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                style={{ transitionDelay: '200ms' }}
-              >
-                Profit.<br />
-                <span className="text-primary-yellow">Growth.</span>
+          {/* Desktop layout (original absolute positioning for larger screens) */}
+          <div className="hidden md:block">
+            {/* Bottom-left section for the main headlines */}
+            <div className="absolute bottom-28 left-16 lg:left-24">
+              <h1 className="text-7xl lg:text-8xl xl:text-9xl font-extrabold text-white leading-none">
+                Sell more.
               </h1>
+              <h1 className="text-7xl lg:text-8xl xl:text-9xl font-extrabold text-primary-yellow leading-none">
+                Work less.
+              </h1>
+            </div>
 
-              <p
-                className={`text-neutral-gray-600 max-w-md mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                style={{ transitionDelay: '400ms' }}
-              >
-                Save time and money. Automated e-commerce analytics that help you make data-driven decisions.
+            {/* Bottom-right section for brief description and sign up button */}
+            <div className="absolute bottom-28 right-16 lg:right-24 max-w-sm text-right">
+              <p className="text-white text-lg md:text-xl mb-6 font-medium">
+                Our app automates and grows your <span className="whitespace-nowrap">e-commerce business</span>
               </p>
-
-              <div
-                className={`flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                style={{ transitionDelay: '600ms' }}
-              >
-                <Link href="/signup" className="bg-primary-yellow text-primary-black py-3 px-8 rounded-md font-medium hover:bg-primary-yellow/90 transition-colors text-center">
-                  Get Started Free
+              <div className="relative group inline-block">
+                <div className="absolute -inset-1 bg-gradient-to-r from-yellow-300 via-primary-yellow to-amber-500 rounded-full opacity-70 group-hover:opacity-100 blur group-hover:blur-md transition-all duration-500"></div>
+                <Link href="/signup" className="relative block">
+                  <button className="relative bg-primary-yellow text-primary-black rounded-full px-10 py-3.5 text-lg font-semibold hover:bg-primary-yellow/90 transition-all duration-300 hover:shadow-lg">
+                    Try us for free
+                  </button>
                 </Link>
               </div>
             </div>
+          </div>
 
-            {/* Device illustration */}
-            <div className="md:w-1/2 flex justify-center z-10 relative">
-              <DeviceIllustration />
+          {/* Play button - positioned differently based on screen size */}
+          <button 
+            onClick={() => setVideoModalOpen(true)}
+            className="absolute md:hidden top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 group"
+            aria-label="Play video"
+          >
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary-yellow flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+              <Play size={24} className="text-primary-black ml-1" />
+            </div>
+          </button>
+
+          {/* Play button - original position for desktop */}
+          <button 
+            onClick={() => setVideoModalOpen(true)}
+            className="hidden md:block absolute bottom-1/2 right-1/2 transform translate-x-16 translate-y-8 group"
+            aria-label="Play video"
+          >
+            <div className="w-20 h-20 rounded-full bg-primary-yellow flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+              <Play size={28} className="text-primary-black ml-1" />
+            </div>
+          </button>
+        </div>
+      </section>
+
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={videoModalOpen}
+        onClose={() => setVideoModalOpen(false)}
+        videoUrl="https://www.youtube.com/embed/dQw4w9WgXcQ" // Replace with your actual video URL
+      />
+
+      {/* Dominate The Competition Section */}
+      <section className="py-20 bg-primary-black text-white overflow-hidden">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            {/* Section Title and Description */}
+            <div className="mb-12 md:mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-primary-yellow mb-5">Dominate The Competition</h2>
+              <p className="text-lg md:text-xl max-w-3xl font-light leading-relaxed">
+                Tezra optimizes your listings based on your e-commerce platforms
+                algorithm. Be the first result when searched, be featured on the home
+                page, beat the competition by being the favorite.
+              </p>
+            </div>
+            
+            {/* Mobile Screenshot Showcase with glow effect */}
+            <div className="relative mt-10">
+              {/* Subtle glow behind the image */}
+              <div className="absolute -inset-5 bg-primary-yellow/10 blur-3xl rounded-full opacity-30"></div>
+              
+              {/* Main image container with animated arrows */}
+              <div className="relative">
+                {/* Sparklines showing increasing metrics */}
+                <div className="hidden md:block absolute top-[8%] left-[15%] z-20">
+                  <div className="bg-neutral-gray-200/80 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+                    <div className="text-xs font-semibold mb-1 text-white">Sales Growth</div>
+                    <div className="h-10 flex items-end space-x-1">
+                      <div className="h-[20%] w-2 bg-green-500 rounded-t"></div>
+                      <div className="h-[30%] w-2 bg-green-500 rounded-t"></div>
+                      <div className="h-[35%] w-2 bg-green-500 rounded-t"></div>
+                      <div className="h-[55%] w-2 bg-green-500 rounded-t"></div>
+                      <div className="h-[60%] w-2 bg-green-500 rounded-t"></div>
+                      <div className="h-[80%] w-2 bg-green-500 rounded-t"></div>
+                      <div className="h-[100%] w-2 bg-green-500 rounded-t"></div>
+                    </div>
+                    <div className="text-xs text-green-400 font-medium mt-1">↑ 43%</div>
+                  </div>
+                </div>
+                
+                <div className="hidden md:block absolute top-[8%] right-[18%] z-20">
+                  <div className="bg-neutral-gray-200/80 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+                    <div className="text-xs font-semibold mb-1 text-white">Conversion Rate</div>
+                    <div className="h-8 w-32 relative">
+                      <svg className="w-full h-full" viewBox="0 0 100 30">
+                        <path
+                          d="M0,25 L14,20 L28,22 L42,18 L56,15 L70,10 L84,5 L100,2"
+                          fill="none"
+                          stroke="#22C55E"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-xs text-green-400 font-medium mt-1">↑ 2.8%</div>
+                  </div>
+                </div>
+                
+                <div className="hidden md:block absolute top-[40%] left-[35%] z-20">
+                  <div className="bg-neutral-gray-200/80 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+                    <div className="text-xs font-semibold mb-1 text-white">Monthly Revenue</div>
+                    <div className="h-8 w-32 relative">
+                      <svg className="w-full h-full" viewBox="0 0 100 30">
+                        <path
+                          d="M0,28 L20,25 L40,20 L60,15 L80,5 L100,2"
+                          fill="none"
+                          stroke="#22C55E"
+                          strokeWidth="2"
+                        />
+                        <path
+                          d="M0,28 L20,25 L40,20 L60,15 L80,5 L100,2"
+                          fill="url(#gradient)"
+                          opacity="0.3"
+                        />
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#22C55E" />
+                          <stop offset="100%" stopColor="transparent" />
+                        </linearGradient>
+                      </svg>
+                    </div>
+                    <div className="text-xs text-green-400 font-medium mt-1">$12.4k ↑</div>
+                  </div>
+                </div>
+                
+                <div className="hidden md:block absolute top-[25%] right-[25%] z-20">
+                  <div className="bg-neutral-gray-200/80 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+                    <div className="text-xs font-semibold mb-1 text-white">Click-Through</div>
+                    <div className="flex items-center gap-1">
+                      <div className="text-xl font-bold text-green-500">18.7%</div>
+                      <div className="text-xs text-green-400">↑ 5.2%</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="hidden md:block absolute bottom-[15%] right-[12%] z-20">
+                  <div className="bg-neutral-gray-200/80 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+                    <div className="text-xs font-semibold mb-1 text-white">Ranking Score</div>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <div className="w-2 h-3 rounded-full bg-green-500"></div>
+                      <div className="w-2 h-4 rounded-full bg-green-500"></div>
+                      <div className="w-2 h-5 rounded-full bg-green-500"></div>
+                      <div className="w-2 h-6 rounded-full bg-green-500"></div>
+                      <div className="w-2 h-7 rounded-full bg-green-500"></div>
+                      <div className="w-2 h-8 rounded-full bg-green-500"></div>
+                      <div className="w-2 h-10 rounded-full bg-green-500 animate-pulse"></div>
+                    </div>
+                    <div className="text-xs text-green-400 font-medium mt-1">Top 3% ↑</div>
+                  </div>
+                </div>
+                
+                {/* The main image */}
+                <Image 
+                  src="/assets/TezraOptimise.png" 
+                  alt="E-commerce optimization showcase" 
+                  width={1200}
+                  height={500}
+                  className="w-full h-auto relative z-10 rounded-lg shadow-2xl"
+                  priority
+                />
+              </div>
+            </div>
+            
+            {/* Bottom Caption */}
+            <div className="mt-14 text-center">
+              <p className="text-xl md:text-2xl font-medium">
+                Everyone sponsors their listings. Sponsored or not, the best listings win.
+              </p>
+              <p className="text-xl md:text-2xl font-medium mt-2">
+                <span className="text-primary-yellow">Ads get you clicks.</span> <span className="text-primary-yellow">Optimization gets you sales.</span>
+              </p>
             </div>
           </div>
         </div>
-
-        {/* Background decorative elements */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-yellow/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-primary-yellow/5 rounded-full blur-3xl"></div>
       </section>
 
-     {/* Benefits Highlights Section */}
-     <section id='benefits' className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
+      {/* Choose Tezra Section (BentoGrid) */}
+      <BentoGrid />
+
+      {/* Our Mission Section */}
+      <section id="our-mission" className="py-20 bg-black text-white">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
+          {/* Text Content */}
+          <div className="flex-1 text-left">
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-4 text-primary-yellow">Our Mission</h2>
+            <p className="text-lg md:text-xl text-neutral-gray-200 max-w-xl">
+              Empowering e-commerce sellers with powerful, streamlined tools to drive smarter decisions, accelerate growth, and dominate their market.
+            </p>
+          </div>
+          {/* Image Content */}
+          <div className="flex-1 flex justify-center">
+            <Image
+              src="/assets/resalecropped.png"
+              alt="Tezra Dashboard Screenshot"
+              width={600}
+              height={350}
+              className="rounded-lg shadow-2xl w-full max-w-xl h-auto object-contain"
+              priority
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 bg-neutral-gray-800">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-primary-black">Why Sellers Choose Resale</h2>
-            <p className="text-neutral-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4 text-gray-100">Why Sellers Choose Tezra</h2>
+          <p className="text-neutral-gray-200 max-w-2xl mx-auto">
               Our platform provides the insights you need to make better decisions and maximize your profits.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-neutral-gray-100 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
-              <div className="mb-4 text-primary-black">
-                <ChartLineIcon className="h-10 w-10" />
+            <div className="bg-neutral-gray-700 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
+              <div className="mb-4 text-primary-yellow">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" fill="currentColor" className="h-10 w-10">
+                  <path d="M384 160c-17.7 0-32-14.3-32-32s14.3-32 32-32H544c17.7 0 32 14.3 32 32V288c0 17.7-14.3 32-32 32s-32-14.3-32-32V205.3L342.6 374.6c-12.5 12.5-32.8 12.5-45.3 0L192 269.3 54.6 406.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l160-160c12.5-12.5 32.8-12.5 45.3 0L320 306.7 466.7 160H384z" />
+                </svg>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-primary-black">AI-Driven Profit Analytics</h3>
-              <p className="text-neutral-gray-600">
+              <h3 className="text-xl font-bold mb-2 text-white">AI-Driven Profit Analytics</h3>
+              <p className="text-neutral-gray-200">
                 Our AI-powered analytics give you a detailed breakdown of costs, fees, and margins to optimize your pricing strategy.
               </p>
             </div>
-            <div className="bg-neutral-gray-100 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
-              <div className="mb-4 text-primary-black">
+            <div className="bg-neutral-gray-700 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
+              <div className="mb-4 text-primary-yellow">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-primary-black">Real-Time Competitor Insights</h3>
-              <p className="text-neutral-gray-600">
+              <h3 className="text-xl font-bold mb-2 text-white">Real-Time Competitor Insights</h3>
+              <p className="text-neutral-gray-200">
                 Stay ahead of the competition by tracking competitor prices, trends, and sales strategies in real-time.
               </p>
             </div>
-            <div className="bg-neutral-gray-100 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
-              <div className="mb-4 text-primary-black">
+            <div className="bg-neutral-gray-700 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
+              <div className="mb-4 text-primary-yellow">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-primary-black">Advanced Inventory Management</h3>
-              <p className="text-neutral-gray-600">
+              <h3 className="text-xl font-bold mb-2 text-white">Advanced Inventory Management</h3>
+              <p className="text-neutral-gray-200">
                 Track your stock levels, predict demand, and automate restocking to avoid overselling or stock shortages.
               </p>
             </div>
           </div>
         </div>
       </section>
-      {/* About Section */}
-      <section id='about' className="py-20 bg-primary-black text-white">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 text-center">
-          <h2 className="text-3xl text-white font-bold mb-6">About Resale</h2>
+
+      {/* Analytics Section */}
+      <section id="analytics" className="py-20 bg-neutral-gray-900 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl text-white font-bold mb-6">Analytics That Drive Growth</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto text-neutral-gray-300">
-            Resale is a cutting-edge e-commerce analytics platform that empowers sellers with actionable insights to boost sales and maximize profits.
+            Our platform delivers actionable insights that help you optimize your operations and maximize profitability.
           </p>
-          <div className="grid md:grid-cols-3 gap-8 mt-8">
-            <div className="bg-white text-primary-black p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Our Mission</h3>
-              <p className="text-neutral-gray-700">To simplify e-commerce analytics and provide sellers with the tools they need to grow their business effectively.</p>
-            </div>
-            <div className="bg-white text-primary-black p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Our Vision</h3>
-              <p className="text-neutral-gray-700">To be the go-to platform for sellers looking to optimize their pricing, sales strategies, and inventory management.</p>
-            </div>
-            <div className="bg-white text-primary-black p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Why Choose Us?</h3>
-              <p className="text-neutral-gray-700">With real-time analytics and AI-powered recommendations, we help you stay ahead of the competition.</p>
-            </div>
-          </div>
-          <div className="mt-8">
-            <Link href="/signup" className="bg-primary-yellow text-primary-black py-3 px-8 rounded-md font-medium hover:bg-primary-yellow/90 transition-colors inline-block">
-              Start Your Free Trial
-            </Link>
-          </div>
         </div>
       </section>
 
-       {/* Pricing Section */}
-       <section id="pricing" className="py-20 bg-neutral-gray-100 text-center">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-primary-black">Pricing Plans</h2>
-            <p className="text-neutral-gray-600 max-w-2xl mx-auto">
-              Choose the best plan for your needs.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Basic Plan */}
-            <div className="bg-neutral-gray-100 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
-              <h3 className="text-xl font-bold mb-2 text-primary-black">Basic</h3>
-              <p className="text-neutral-gray-600">Perfect for small sellers</p>
-              <p className="text-3xl font-bold text-primary-black mt-4">$19.99 AUD</p>
-              <p className="text-gray-500 mb-4">per month</p>
-              <ul className="text-gray-600 space-y-2 mb-6">
-                <li>✔ Basic Analytics</li>
-                <li>✔ 10 Listings</li>
-                <li>✔ Email Support</li>
-              </ul>
-              <button className="bg-primary-yellow text-primary-black py-2 px-6 rounded-md font-medium">Choose Plan</button>
-            </div>
-
-            {/* Pro Plan */}
-            <div className="bg-neutral-gray-100 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
-              <h3 className="text-xl font-bold mb-2 text-primary-black">Pro</h3>
-              <p className="text-neutral-gray-600">For growing businesses</p>
-              <p className="text-3xl font-bold text-primary-black mt-4">$49.99 AUD</p>
-              <p className="text-gray-500 mb-4">per month</p>
-              <ul className="text-gray-600 space-y-2 mb-6">
-                <li>✔ Advanced Analytics</li>
-                <li>✔ 50 Listings</li>
-                <li>✔ Priority Support</li>
-              </ul>
-              <button className="bg-primary-yellow text-primary-black py-2 px-6 rounded-md font-medium">Choose Plan</button>
-            </div>
-
-            {/* Enterprise Plan */}
-            <div className="bg-neutral-gray-100 rounded-lg p-6 border-t-4 border-primary-yellow hover:shadow-lg transition-all duration-300">
-              <h3 className="text-xl font-bold mb-2 text-primary-black">Enterprise</h3>
-              <p className="text-neutral-gray-600">For large-scale sellers</p>
-              <p className="text-3xl font-bold text-primary-black mt-4">$99.99 AUD</p>
-              <p className="text-gray-500 mb-4">per month</p>
-              <ul className="text-gray-600 space-y-2 mb-6">
-                <li>✔ Full Analytics Suite</li>
-                <li>✔ Unlimited Listings</li>
-                <li>✔ Dedicated Account Manager</li>
-              </ul>
-              <button className="bg-primary-yellow text-primary-black py-2 px-6 rounded-md font-medium">Choose Plan</button>
-            </div>
-          </div>
+      {/* Forecasting Section */}
+      <section id="forecasting" className="py-20 bg-neutral-gray-800">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-6 text-gray-200">Predictive Forecasting</h2>
+          <p className="text-xl mb-8 max-w-2xl mx-auto text-neutral-gray-300">
+            Anticipate market trends and customer demand with our AI-powered forecasting tools.
+          </p>
         </div>
       </section>
 
-     {/* Contact Section */}
-     <section id="contact" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-primary-black">Contact Us</h2>
-            <p className="text-neutral-gray-600 max-w-2xl mx-auto">Get in touch with our team.</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Contact Form */}
-            <form className="bg-neutral-gray-100 p-6 rounded-lg shadow-md">
-              <div className="mb-4">
-                <label className="block text-left text-primary-black font-medium">Name</label>
-                <input type="text" className="w-full p-2 border border-gray-300 rounded-lg" placeholder="Your Name" required />
-              </div>
-              <div className="mb-4">
-                <label className="block text-left text-primary-black font-medium">Email</label>
-                <input type="email" className="w-full p-2 border border-gray-300 rounded-lg" placeholder="Your Email" required />
-              </div>
-              <div className="mb-4">
-                <label className="block text-left text-primary-black font-medium">Message</label>
-                <textarea className="w-full p-2 border border-gray-300 rounded-lg" placeholder="Your Message" rows={4} required></textarea>
-              </div>
-              <button type="submit" className="bg-primary-yellow text-primary-black py-2 px-6 rounded-md font-medium w-full">Send Message</button>
-            </form>
-            
-            {/* Contact Information */}
-            <div className="flex flex-col justify-center bg-neutral-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-4 text-primary-black">Our Contact Details</h3>
-              <p className="text-neutral-gray-600 mb-2"><strong>Email:</strong> support@resale.com</p>
-              <p className="text-neutral-gray-600 mb-2"><strong>Phone:</strong> +61 123 456 789</p>
-              <p className="text-neutral-gray-600 mb-2"><strong>Address:</strong> 123 Resale St, Sydney, Australia</p>
-              <h3 className="text-xl font-bold mt-6 mb-4 text-primary-black">Business Hours</h3>
-              <p className="text-neutral-gray-600">Monday - Friday: 9 AM - 6 PM</p>
-              <p className="text-neutral-gray-600">Saturday - Sunday: Closed</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-       {/* FAQ Section */}
-       <section id="faq" className="py-20 bg-neutral-gray-100">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-primary-black">Frequently Asked Questions</h2>
-            <p className="text-neutral-gray-600 max-w-2xl mx-auto">Find answers to common questions.</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2 text-primary-black">How do I sign up?</h3>
-              <p className="text-neutral-gray-600">You can sign up by clicking the &apos;Get Started&apos; button and following the instructions.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2 text-primary-black">What payment methods do you accept?</h3>
-              <p className="text-neutral-gray-600">We accept Visa, MasterCard, PayPal, and other major payment methods.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2 text-primary-black">Can I cancel my subscription?</h3>
-              <p className="text-neutral-gray-600">Yes, you can cancel anytime from your account settings without any extra charges.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2 text-primary-black">Do you offer customer support?</h3>
-              <p className="text-neutral-gray-600">Yes, our support team is available Monday - Friday from 9 AM to 6 PM.</p>
-            </div>
-          </div>
+      {/* Competitor Analysis Section */}
+      <section id="competitor-analysis" className="py-20 bg-neutral-gray-900">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-6 text-gray-200">Comprehensive Competitor Analysis</h2>
+          <p className="text-xl mb-8 max-w-2xl mx-auto text-neutral-gray-300">
+            Gain valuable insights into your competitors' strategies and position your business for success.
+          </p>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-neutral-gray-100 text-neutral-gray-600 py-12 border-t border-neutral-gray-200">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
+        <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-primary-black font-bold text-lg mb-4 flex items-center">
-                <ChartLineIcon className="w-5 h-5 text-primary-yellow mr-2" />
-                Resale
+              <h3 className="text-white font-bold text-lg mb-4 flex items-center">
+                <div className="w-6 h-6 bg-primary-yellow rounded-full flex items-center justify-center mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" fill="currentColor" className="w-3 h-3 text-primary-black">
+                    <path d="M384 160c-17.7 0-32-14.3-32-32s14.3-32 32-32H544c17.7 0 32 14.3 32 32V288c0 17.7-14.3 32-32 32s-32-14.3-32-32V205.3L342.6 374.6c-12.5 12.5-32.8 12.5-45.3 0L192 269.3 54.6 406.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l160-160c12.5-12.5 32.8-12.5 45.3 0L320 306.7 466.7 160H384z" />
+                  </svg>
+                </div>
+                Tezra
               </h3>
               <p className="mb-4">
                 Advanced analytics for e-commerce sellers.
               </p>
             </div>
             <div>
-              <h4 className="text-primary-black font-bold mb-4">Product</h4>
+              <h4 className="text-white font-bold mb-4">Product</h4>
               <ul className="space-y-2">
                 <li><Link href="#features" className="hover:text-primary-yellow">Features</Link></li>
                 <li><Link href="#pricing" className="hover:text-primary-yellow">Pricing</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-primary-black font-bold mb-4">Company</h4>
+              <h4 className="text-white font-bold mb-4">Company</h4>
               <ul className="space-y-2">
                 <li><Link href="#about" className="hover:text-primary-yellow">About Us</Link></li>
                 <li><Link href="#contact" className="hover:text-primary-yellow">Contact</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-primary-black font-bold mb-4">Legal</h4>
+              <h4 className="text-white font-bold mb-4">Legal</h4>
               <ul className="space-y-2">
                 <li><Link href="#terms" className="hover:text-primary-yellow">Terms of Service</Link></li>
                 <li><Link href="#privacy" className="hover:text-primary-yellow">Privacy Policy</Link></li>
@@ -628,7 +679,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-neutral-gray-200 mt-12 pt-8 text-center">
-            <p>&copy; {new Date().getFullYear()} Resale. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Tezra. All rights reserved.</p>
           </div>
         </div>
       </footer>
