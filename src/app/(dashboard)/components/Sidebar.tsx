@@ -12,6 +12,7 @@ import {
   Search, 
   BarChart3,
   Store,
+  PersonStandingIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -113,12 +114,12 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/analytics", // You can create this page
       active: activeItem === "/analytics",
     },
-    {
-      icon: Store,
-      label: "Marketplace",
-      href: "/plugin", // You can create this page
-      active: activeItem === "/plugin",
-    },
+    // {
+    //   icon: Store,
+    //   label: "Marketplace",
+    //   href: "/plugin", // You can create this page
+    //   active: activeItem === "/plugin",
+    // },
   ];
 
   const mobileMenuVariants = {
@@ -243,7 +244,12 @@ export function Sidebar({ className }: SidebarProps) {
             {(expanded || mobileOpen) && (
               <div className="px-4 mb-2 flex items-center justify-between">
                 <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">Plugins</h3>
-                <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full text-gray-400 hover:text-white">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 rounded-full text-gray-400 hover:text-white"
+                  onClick={() => handleNavigation("/plugin")}
+                >
                   <PlusCircle className="h-3.5 w-3.5" />
                   <span className="sr-only">Add Plugin</span>
                 </Button>
@@ -280,6 +286,24 @@ export function Sidebar({ className }: SidebarProps) {
                 active={activeItem === "/settings"}
                 expanded={expanded || mobileOpen}
                 onClick={() => handleNavigation("/settings")}
+              />
+            </div>
+          </div>
+ {/* ADMIN NAV */}
+          <div className="mb-6">
+            {(expanded || mobileOpen) && (
+              <div className="px-4 mb-2">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">Admin</h3>
+              </div>
+            )}
+            <div className="space-y-1">
+              <NavItem
+                icon={PersonStandingIcon} // Replace with the person icon you want to use
+                label="Admin"
+                href="/admin"
+                active={activeItem === "/admin"}
+                expanded={expanded || mobileOpen}
+                onClick={() => handleNavigation("/admin")}
               />
             </div>
           </div>
