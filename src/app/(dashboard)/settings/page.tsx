@@ -596,16 +596,16 @@ export default function Settings() {
 
         {/* eBay Integration Tab */}
         {activeTab === "integrations" && (
-          <div className="card p-4 bg-white shadow rounded-lg">
-            <h2 className="text-lg font-semibold mb-4">eBay Account</h2>
+            <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors">
+            <h2 className="text-white font-semibold mb-4">eBay Account</h2>
 
             <div className="flex items-center mb-4">
               <span
-                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  ebayProfile?.access_token
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}
+              className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                ebayProfile?.access_token
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+              }`}
               >
                 {ebayProfile?.access_token ? "Connected" : "Disconnected"}
               </span>
@@ -635,18 +635,18 @@ export default function Settings() {
 
         {/* Preferences Tab */}
         {activeTab === "preferences" && (
-          <div className="space-y-6">
-            <div className="card p-4 bg-white shadow rounded-lg">
-              <h2 className="text-lg font-semibold mb-4">Preferences</h2>
-              <p className="text-gray-600">
-                Customize your application experience.
+            <div className="space-y-6">
+            <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors">
+              <h2 className="text-white font-semibold mb-4">Preferences</h2>
+              <p className="text-white-600">
+              Customize your application experience.
               </p>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white mb-2">
                   Theme
                 </label>
-                <select className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 cursor-not-allowed bg-gray-100">
+                <select className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 cursor-not-allowed bg-neutral-800">
                   <option value="light" selected>
                     Light Mode
                   </option>
@@ -656,93 +656,93 @@ export default function Settings() {
             </div>
             
             {/* Predefined Messages Card */}
-            <div className="card p-4 bg-white shadow rounded-lg">
-              <h2 className="text-lg font-semibold mb-4">Predefined Messages</h2>
-              <p className="text-gray-600 mb-4">
-                Create message templates to quickly respond to customers after they place an order.
+            <div className="card p-4 bg-black text-white border border-white shadow rounded-lg hover:border-primary-yellow transition-colors">
+              <h2 className="text-white font-semibold mb-4">Predefined Messages</h2>
+              <p className="text-gray-400 mb-4">
+              Create message templates to quickly respond to customers after they place an order.
               </p>
               
               {/* Form to add/edit messages */}
-              <div className="space-y-4 mb-6 border-b pb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Message Title
-                  </label>
-                  <input
-                    type="text"
-                    value={newMessageTitle}
-                    onChange={(e) => setNewMessageTitle(e.target.value)}
-                    placeholder="e.g., Thank You, Shipping Update"
-                    className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-yellow focus:border-primary-yellow"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Message Content
-                  </label>
-                  <textarea
-                    value={newMessageContent}
-                    onChange={(e) => setNewMessageContent(e.target.value)}
-                    placeholder="Write your message here..."
-                    rows={4}
-                    className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-yellow focus:border-primary-yellow"
-                  />
-                </div>
-                
+              <div className="space-y-4 mb-6 border-b border-white pb-6">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                Message Title
+                </label>
+                <input
+                type="text"
+                value={newMessageTitle}
+                onChange={(e) => setNewMessageTitle(e.target.value)}
+                placeholder="e.g., Thank You, Shipping Update"
+                className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-yellow focus:border-primary-yellow bg-neutral-800 text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                Message Content
+                </label>
+                <textarea
+                value={newMessageContent}
+                onChange={(e) => setNewMessageContent(e.target.value)}
+                placeholder="Write your message here..."
+                rows={4}
+                className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-yellow focus:border-primary-yellow bg-neutral-800 text-white"
+                />
+              </div>
+              
+              <button
+                onClick={editingMessageId ? handleUpdateMessage : handleAddMessage}
+                className="px-4 py-2 bg-primary-yellow text-primary-black font-medium rounded-md hover:bg-primary-black hover:text-white transition"
+              >
+                {editingMessageId ? "Update Template" : "Add Template"}
+              </button>
+              
+              {editingMessageId && (
                 <button
-                  onClick={editingMessageId ? handleUpdateMessage : handleAddMessage}
-                  className="px-4 py-2 bg-primary-yellow text-primary-black font-medium rounded-md hover:bg-primary-black hover:text-white transition"
+                onClick={() => {
+                  setNewMessageTitle("");
+                  setNewMessageContent("");
+                  setEditingMessageId(null);
+                }}
+                className="ml-3 px-4 py-2 bg-gray-700 text-white font-medium rounded-md hover:bg-gray-600 transition"
                 >
-                  {editingMessageId ? "Update Template" : "Add Template"}
+                Cancel Editing
                 </button>
-                
-                {editingMessageId && (
-                  <button
-                    onClick={() => {
-                      setNewMessageTitle("");
-                      setNewMessageContent("");
-                      setEditingMessageId(null);
-                    }}
-                    className="ml-3 px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition"
-                  >
-                    Cancel Editing
-                  </button>
-                )}
+              )}
               </div>
               
               {/* List of saved messages */}
               <div>
-                <h3 className="font-medium text-gray-700 mb-3">Your Templates</h3>
-                
-                {predefinedMessages.length === 0 ? (
-                  <p className="text-gray-500 italic">No message templates saved yet.</p>
-                ) : (
-                  <ul className="space-y-3">
-                    {predefinedMessages.map((message) => (
-                      <li key={message.id} className="border rounded-md p-3 bg-gray-50">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium text-primary-black">{message.title}</h4>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEditMessage(message.id)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteMessage(message.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                        <p className="text-gray-700 text-sm whitespace-pre-line">{message.message}</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <h3 className="font-medium text-white mb-3">Your Templates</h3>
+              
+              {predefinedMessages.length === 0 ? (
+                <p className="text-gray-400 italic">No message templates saved yet.</p>
+              ) : (
+                <ul className="space-y-3">
+                {predefinedMessages.map((message) => (
+                  <li key={message.id} className="border border-white rounded-md p-3 bg-neutral-800 hover:border-primary-yellow transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-primary-yellow">{message.title}</h4>
+                    <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEditMessage(message.id)}
+                      className="text-blue-400 hover:text-blue-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMessage(message.id)}
+                      className="text-red-400 hover:text-red-600"
+                    >
+                      Delete
+                    </button>
+                    </div>
+                  </div>
+                  <p className="text-gray-300 text-sm whitespace-pre-line">{message.message}</p>
+                  </li>
+                ))}
+                </ul>
+              )}
               </div>
             </div>
           </div>

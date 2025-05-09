@@ -17,7 +17,7 @@ export type ProductCardProps = {
     opportunityScore?: number;
   };
   onClick?: (productId: string) => void;
-  viewMode?: 'grid' | 'list'; // 👈 Add viewMode prop
+  viewMode?: 'grid' | 'list';
 };
 
 const getStarRating = (rating: number) => (
@@ -26,7 +26,7 @@ const getStarRating = (rating: number) => (
       i < rating ? (
         <FaStar key={i} className="text-primary-yellow" />
       ) : (
-        <FaRegStar key={i} className="text-gray-300" />
+        <FaRegStar key={i} className="text-gray-500" />
       )
     )}
   </div>
@@ -35,7 +35,7 @@ const getStarRating = (rating: number) => (
 export const ProductFinderCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
-  viewMode = 'grid', // 👈 Default to grid view
+  viewMode = 'grid',
 }) => {
   const imageName = product.imagecsv?.split(',')[0]?.trim();
   const imageUrl = imageName
@@ -62,39 +62,40 @@ export const ProductFinderCard: React.FC<ProductCardProps> = ({
   };
 
   if (viewMode === 'list') {
-    // 👇 List Layout
     return (
-<div
-  className="flex flex-col sm:flex-row bg-white rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-all cursor-pointer"
-  onClick={() => onClick?.(product.id)}
->
-  {/* Image */}
-  <div className="relative w-full sm:w-60 h-60 sm:h-auto sm:min-h-[200px] flex-shrink-0">
-    <Image
-      src={imageUrl}
-      alt={product.title}
-      className="object-cover"
-      fill
-      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 250px, 250px"
-    />
-  </div>
+      <div
+        className="flex flex-col sm:flex-row bg-neutral-800 text-white rounded-xl overflow-hidden border border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer"
+        onClick={() => onClick?.(product.id)}
+      >
+        {/* Image */}
+        <div className="relative w-full sm:w-60 h-60 sm:h-auto sm:min-h-[200px] flex-shrink-0">
+          <Image
+            src={imageUrl}
+            alt={product.title}
+            className="object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 250px, 250px"
+          />
+        </div>
 
         {/* Right Content */}
         <div className="flex flex-col p-4 flex-1">
-          {/* Top: Title, Category */}
+          {/* Title & Category */}
           <div>
-            <h3 className="font-semibold text-lg mb-1 line-clamp-2">{product.title}</h3>
+            <h3 className="font-semibold text-lg mb-1 line-clamp-2 text-white">
+              {product.title}
+            </h3>
             {product.category && (
-              <span className="text-xs font-medium text-neutral-gray-500 bg-neutral-gray-100 px-2 py-1 rounded-full">
+              <span className="text-xs font-medium text-white bg-neutral-700 px-2 py-1 rounded-full">
                 {product.category}
               </span>
             )}
           </div>
 
-          {/* Middle: Rating */}
+          {/* Rating */}
           <div className="mt-2">{getStarRating(productRating)}</div>
 
-          {/* Bottom: Buttons */}
+          {/* Buttons */}
           <div className="mt-auto flex gap-3 pt-4">
             <button
               className="flex-1 h-10 bg-[#FF6A00] text-white font-medium rounded-lg hover:bg-[#e55d00] transition-all text-sm"
@@ -103,7 +104,7 @@ export const ProductFinderCard: React.FC<ProductCardProps> = ({
               Alibaba
             </button>
             <button
-              className="flex-1 h-10 bg-[#FFAE00] text-black font-medium rounded-lg hover:bg-[#e69c00] transition-all text-sm"
+              className="flex-1 h-10 bg-[#FFAE00] text-white font-medium rounded-lg hover:bg-[#e69c00] transition-all text-sm"
               onClick={handleAliExpressClick}
             >
               AliExpress
@@ -114,10 +115,10 @@ export const ProductFinderCard: React.FC<ProductCardProps> = ({
     );
   }
 
-  // 👇 Grid Layout (original one)
+  // Grid Layout
   return (
     <div
-      className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md hover:scale-[1.02] border border-neutral-gray-100 cursor-pointer"
+      className="bg-neutral-800 text-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md hover:scale-[1.02] border border-neutral-700 cursor-pointer"
       onClick={() => onClick?.(product.id)}
     >
       {/* Image Section */}
@@ -134,7 +135,7 @@ export const ProductFinderCard: React.FC<ProductCardProps> = ({
 
         {/* Rating Badge */}
         <div className="absolute top-3 right-3">
-          <div className="px-2 py-1 bg-white/80 backdrop-blur-sm rounded-full text-xs flex items-center shadow-sm">
+          <div className="px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-xs flex items-center shadow-sm">
             {getStarRating(productRating)}
           </div>
         </div>
@@ -142,13 +143,13 @@ export const ProductFinderCard: React.FC<ProductCardProps> = ({
 
       {/* Product Details */}
       <div className="p-4">
-        <h3 className="font-semibold text-lg leading-tight line-clamp-2 text-neutral-gray-900 mb-2">
+        <h3 className="font-semibold text-lg leading-tight line-clamp-2 text-white mb-2">
           {product.title}
         </h3>
 
         <div className="mt-2 flex justify-between items-center">
           {product.category && (
-            <span className="text-xs font-medium text-neutral-gray-500 bg-neutral-gray-100 px-2 py-1 rounded-full">
+            <span className="text-xs font-medium text-white bg-neutral-700 px-2 py-1 rounded-full">
               {product.category}
             </span>
           )}
@@ -163,7 +164,7 @@ export const ProductFinderCard: React.FC<ProductCardProps> = ({
           </button>
 
           <button
-            className="flex-1 h-10 bg-[#FFAE00] text-black font-medium rounded-lg hover:bg-[#e69c00] transition-all active:scale-[0.98] text-sm"
+            className="flex-1 h-10 bg-[#FFAE00] text-white font-medium rounded-lg hover:bg-[#e69c00] transition-all active:scale-[0.98] text-sm"
             onClick={handleAliExpressClick}
           >
             AliExpress

@@ -220,7 +220,7 @@ export default function PluginPage() {
       <h1 className="text-2xl font-bold mb-6 text-left text-white">
         Plugin Marketplace
       </h1>
-      <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
+      <div className="bg-neutral-800 rounded-xl shadow-md p-4 border border-gray-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Search Bar */}
           <div className="relative w-full">
@@ -240,7 +240,7 @@ export default function PluginPage() {
             <input
               id="search"
               name="search"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-neutral-800 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm"
               placeholder="Search products"
               type="search"
               value={searchTerm}
@@ -253,7 +253,7 @@ export default function PluginPage() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="block w-full px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400 focus:border-yellow-400"
+              className="block w-full px-4 py-2 border border-gray-300 rounded-md text-sm text-white bg-neutral-800 focus:outline-none focus:ring-1 focus:ring-yellow-400 focus:border-yellow-400"
             >
               <option value="all">All</option>
               <option value="paid">Paid</option>

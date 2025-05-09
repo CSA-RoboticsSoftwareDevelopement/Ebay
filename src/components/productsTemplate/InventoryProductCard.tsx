@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react"; // Removed useCallback
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { formatCurrency, formatPercentage } from "../../lib/formatters";
 import { Product } from "@/types/ProductTypes";
-import axios from "axios"; // Ensure you import axios
+import axios from "axios";
+
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
-// Define the ProductCard props type
 export type ProductCardProps = {
   product: Pick<
     Product,
@@ -27,47 +27,32 @@ export type ProductCardProps = {
   onClick: (productId: string) => void;
 };
 
-/**
- * A card component for displaying product information in the products grid
- */
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
 }) => {
-  // Status color mapping
   const getStatusColor = (status?: string | null) => {
-    if (!status) return "bg-gray-500"; // Default gray for unknown status
-
+    if (!status) return "bg-gray-500";
     const statusMap: Record<string, string> = {
       active: "bg-green-500",
       ended: "bg-red-500",
       draft: "bg-yellow-500",
       scheduled: "bg-blue-500",
     };
-
     return statusMap[status.toLowerCase()] || "bg-gray-500";
   };
 
-  const calculateEbayFee = (price) => {
-    const fixedFee = 0.3; // $0.30 fixed fee
+  const calculateEbayFee = (price: number) => {
+    const fixedFee = 0.3;
     let variableFee = 0;
-
-    // Ensure valid price
     if (price <= 1000) {
-      variableFee = price * 0.134; // 13.4% for items <= $1,000
+      variableFee = price * 0.134;
     } else {
-      // 13.4% for the first $1,000
-      variableFee = 1000 * 0.134 + (price - 1000) * 0.0275; // 2.75% for the amount above $1,000
+      variableFee = 1000 * 0.134 + (price - 1000) * 0.0275;
     }
-
-    // Total eBay fee calculation
-    const ebayFee = fixedFee + variableFee;
-
-    // Round the total fee to 2 decimal places
-    return parseFloat(ebayFee.toFixed(2));
+    return parseFloat((fixedFee + variableFee).toFixed(2));
   };
 
-  // Generate a placeholder image URL if none exists
   const [imgSrc, setImgSrc] = useState(
     product.imageUrl ||
       `https://placehold.co/400x300?text=${encodeURIComponent(
@@ -94,13 +79,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         const response = await axios.get(
           `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
         );
-        console.log("Fetched Product Data:", response.data); // Print to console
-        if (setProductData) {
-          setProductData(response.data);
-        }
-          
-        // Assuming the response contains an array of products and each product has 'costPrice'
-        // Update the edited values with the fetched 'costPrice' for the first product
+        if (setProductData) setProductData(response.data);
+
         if (
           response.data &&
           Array.isArray(response.data.data) &&
@@ -109,7 +89,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           const fetchedProduct = response.data.data.find(
             (item) => item.sku === product.id
           );
-  
+
           const costPrice = fetchedProduct
             ? parseFloat(fetchedProduct.cost_price ?? "0")
             : 0;
@@ -117,20 +97,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             fetchedProduct && fetchedProduct.ebay_fees != null
               ? parseFloat(fetchedProduct.ebay_fees)
               : calculateEbayFee(product.price);
-  
-          console.log("Resolved Cost Price:", costPrice);
-          console.log("Resolved eBay Fee:", ebayFees);
-  
+
           setEditedValues((prevState) => {
             const profit = prevState.salesPrice - costPrice - ebayFees;
-  
             const profitMargin =
               prevState.salesPrice > 0
                 ? (profit / prevState.salesPrice) * 100
                 : 0;
-  
             const roi = costPrice > 0 ? profit / costPrice : 0;
-  
             return {
               ...prevState,
               costPrice,
@@ -145,26 +119,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         console.error("Error fetching product data:", error);
       }
     };
-  
-    fetchProductData(); // Call the function to fetch data on component mount
-  }, [product.id, product.price,setProductData]); // Remove setProductData from the dependency array
-  
-  // Calculate sell-through percentage for display
+
+    fetchProductData();
+  }, [product.id, product.price]);
+
   const sellThroughDisplay = product.sellThroughRate
     ? `${Math.round(product.sellThroughRate * 100)}%`
     : "N/A";
 
   return (
     <div
-      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+      className="bg-neutral-800 text-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
       onClick={() => onClick(product.id)}
     >
       <div className="h-48 overflow-hidden relative">
-        {/* Image with placeholder fallback */}
         <div className="relative w-full h-full">
           <Image
             src={imgSrc}
-            alt={product.title || "No image available"} // ✅ Fallback alt text
+            alt={product.title || "No image available"}
             className="object-cover"
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -172,13 +144,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               setImgSrc(
                 `https://placehold.co/400x300?text=${encodeURIComponent(
                   product.title
-                )}` 
+                )}`
               )
-            } // ✅ Fallback to placeholder
+            }
           />
         </div>
-
-        {/* Status badge */}
         {product.listingStatus && (
           <div
             className={`absolute top-2 right-2 ${getStatusColor(
@@ -191,48 +161,46 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       <div className="p-4">
-        {/* Title with truncation */}
-        <h3 className="font-medium text-lg line-clamp-2 ">{product.title}</h3>
+        {/* ✅ Title now white */}
+        <h3 className="font-medium text-lg text-white line-clamp-2">
+          {product.title}
+        </h3>
 
-        {/* Key metrics grid */}
         <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
           <div>
-            <p className="text-gray-600">Price</p>
-            <p className="font-semibold">
+            <p className="text-gray-300">Price</p>
+            <p className="font-semibold text-white">
               {formatCurrency(product.price, product.currency)}
             </p>
           </div>
           <div>
-            <div>
-              <p className="text-gray-600">Profit</p>
-              <p className="font-semibold">
-                {editedValues.profit !== undefined
-                  ? formatCurrency(editedValues.profit, product.currency)
-                  : "N/A"}
-              </p>
-            </div>
+            <p className="text-gray-300">Profit</p>
+            <p className="font-semibold text-white">
+              {editedValues.profit !== undefined
+                ? formatCurrency(editedValues.profit, product.currency)
+                : "N/A"}
+            </p>
           </div>
           <div>
-            <p className="text-gray-600">profit Margin</p>
-            <p className="font-semibold">
+            <p className="text-gray-300">Profit Margin</p>
+            <p className="font-semibold text-white">
               {formatPercentage((editedValues.profitMargin ?? 0) / 100)}
             </p>
           </div>
           <div>
-            <p className="text-gray-600">Sell Through</p>
-            <p className="font-semibold">{sellThroughDisplay}</p>
+            <p className="text-gray-300">Sell Through</p>
+            <p className="font-semibold text-white">{sellThroughDisplay}</p>
           </div>
           <div>
-            <p className="text-gray-600">Quantity</p>
-            <p className="font-semibold">{product.quantity}</p>
+            <p className="text-gray-300">Quantity</p>
+            <p className="font-semibold text-white">{product.quantity}</p>
           </div>
         </div>
 
-        {/* View Details button */}
         <button
           className="w-full mt-3 py-2 bg-primary-yellow text-black font-medium rounded hover:bg-primary-yellow/90 transition-colors"
           onClick={(e) => {
-            e.stopPropagation(); // Prevent duplicate click events
+            e.stopPropagation();
             onClick(product.id);
           }}
         >

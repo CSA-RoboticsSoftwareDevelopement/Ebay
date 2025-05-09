@@ -222,7 +222,7 @@ export default function Products() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-12 mt-5">
+      <div className="bg-neutral-800 rounded-lg shadow p-4 mb-12 mt-5">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label htmlFor="search" className="sr-only">
@@ -245,7 +245,7 @@ export default function Products() {
               <input
                 id="search"
                 name="search"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-neutral-800 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm"
                 placeholder="Search products"
                 type="search"
                 value={searchQuery}
@@ -261,7 +261,7 @@ export default function Products() {
             <select
               id="status"
               name="status"
-              className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm rounded-md"
+              className="block w-full pl-3 pr-10 py-2 text-base border bg-neutral-800 focus:outline-none focus:ring-primary-yellow focus:border-primary-yellow sm:text-sm rounded-md"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -276,7 +276,7 @@ export default function Products() {
         </div>
 
         {/* Results summary */}
-        <div className="mt-4 text-sm text-gray-500">
+        <div className="mt-4 text-sm text-white-400">
           Showing {filteredProducts.length} of {productsData.length} products
         </div>
       </div>

@@ -271,7 +271,7 @@ export default function OrdersPage() {
       </div>
       
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-md p-4">
+      <div className="bg-neutral-800 rounded-lg shadow-md p-4">
         <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
             <label htmlFor="search" className="sr-only">Search</label>
