@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from 'next/link'; // Ensure you're using Next.js
+import Link from "next/link"; // Ensure you're using Next.js
 import ProductCard from "../../../components/productsTemplate/InventoryProductCard";
 import ProductDetailModal from "../../../components/productsTemplate/InventoryProductDetailModal";
 import AddProductModal from "../../../components/productsTemplate/AddProductModal"; // ✅ Import AddProductModal
@@ -9,10 +9,9 @@ import { Product } from "../../../types/ProductTypes";
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
-
 export default function Products() {
   const { user } = useAuth();
-  const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user?.id}`;  
+  const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user?.id}`;
   const [productsData, setProductsData] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,13 +25,27 @@ export default function Products() {
   if (user?.id) {
     console.log("API URL:", EBAY_INVENTORY_API);
   }
-    // Fetch inventory data from API
+  // Fetch inventory data from API
   useEffect(() => {
     if (!user?.id) return; // ⛔ Don't fetch until user is ready
-  
+
     const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`;
     console.log("Fetching inventory from:", EBAY_INVENTORY_API);
-  
+    interface InventoryItem {
+      sku: string;
+      product: {
+        title: string;
+        description: string;
+        mpn: string;
+        imageUrls: string[];
+      };
+      availability: {
+        shipToLocationAvailability: {
+          quantity: number;
+        };
+      };
+    }
+
     async function fetchProducts() {
       try {
         const response = await fetch(EBAY_INVENTORY_API);
@@ -42,8 +55,8 @@ export default function Products() {
         const data = await response.json();
         const inventoryItems = data.inventory?.inventoryItems || [];
         console.log("✅ Inventory API response:", data); // <-- Add this line
-        
-        const formattedProducts = inventoryItems.map((item: any) => ({
+
+        const formattedProducts = inventoryItems.map((item: InventoryItem) => ({
           id: item.sku,
           title: item.product?.title || "Untitled",
           description: item.product?.description || "No description available",
@@ -84,18 +97,21 @@ export default function Products() {
             lastUpdated: new Date(),
           },
         }));
-  
+
         setProductsData(formattedProducts);
         setLoading(false);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("An unexpected error occurred.");
+        }
         setLoading(false);
       }
     }
-  
+
     fetchProducts();
   }, [refreshTrigger, user]);
-  
 
   const handleAddProduct = (newProduct: Product) => {
     setProductsData((prevProducts) => {
@@ -103,7 +119,7 @@ export default function Products() {
       if (prevProducts.some((product) => product.id === newProduct.id)) {
         return prevProducts;
       }
-  
+
       const updatedProduct: Product = {
         ...newProduct,
         currency: newProduct.currency || "USD",
@@ -111,13 +127,12 @@ export default function Products() {
         createdAt: newProduct.createdAt || new Date().toISOString(),
         updatedAt: newProduct.updatedAt || new Date().toISOString(),
       };
-  
+
       return [...prevProducts, updatedProduct];
     });
-  
+
     setRefreshTrigger((prev) => prev + 1); // 🔹 Forces re-fetch
   };
-  
 
   // Find the selected product
   const selectedProduct = selectedProductId
@@ -155,13 +170,16 @@ export default function Products() {
   if (!user?.id) {
     return (
       <div className="text-center text-gray-500 py-12">
-        <h2 className="text-xl font-semibold">You must be logged in to view inventory.</h2>
-        <p className="mt-2 text-sm">Please log in to access your eBay inventory dashboard.</p>
+        <h2 className="text-xl font-semibold">
+          You must be logged in to view inventory.
+        </h2>
+        <p className="mt-2 text-sm">
+          Please log in to access your eBay inventory dashboard.
+        </p>
       </div>
     );
   }
-  
-  
+
   if (loading) return <p>Loading products...</p>;
   if (error) {
     return (
@@ -170,26 +188,29 @@ export default function Products() {
         <p>{error}</p>
         {error.includes("integration") && (
           <p className="mt-2 text-sm text-gray-600">
-            Go to your <strong>Account Settings</strong> to connect your eBay account.
+            Go to your <strong>Account Settings</strong> to connect your eBay
+            account.
           </p>
         )}
       </div>
     );
   }
-    
 
   return (
-    
     <div className="">
-                  <nav className="text-sm text-gray-400 mb-2">
-                    <ol className="list-reset flex">
-                      <li>
-                        <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
-                      </li>
-                      <li><span className="mx-2">/</span></li>
-                      <li className="text-white">Inventory</li>
-                    </ol>
-                  </nav>
+      <nav className="text-sm text-gray-400 mb-2">
+        <ol className="list-reset flex">
+          <li>
+            <Link href="/" className="hover:underline text-primary-yellow">
+              Home
+            </Link>
+          </li>
+          <li>
+            <span className="mx-2">/</span>
+          </li>
+          <li className="text-white">Inventory</li>
+        </ol>
+      </nav>
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Inventory</h1>
         <button

@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronDown, Menu, X } from "lucide-react";
-import Image from "next/image";
 
 // Define the sections for the dropdown
 const sections = [
@@ -18,7 +17,6 @@ export default function Navbar() {
   const [isMobile, setIsMobile] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [sectionsOpen, setSectionsOpen] = useState(false);
-  const [pricingOpen, setPricingOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const closeTimeout = useRef<NodeJS.Timeout | null>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -42,7 +40,6 @@ export default function Navbar() {
   // Handle scroll to detect active section
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 100; // Offset for navbar height
 
       // Find the section that is currently in view
       for (const section of sections) {

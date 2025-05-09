@@ -59,16 +59,16 @@ export default function Settings() {
       try {
         setIsLoading(true);
         setError(null);
-
+  
         if (!user || !user.id) {
           console.error("❌ No user ID found in session");
           setError("Not authenticated. Please login again.");
           return;
         }
-
+  
         console.log("✅ User ID:", user.id);
         console.log("✅ Token:", authToken);
-
+  
         const profileResponse = await axios.get(
           `${BACKEND_SERVER_URL}/api/ebay/profile?user_id=${user.id}`,
           {
@@ -77,14 +77,13 @@ export default function Settings() {
             },
           }
         );
-        console.log(profileResponse);
-
+  
         if (profileResponse.data?.ebayProfile?.access_token) {
           setEbayProfile(profileResponse.data.ebayProfile);
         } else {
           setEbayProfile(null);
         }
-
+  
         console.log("✅ eBay Profile:", profileResponse.data);
       } catch (error) {
         console.error("❌ Failed to load eBay profile:", error);
@@ -97,12 +96,17 @@ export default function Settings() {
         setIsLoading(false);
       }
     };
-
+  
     fetchEbayProfile();
+  }, [user, authToken]); // ✅ Do NOT include 'error' here
+  
+  // Move this outside
+  useEffect(() => {
     if (error) {
       console.error("Error:", error);
     }
-  }, [user, authToken]); // ✅ Depend on user and authToken
+  }, [error]);
+  
 
   const handleDisconnectEbay = async () => {
     const result = await Swal.fire({
@@ -214,7 +218,6 @@ export default function Settings() {
 
   const [name, setName] = useState(user?.username || "");
   const [email, setEmail] = useState(user?.email || "");
-  const [password, setPassword] = useState(user?.password || "");
   const [isChanged, setIsChanged] = useState(false);
 
   useEffect(() => {

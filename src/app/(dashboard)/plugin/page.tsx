@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, ReactNode } from "react";
 import { useAuth } from "@/context/AuthContext";
-import Link from 'next/link'; // Ensure you're using Next.js
+import Link from "next/link"; // Ensure you're using Next.js
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import Swal from "sweetalert2";
@@ -22,15 +21,17 @@ const getPluginIcon = (name: string) => {
   }
 };
 
-
 console.log(BACKEND_SERVER_URL);
-type Plugin = {
+interface Plugin {
   id: number;
   name: string;
   description: string;
-  price: string; // Add this line
+  price: string;
   comingSoon?: boolean;
-};
+  plugin_id: string;  // Make sure this is included as it's in the backend data
+  installed: boolean;
+}
+
 
 const pluginList: Plugin[] = [
   {
@@ -38,27 +39,22 @@ const pluginList: Plugin[] = [
     name: "Product Finder",
     description: "Easily find high-demand products to sell in your store.",
     price: "$0",
+    plugin_id: "",
+    installed: false
   },
-  // {
-  //   id: 2,
-  //   name: "Find Seller",
-  //   description: "Discover top sellers and analyze their strategies.",
-  //   price: "$14.99", // still shown as "—" due to comingSoon
-  //   comingSoon: true,
-  // },
   {
-    id: 3,
+    id: 2,
     name: "Product Optimization",
     description: "Enhance your listings with AI-optimized titles and prices.",
-    price: "$19.99", // still shown as "—" due to comingSoon
+    price: "$19.99",
     comingSoon: true,
+    plugin_id: "",
+    installed: false
   },
 ];
 
 export default function PluginPage() {
   const { user, loading } = useAuth();
-  const isAdmin = user?.is_admin === 1;
-  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
 
   const [installed, setInstalled] = useState<number[]>([]);
@@ -69,6 +65,14 @@ export default function PluginPage() {
   const [filter, setFilter] = useState("all"); // "all", "paid", "installed"
 
   // ✅ Fetch installed plugin IDs from backend
+  interface Plugin {
+    id: number;
+    description: ReactNode;
+    name: ReactNode;
+    plugin_id: string;
+    installed: boolean;
+  }
+
   useEffect(() => {
     const fetchPlugins = async () => {
       if (!user) return;
@@ -76,9 +80,10 @@ export default function PluginPage() {
       try {
         const res = await fetch(`${BACKEND_SERVER_URL}/api/plugin/${user.id}`);
         const data = await res.json();
-        const installedIds = data.plugins
-          .filter((p: any) => p.installed)
-          .map((p: any) => p.plugin_id);
+        const installedIds = (data.plugins as Plugin[])
+          .filter((p) => p.installed)
+          .map((p) => Number(p.plugin_id)); // Convert to number
+
         setInstalled(installedIds);
       } catch (err) {
         console.error("Error fetching installed plugins:", err);
@@ -118,7 +123,7 @@ export default function PluginPage() {
     if (!plugin || plugin.comingSoon) return;
 
     const install = !installed.includes(id);
-    if (!fromModal) setLoadingPluginId(id);
+    if (!fromModal) setLoadingPluginId(id); // `id` should be a number
 
     try {
       const res = await fetch(`${BACKEND_SERVER_URL}/api/plugin/toggle`, {
@@ -188,30 +193,35 @@ export default function PluginPage() {
         },
       });
     } finally {
-      if (!fromModal) setLoadingPluginId(null);
+      if (!fromModal) setLoadingPluginId(null); // Reset loading state
     }
   };
 
   if (loading || loadingPlugins) {
     return <p className="text-center mt-10">Loading...</p>;
   }
-  
 
   return (
     <div className="">
-                    <nav className="text-sm text-gray-400 mb-4">
-                  <ol className="list-reset flex">
-                  <li>
-                    <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
-                  </li>
-                  <li><span className="mx-2">/</span></li>
-                  <li className="text-white">Marketplace</li>
-                  </ol>
-                </nav>
+      <nav className="text-sm text-gray-400 mb-4">
+        <ol className="list-reset flex">
+          <li>
+            <Link href="/" className="hover:underline text-primary-yellow">
+              Home
+            </Link>
+          </li>
+          <li>
+            <span className="mx-2">/</span>
+          </li>
+          <li className="text-white">Marketplace</li>
+        </ol>
+      </nav>
 
-              <h1 className="text-2xl font-bold mb-6 text-left text-white">Plugin Marketplace</h1>
-              <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <h1 className="text-2xl font-bold mb-6 text-left text-white">
+        Plugin Marketplace
+      </h1>
+      <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Search Bar */}
           <div className="relative w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -285,94 +295,120 @@ export default function PluginPage() {
 
             return (
               <div
-              key={plugin.id}
-              className={`relative group w-full max-w-xs rounded-2xl p-4 border transition-all duration-300 overflow-hidden shadow-sm ${
-                plugin.comingSoon
-                  ? "bg-gradient-to-br from-gray-200 to-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
-                  : "bg-gradient-to-br from-white via-gray-50 to-white hover:shadow-lg hover:scale-[1.01]"
-              }`}
-              style={{
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)",
-              }}
-            >
-              {/* Shine effect */}
-              {!plugin.comingSoon && (
-                <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition duration-300">
-                  <div className="absolute -top-1/2 left-1/2 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-10 transform rotate-12 blur-2xl animate-pulse"></div>
-                </div>
-              )}
-            
-              {/* Installed badge */}
-              {isInstalled && (
-                <span className="absolute top-2 right-2 bg-green-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow">
-                  Installed
-                </span>
-              )}
-            
-              {/* Card content */}
-              <div className="space-y-3 z-10 relative">
-                <div className="flex items-center gap-2 text-base font-semibold text-gray-800">
-                  {getPluginIcon(plugin.name)}
-                  <span className="truncate">{plugin.name}</span>
-                </div>
-            
-                <p className="text-sm text-gray-600 leading-snug line-clamp-3">
-                  {plugin.description}
-                </p>
-            
-                <div className="flex items-center gap-2 text-xs">
-                  <span
-                    className={`inline-block font-medium px-2 py-0.5 rounded-full ${
-                      plugin.price === "$0"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {plugin.price === "$0" ? "Free" : plugin.price}
+                key={plugin.id}
+                className={`relative group w-full max-w-xs rounded-2xl p-4 border transition-all duration-300 overflow-hidden shadow-sm ${
+                  plugin.comingSoon
+                    ? "bg-gradient-to-br from-gray-200 to-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
+                    : "bg-gradient-to-br from-white via-gray-50 to-white hover:shadow-lg hover:scale-[1.01]"
+                }`}
+                style={{
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                }}
+              >
+                {/* Shine effect */}
+                {!plugin.comingSoon && (
+                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition duration-300">
+                    <div className="absolute -top-1/2 left-1/2 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-10 transform rotate-12 blur-2xl animate-pulse"></div>
+                  </div>
+                )}
+
+                {/* Installed badge */}
+                {isInstalled && (
+                  <span className="absolute top-2 right-2 bg-green-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow">
+                    Installed
                   </span>
-            
-                  {plugin.comingSoon && (
-                    <span className="text-gray-400 font-medium">Coming Soon</span>
+                )}
+
+                {/* Card content */}
+                <div className="space-y-3 z-10 relative">
+                  <div className="flex items-center gap-2 text-base font-semibold text-gray-800">
+                    {getPluginIcon(plugin.name)}
+                    <span className="truncate">{plugin.name}</span>
+                  </div>
+
+                  <p className="text-sm text-gray-600 leading-snug line-clamp-3">
+                    {plugin.description}
+                  </p>
+
+                  <div className="flex items-center gap-2 text-xs">
+                    <span
+                      className={`inline-block font-medium px-2 py-0.5 rounded-full ${
+                        plugin.price === "$0"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {plugin.price === "$0" ? "Free" : plugin.price}
+                    </span>
+
+                    {plugin.comingSoon && (
+                      <span className="text-gray-400 font-medium">
+                        Coming Soon
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action button */}
+                <div className="mt-4 z-10 relative">
+                  {plugin.comingSoon ? (
+                    <button
+                      disabled
+                      className="w-full py-1.5 text-sm rounded-xl bg-gray-300 text-gray-500 font-medium cursor-not-allowed"
+                    >
+                      Coming Soon
+                    </button>
+                  ) : (
+                    <button
+  onClick={() => setSelectedPlugin(plugin as unknown as Plugin)} // Removed `null` and cast `plugin` to `Plugin`
+  className={`w-full py-1.5 text-sm rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-200 ${
+    isInstalled
+      ? "bg-red-600 text-white hover:bg-red-700"
+      : "bg-yellow-400 text-black hover:bg-yellow-500"
+  }`}
+  disabled={loadingPluginId === plugin.id} // Disable button if the current plugin is loading
+>
+  {loadingPluginId === plugin.id ? (
+    <div className="flex items-center">
+      <svg
+        className="animate-spin h-5 w-5 mr-2 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5h3l-4 4-4-4h3a5 5 0 005-5h3a8 8 0 01-8 8z"
+        />
+      </svg>
+      {isInstalled ? "Uninstalling..." : "Installing..."}
+    </div>
+  ) : isInstalled ? (
+    <>
+      <FiTrash2 className="text-sm" />
+      Uninstall
+    </>
+  ) : (
+    <>
+      <FiPlus className="text-base" />
+      Install
+    </>
+  )}
+</button>
+
                   )}
                 </div>
               </div>
-            
-              {/* Action button */}
-              <div className="mt-4 z-10 relative">
-                {plugin.comingSoon ? (
-                  <button
-                    disabled
-                    className="w-full py-1.5 text-sm rounded-xl bg-gray-300 text-gray-500 font-medium cursor-not-allowed"
-                  >
-                    Coming Soon
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setSelectedPlugin(plugin)}
-                    className={`w-full py-1.5 text-sm rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-200 ${
-                      isInstalled
-                        ? "bg-red-600 text-white hover:bg-red-700"
-                        : "bg-yellow-400 text-black hover:bg-yellow-500"
-                    }`}
-                  >
-                    {isInstalled ? (
-                      <>
-                        <FiTrash2 className="text-sm" />
-                        Uninstall
-                      </>
-                    ) : (
-                      <>
-                        <FiPlus className="text-base" />
-                        Install
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            
             );
           })}
       </div>
@@ -385,8 +421,8 @@ export default function PluginPage() {
             >
               &times;
             </button>
-            <h2 className="text-2xl font-bold">{selectedPlugin.name}</h2>
-            <p className="text-gray-700">{selectedPlugin.description}</p>
+            <h2 className="text-2xl font-bold">{selectedPlugin?.name}</h2>
+            <p className="text-gray-700">{selectedPlugin?.description}</p>
             <div className="border-t pt-4">
               <h3 className="font-semibold mb-1">Terms & Conditions</h3>
               <p className="text-sm text-gray-600">

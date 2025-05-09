@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Image from "next/image";
-import { FaStar, FaRegStar, FaArrowRight, FaChartLine, FaTags, FaShoppingBasket, FaInfoCircle, FaHistory } from "react-icons/fa";
+import { FaStar, FaRegStar, FaArrowRight, FaChartLine, FaShoppingBasket, FaInfoCircle, FaHistory } from "react-icons/fa";
 
 // Product type specific to product finder using Keepa API data
 export type RecommendedProduct = {

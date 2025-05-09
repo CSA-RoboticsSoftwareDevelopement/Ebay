@@ -1,5 +1,4 @@
 "use client";
-import { useRef } from "react";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
@@ -38,16 +37,7 @@ const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 // Mock data with enhanced fields for the product finder
 
-const CategoryPills = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (scrollRef.current) {
-      // Scroll horizontally based on vertical wheel
-      scrollRef.current.scrollLeft += e.deltaY;
-    }
-  };
-}
 const ProductFinder: React.FC = () => {
   const [productsData, setProductsData] = useState<RecommendedProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +59,23 @@ const ProductFinder: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
+  interface ProductDetail {
+    asin: string;
+    title: string;
+    price?: string;
+    currency?: string;
+    imagesCSV: string;
+    rating?: number;
+    category?: string;
+    condition?: string;
+    opportunityScore?: number;
+  }
+  
+  interface ProductFile {
+    category: string;
+    productDetails: ProductDetail[];
+  }
+  
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -76,9 +83,9 @@ const ProductFinder: React.FC = () => {
         const json = await res.json();
   
         if (json.success) {
-          const allProducts: RecommendedProduct[] = json.data.flatMap((file: any) =>
-            file.productDetails.map((p: any, idx: number) => ({
-              id: `${p.asin}-${file.category}-${idx}`, // This ensures uniqueness
+          const allProducts: RecommendedProduct[] = json.data.flatMap((file: ProductFile) =>
+            file.productDetails.map((p: ProductDetail, idx: number) => ({
+              id: `${p.asin}-${file.category}-${idx}`,
               title: p.title,
               price: p.price || "0.00",
               currency: p.currency || "$",
@@ -88,8 +95,8 @@ const ProductFinder: React.FC = () => {
               condition: p.condition || "New",
               opportunityScore: p.opportunityScore || 0,
             }))
-            
           );
+          
   
           setProductsData(allProducts);
   
@@ -673,9 +680,9 @@ const ProductFinder: React.FC = () => {
                     No products found
                   </h3>
                   <p className="text-neutral-gray-500 mb-4">
-                    Try adjusting your search or filters to find what you're
-                    looking for.
-                  </p>
+  Try adjusting your search or filters to find what you&rsquo;re looking for.
+</p>
+
                   <button
                     className="text-primary-yellow hover:underline font-medium"
                     onClick={() => {

@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { usePathname } from "next/navigation"
 
 import { motion } from "framer-motion"
 import { ChevronRight, HelpCircle, Search, Settings } from "lucide-react"
@@ -31,7 +30,6 @@ interface HeaderProps {
 }
 
 export function Header({ className, breadcrumbs, title, subtitle }: HeaderProps) {
-  const pathname = usePathname()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
 

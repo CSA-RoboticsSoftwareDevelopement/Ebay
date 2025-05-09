@@ -12,21 +12,12 @@ import {
   Search, 
   BarChart3,
   Store,
-  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { useMediaQuery } from "hooks/use-media-query";
 import { FirstTimeTooltip } from "./first-time-tooltip";
 import { ResizeHandle } from "./resize-handle";
@@ -60,7 +51,6 @@ export function Sidebar({ className }: SidebarProps) {
   const minWidth = 80;
   const maxWidth = 280;
 
-  const handleDragStart = () => setIsDragging(true);
   const handleDrag = (_, info) => {
     const newWidth = Math.max(minWidth, Math.min(maxWidth, width.get() + info.delta.x));
     width.set(newWidth);
@@ -305,7 +295,7 @@ interface NavItemProps extends Omit<NavItemType, "children" | "href"> {
   onClick?: () => void;
 }
 
-function NavItem({ icon: Icon, label, active, badge, expanded, href, onClick }: NavItemProps) {
+function NavItem({ icon: Icon, label, active, badge, expanded, onClick }: NavItemProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>

@@ -1,8 +1,7 @@
 'use client';
 import Link from 'next/link'; // Ensure you're using Next.js
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Order, orderStatusColors } from '@/types/OrderTypes';
-import { formatDate } from '@/lib/formatters';
 import Image from 'next/image';
 import { OrderDetailModal } from '@/components/OrderDetailModal';
 
@@ -478,8 +477,9 @@ export default function OrdersPage() {
         </svg>
         <h3 className="mt-2 text-sm font-medium text-gray-200">No orders found</h3>
         <p className="mt-1 text-sm text-gray-400">
-          Try adjusting your search or filter to find what you're looking for.
-        </p>
+  Try adjusting your search or filter to find what&apos;s looking for.
+</p>
+
           </div>
         )}
       </div>

@@ -35,3 +35,12 @@ export const orderStatusColors = {
   cancelled: 'bg-red-100 text-red-800',
   returned: 'bg-gray-100 text-gray-800',
 }; 
+
+// types.ts
+export interface Plugin {
+  plugin_id: string;
+  installedts: number;
+  name: string;
+  version: string;
+  // Add other necessary properties
+}

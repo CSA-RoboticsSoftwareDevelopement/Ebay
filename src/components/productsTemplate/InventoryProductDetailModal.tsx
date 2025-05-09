@@ -83,65 +83,68 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     product.imageUrl ||
     `https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`;
 
-  const [productData, setProductData] = useState(null); // State to store fetched product data
-
-  const fetchProductData = async () => {
-    try {
-      const response = await axios.get(
-        `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
-      );
-      console.log("Fetched Product Data:", response.data); // Print to console
-      setProductData(response.data); // Store in the state
-
-      // Assuming the response contains an array of products and each product has 'costPrice'
-      // Update the edited values with the fetched 'costPrice' for the first product
-      if (
-        response.data &&
-        Array.isArray(response.data.data) &&
-        response.data.data.length > 0
-      ) {
-        const fetchedProduct = response.data.data.find(
-          (item) => item.sku === product.id
-        );
-
-        const costPrice = fetchedProduct
-          ? parseFloat(fetchedProduct.cost_price ?? "0")
-          : 0;
-        const ebayFees =
-          fetchedProduct && fetchedProduct.ebay_fees != null
-            ? parseFloat(fetchedProduct.ebay_fees)
-            : calculateEbayFee(product.price);
-
-        console.log("Resolved Cost Price:", costPrice);
-        console.log("Resolved eBay Fee:", ebayFees);
-
-        setEditedValues((prevState) => {
-          const profit = prevState.salesPrice - costPrice - ebayFees;
-
-          const profitMargin =
-            prevState.salesPrice > 0
-              ? (profit / prevState.salesPrice) * 100
-              : 0;
-
-          const roi = costPrice > 0 ? profit / costPrice : 0;
-
-
-          return {
-            ...prevState,
-            costPrice,
-            ebayFees,
-            profit,
-            profitMargin,
-            roi,
-          };
-        });
-      }
-    } catch (error) {}
-  };
+  const [, setProductData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
+    const fetchProductData = async () => {
+      try {
+        const response = await axios.get(
+          `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
+        );
+        console.log("Fetched Product Data:", response.data); // Print to console
+        if (setProductData) {
+          setProductData(response.data);
+        }  
+        // Assuming the response contains an array of products and each product has 'costPrice'
+        // Update the edited values with the fetched 'costPrice' for the first product
+        if (
+          response.data &&
+          Array.isArray(response.data.data) &&
+          response.data.data.length > 0
+        ) {
+          const fetchedProduct = response.data.data.find(
+            (item) => item.sku === product.id
+          );
+  
+          const costPrice = fetchedProduct
+            ? parseFloat(fetchedProduct.cost_price ?? "0")
+            : 0;
+          const ebayFees =
+            fetchedProduct && fetchedProduct.ebay_fees != null
+              ? parseFloat(fetchedProduct.ebay_fees)
+              : calculateEbayFee(product.price);
+  
+          console.log("Resolved Cost Price:", costPrice);
+          console.log("Resolved eBay Fee:", ebayFees);
+  
+          setEditedValues((prevState) => {
+            const profit = prevState.salesPrice - costPrice - ebayFees;
+  
+            const profitMargin =
+              prevState.salesPrice > 0
+                ? (profit / prevState.salesPrice) * 100
+                : 0;
+  
+            const roi = costPrice > 0 ? profit / costPrice : 0;
+  
+            return {
+              ...prevState,
+              costPrice,
+              ebayFees,
+              profit,
+              profitMargin,
+              roi,
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching product data:", error);
+      }
+    };
+  
     fetchProductData(); // Call the function to fetch data on component mount
-  }, []); // Empty dependency array to run once when component mounts
+  }, [product.id, product.price,setProductData]); // Dependencies now include product.id and product.price
+  
 
   const handleTabChange = (
     tab: "overview" | "performance" | "images" | "settings"
@@ -150,7 +153,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
   const handleSaveChanges = async () => {
     // Recalculate the eBay fee based on the sales price
-    const ebayFee = calculateEbayFee(editedValues.salesPrice);
 
     // Prepare the data to be saved
     const productData = {

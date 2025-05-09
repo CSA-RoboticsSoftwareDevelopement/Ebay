@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 
 const features = [
@@ -42,7 +42,7 @@ const automateImages = [
   "/assets/listing-tools.png",
 ];
 
-function useTypewriter(words: string[], delay = 2000) {
+function useTypewriter(words: string[] ) {
   const [index, setIndex] = useState(0);
   const [displayed, setDisplayed] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -107,7 +107,7 @@ const BentoCard = ({ className, children, index }: { className?: string; childre
 );
 
 export default function BentoGrid() {
-  const [autoText, autoIdx] = useTypewriter(automateTexts, 2200);
+  const [autoText, autoIdx] = useTypewriter(automateTexts);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {

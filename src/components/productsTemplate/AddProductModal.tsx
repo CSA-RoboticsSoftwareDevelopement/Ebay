@@ -160,14 +160,20 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     setVariations(newVariations);
   };
 
-  const handleVariationOptionChange = (variationIndex: number, optionIndex: number, field: string, value: any) => {
+  const handleVariationOptionChange = (
+    variationIndex: number,
+    optionIndex: number,
+    field: string,
+    value: string | number
+  ) => {
     const newVariations = [...variations];
-    newVariations[variationIndex].options[optionIndex] = { 
-      ...newVariations[variationIndex].options[optionIndex], 
-      [field]: field === 'quantity' ? Number(value) : value 
+    newVariations[variationIndex].options[optionIndex] = {
+      ...newVariations[variationIndex].options[optionIndex],
+      [field]: field === 'quantity' ? Number(value) : value
     };
     setVariations(newVariations);
   };
+  
 
   const addVariation = () => {
     setVariations([...variations, { 
@@ -320,11 +326,16 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
       // ✅ Close modal after successful submission
       onClose();
-    } catch (err: any) {
-      setError(err.message || "Something went wrong!");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong!");
+      }
     } finally {
       setLoading(false);
     }
+
   };
 
   // Platform Icons
@@ -675,9 +686,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             {selectedTab === 'shipping' && (
               <div className="space-y-6">
                 <h3 className="font-medium">Shipping Configuration</h3>
-                <p className="text-sm text-gray-600">
-                  Configure how this product will be shipped. Platform-specific shipping details can be set in each platform's tab.
-                </p>
+<p className="text-sm text-gray-600">
+  Configure how this product will be shipped. Platform-specific shipping details can be set in each platform&rsquo;s tab.
+</p>
+
                 
                 <div className="space-y-4">
                   <div className="border rounded-lg p-4">
@@ -737,9 +749,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   
                   {shippingType === "custom" && (
                     <div className="border rounded-lg p-4 space-y-4">
-                      <p className="text-sm text-gray-600">
-                        You've selected custom shipping. Please configure platform-specific shipping details in each platform's tab.
-                      </p>
+    <p className="text-sm text-gray-600">
+  You&rsquo;ve selected custom shipping. Please configure platform-specific shipping details in each platform&rsquo;s tab.
+</p>
+
                     </div>
                   )}
                 </div>
@@ -1097,8 +1110,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                         required={platforms.etsy}
                       >
                         <option value="false">No</option>
-                        <option value="true">Yes, it's a craft supply</option>
-                      </select>
+                        <option value="true">Yes, it&rsquo;s a craft supply</option>
+                        </select>
                     </div>
                   </div>
                   

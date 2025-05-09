@@ -1,5 +1,4 @@
-import React, { useEffect } from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react"; // Removed useCallback
 import Image from "next/image";
 import { formatCurrency, formatPercentage } from "../../lib/formatters";
 import { Product } from "@/types/ProductTypes";
@@ -69,15 +68,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   // Generate a placeholder image URL if none exists
-  // Generate placeholder image URL if needed in the useState below
-
   const [imgSrc, setImgSrc] = useState(
     product.imageUrl ||
       `https://placehold.co/400x300?text=${encodeURIComponent(
         product.title?.substring(0, 1) || product.title
       )}`
   );
-  const [productData, setProductData] = useState(null); // State to store fetched product data
+  const [, setProductData] = useState<Record<string, unknown> | null>(null);
   const [editedValues, setEditedValues] = useState<{
     costPrice: number;
     salesPrice: number;
@@ -91,64 +88,67 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     ebayFees: calculateEbayFee(product.price),
   });
 
-  const fetchProductData = async () => {
-    try {
-      const response = await axios.get(
-        `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
-      );
-      console.log("Fetched Product Data:", response.data); // Print to console
-      setProductData(response.data); // Store in the state
-
-      // Assuming the response contains an array of products and each product has 'costPrice'
-      // Update the edited values with the fetched 'costPrice' for the first product
-      if (
-        response.data &&
-        Array.isArray(response.data.data) &&
-        response.data.data.length > 0
-      ) {
-        const fetchedProduct = response.data.data.find(
-          (item) => item.sku === product.id
-        );
-
-        const costPrice = fetchedProduct
-          ? parseFloat(fetchedProduct.cost_price ?? "0")
-          : 0;
-        const ebayFees =
-          fetchedProduct && fetchedProduct.ebay_fees != null
-            ? parseFloat(fetchedProduct.ebay_fees)
-            : calculateEbayFee(product.price);
-
-        console.log("Resolved Cost Price:", costPrice);
-        console.log("Resolved eBay Fee:", ebayFees);
-
-        setEditedValues((prevState) => {
-          const profit = prevState.salesPrice - costPrice - ebayFees;
-
-          const profitMargin =
-            prevState.salesPrice > 0
-              ? (profit / prevState.salesPrice) * 100
-              : 0;
-
-          const roi = costPrice > 0 ? profit / costPrice : 0;
-
-
-
-          return {
-            ...prevState,
-            costPrice,
-            ebayFees,
-            profit,
-            profitMargin,
-            roi,
-          };
-        });
-      }
-    } catch (error) {}
-  };
   useEffect(() => {
+    const fetchProductData = async () => {
+      try {
+        const response = await axios.get(
+          `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
+        );
+        console.log("Fetched Product Data:", response.data); // Print to console
+        if (setProductData) {
+          setProductData(response.data);
+        }
+          
+        // Assuming the response contains an array of products and each product has 'costPrice'
+        // Update the edited values with the fetched 'costPrice' for the first product
+        if (
+          response.data &&
+          Array.isArray(response.data.data) &&
+          response.data.data.length > 0
+        ) {
+          const fetchedProduct = response.data.data.find(
+            (item) => item.sku === product.id
+          );
+  
+          const costPrice = fetchedProduct
+            ? parseFloat(fetchedProduct.cost_price ?? "0")
+            : 0;
+          const ebayFees =
+            fetchedProduct && fetchedProduct.ebay_fees != null
+              ? parseFloat(fetchedProduct.ebay_fees)
+              : calculateEbayFee(product.price);
+  
+          console.log("Resolved Cost Price:", costPrice);
+          console.log("Resolved eBay Fee:", ebayFees);
+  
+          setEditedValues((prevState) => {
+            const profit = prevState.salesPrice - costPrice - ebayFees;
+  
+            const profitMargin =
+              prevState.salesPrice > 0
+                ? (profit / prevState.salesPrice) * 100
+                : 0;
+  
+            const roi = costPrice > 0 ? profit / costPrice : 0;
+  
+            return {
+              ...prevState,
+              costPrice,
+              ebayFees,
+              profit,
+              profitMargin,
+              roi,
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching product data:", error);
+      }
+    };
+  
     fetchProductData(); // Call the function to fetch data on component mount
-  }, []); // Empty dependency array to run once when component mounts
-
+  }, [product.id, product.price,setProductData]); // Remove setProductData from the dependency array
+  
   // Calculate sell-through percentage for display
   const sellThroughDisplay = product.sellThroughRate
     ? `${Math.round(product.sellThroughRate * 100)}%`
@@ -172,7 +172,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               setImgSrc(
                 `https://placehold.co/400x300?text=${encodeURIComponent(
                   product.title
-                )}`
+                )}` 
               )
             } // ✅ Fallback to placeholder
           />
@@ -216,7 +216,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <p className="text-gray-600">profit Margin</p>
             <p className="font-semibold">
               {formatPercentage((editedValues.profitMargin ?? 0) / 100)}
-              {/* Use editedValues.profitMargin */}
             </p>
           </div>
           <div>

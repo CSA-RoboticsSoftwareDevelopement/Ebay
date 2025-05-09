@@ -4,11 +4,13 @@ import type * as React from "react"
 import { motion } from "framer-motion"
 import { GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { PanInfo } from "framer-motion";
+
 
 interface ResizeHandleProps {
-  onDrag: (e: React.MouseEvent | React.TouchEvent | PointerEvent, info: any) => void
-  onDragEnd: () => void
-  className?: string
+  onDrag: (e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  onDragEnd: () => void;
+  className?: string;
 }
 
 export function ResizeHandle({ onDrag, onDragEnd, className }: ResizeHandleProps) {

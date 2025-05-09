@@ -9,7 +9,7 @@ export interface BreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
 }
 
 const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
-  ({ className, separator = <ChevronRight className="h-4 w-4" />, asChild = false, ...props }, ref) => {
+  ({ className, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "nav"
 
     return (

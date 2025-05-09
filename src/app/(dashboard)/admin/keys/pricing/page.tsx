@@ -1,16 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Select from "react-select";
 import Swal from "sweetalert2";
 
 export default function PricingPlans() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const isAdmin = user?.is_admin === 1;
   const [showModal, setShowModal] = useState(false);
-  const [editablePlan, setEditablePlan] = useState<any>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  type Plan = {
+    id: string;
+    name: string;
+    price: number;
+    inventory: number;
+    productFinder: number;
+    platform: string[];
+    findSeller: boolean;
+    productOptimization: boolean;
+    plan_type?: string;
+    find_seller?: boolean | number;
+    product_optimization?: boolean | number;
+  };
+  
+  
+  const [editablePlan, setEditablePlan] = useState<Plan | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
   const [allPlans, setAllPlans] = useState([]);
   const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
   const [deletingPlanId, setDeletingPlanId] = useState<number | null>(null);
@@ -26,16 +41,18 @@ export default function PricingPlans() {
     });
   };
 
-  const initialForm = {
+  const initialForm: Plan = {
+    id: "", // or generate a temporary UUID
     name: "",
-    price: "",
+    price: 0,
     inventory: 0,
     productFinder: 0,
     platform: [],
     findSeller: false,
     productOptimization: false,
   };
-  const fetchPlans = async () => {
+  
+  const fetchPlans = useCallback(async () => {
     try {
       const response = await fetch(`${BACKEND_SERVER_URL}/api/plans/allplans`);
       if (!response.ok) {
@@ -47,18 +64,22 @@ export default function PricingPlans() {
     } catch (error) {
       console.error("Error fetching plans:", error);
     }
-  };
-
+  }, [BACKEND_SERVER_URL]);
+  
   useEffect(() => {
     fetchPlans();
-  }, [BACKEND_SERVER_URL]);
+  }, [fetchPlans]);
+  
 
-  const handleChange = (key: string, value: any) => {
-    setEditablePlan((prev: any) => ({
-      ...prev,
-      [key]: value,
-    }));
+
+
+
+  const handleChange = (key: keyof Plan, value: Plan[keyof Plan]) => {
+    setEditablePlan((prev: Plan | null) =>
+      prev ? { ...prev, [key]: value } : prev
+    );
   };
+    
 
   const handleSave = async () => {
     if (!editablePlan || !user) return;
@@ -82,15 +103,15 @@ export default function PricingPlans() {
         },
         body: JSON.stringify({
           plan_type: editablePlan.name,
-          price: parseFloat(editablePlan.price),
-          inventory: parseInt(editablePlan.inventory),
-          product_finder: parseInt(editablePlan.productFinder),
-          platform: editablePlan.platform,
-          find_seller: editablePlan.findSeller,
-          product_optimization: editablePlan.productOptimization,
+          price: editablePlan.price ? editablePlan.price.toString() : '0', // Convert to string
+          inventory: editablePlan.inventory ? editablePlan.inventory.toString() : '0', // Convert to string
+          product_finder: editablePlan.productFinder ? editablePlan.productFinder.toString() : '0', // Convert to string
+          platform: editablePlan.platform || "", // Default to empty string if platform is undefined or null
+          find_seller: editablePlan.findSeller || false, // Default to false if findSeller is undefined
+          product_optimization: editablePlan.productOptimization || false, // Default to false if productOptimization is undefined
         }),
       });
-
+      
       const data = await response.json();
       console.log("🧪 Backend response:", data);
 
@@ -113,6 +134,7 @@ export default function PricingPlans() {
     }
   };
 
+  
   return (
     <div className="p-8 bg-white min-h-screen relative">
       <h1 className="text-2xl font-bold mb-4">Plans</h1>
@@ -169,12 +191,13 @@ export default function PricingPlans() {
                     value={editablePlan[key]}
                     onChange={(e) =>
                       handleChange(
-                        key,
+                        key as keyof Plan,
                         type === "number"
                           ? parseInt(e.target.value)
                           : e.target.value
                       )
                     }
+                    
                     className="border px-2 py-1 rounded w-full"
                   />
                 </div>
@@ -248,8 +271,7 @@ export default function PricingPlans() {
       )}
       {/* Show Plans List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {allPlans.map((plan: any, index: number) => {
-          const isArray = Array.isArray(plan.platform);
+      {allPlans.map((plan: Plan, index: number) => {
           const platforms = (() => {
             try {
               if (Array.isArray(plan.platform)) return plan.platform.join(", ");
@@ -272,8 +294,8 @@ export default function PricingPlans() {
               <div className="text-left space-y-3">
                 <div className="flex items-center">
                   <span className="w-60 font-semibold">Price</span>
-                  <span>AUD ${parseFloat(plan.price).toFixed(2)}</span>
-                </div>
+                  <span>AUD ${plan.price.toFixed(2)}</span>
+                  </div>
 
                 <div className="flex items-center">
                   <span className="w-60 font-semibold">Inventory</span>
@@ -282,7 +304,7 @@ export default function PricingPlans() {
 
                 <div className="flex items-center">
                   <span className="w-60 font-semibold">Product Finder</span>
-                  <span>{plan.product_finder}</span>
+                  <span>{plan.productFinder}</span>
                 </div>
 
                 <div className="flex items-center">
@@ -316,7 +338,7 @@ export default function PricingPlans() {
                   </span>
                 </div>
                 <div className="mt-6">
-                  {plan.plan_type.toLowerCase() === "silver" ? (
+                {plan.plan_type?.toLowerCase() === "silver" ? (
                     <button
                       disabled
                       className="bg-gray-300 text-gray-600 px-4 py-2 rounded font-semibold cursor-not-allowed"
@@ -340,10 +362,10 @@ export default function PricingPlans() {
                   <button
                     onClick={() => {
                       setEditablePlan({
-                        name: plan.plan_type,
+                        name: plan.plan_type || "",
                         price: plan.price,
                         inventory: plan.inventory,
-                        productFinder: plan.product_finder,
+                        productFinder: plan.productFinder,
                         platform: (() => {
                           try {
                             if (Array.isArray(plan.platform))
@@ -385,7 +407,7 @@ export default function PricingPlans() {
                         }).then(async (result) => {
                           if (result.isConfirmed) {
                             try {
-                              setDeletingPlanId(plan.id);
+                              setDeletingPlanId(Number(plan.id));
                               const res = await fetch(
                                 `${BACKEND_SERVER_URL}/api/plans/deleteplan/${plan.id}`,
                                 { method: "DELETE" }
@@ -405,7 +427,7 @@ export default function PricingPlans() {
                           }
                         });
                     }}
-                    disabled={deletingPlanId === plan.id}
+                    disabled={deletingPlanId === Number(plan.id)}
                     className="ml-4 text-red-500 font-semibold hover:underline"
                   >
                     🗑 Delete
