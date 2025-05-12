@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-
 import { motion } from "framer-motion"
 import { ChevronRight, HelpCircle, Search, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -33,15 +32,9 @@ export function Header({ className, breadcrumbs, title, subtitle }: HeaderProps)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
 
-  // Get last breadcrumb title as the dynamic page title
-  const lastCrumbTitle = breadcrumbs?.length
-    ? breadcrumbs[breadcrumbs.length - 1].title
-    : title || "Welcome"
-
   return (
     <TooltipProvider delayDuration={0}>
       <header
-      
         className={cn(
           "sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-white/[0.01] bg-[#09090B] px-4 backdrop-blur-md",
           className,
@@ -88,14 +81,6 @@ export function Header({ className, breadcrumbs, title, subtitle }: HeaderProps)
                 onBlur={() => setIsSearchOpen(false)}
               />
             </motion.div>
-          )}
-
-          {/* Fallback title if no breadcrumbs and not searching */}
-          {!breadcrumbs?.length && !isSearchOpen && (
-            <div>
-              <h1 className="text-lg font-semibold text-white">{lastCrumbTitle}</h1>
-              {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
-            </div>
           )}
         </div>
 

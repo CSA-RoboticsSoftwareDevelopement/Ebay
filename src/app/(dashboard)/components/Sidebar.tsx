@@ -13,6 +13,8 @@ import {
   BarChart3,
   Store,
   PersonStandingIcon,
+  DollarSign,
+  DollarSignIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -298,12 +300,23 @@ export function Sidebar({ className }: SidebarProps) {
             )}
             <div className="space-y-1">
               <NavItem
-                icon={PersonStandingIcon} // Replace with the person icon you want to use
-                label="Admin"
-                href="/admin"
-                active={activeItem === "/admin"}
-                expanded={expanded || mobileOpen}
-                onClick={() => handleNavigation("/admin")}
+              icon={PersonStandingIcon} // Replace with the person icon you want to use
+              label="Admin"
+              href="/admin/keys"
+              active={activeItem === "/admin/keys"}
+              expanded={expanded || mobileOpen}
+              onClick={() => handleNavigation("/admin/keys")}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <NavItem
+              icon={DollarSignIcon} // Replace with the person icon you want to use
+              label="Plans"
+              href="/admin/keys/pricing"
+              active={activeItem === "/admin/keys/pricing"}
+              expanded={expanded || mobileOpen}
+              onClick={() => handleNavigation("/admin/keys/pricing")}
               />
             </div>
           </div>

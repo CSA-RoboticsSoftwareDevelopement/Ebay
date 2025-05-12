@@ -257,15 +257,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-4">
             {/* ✅ Breadcrumb Navigation */}
-            <nav className="text-sm text-gray-400 mb-2">
-              <ol className="list-reset flex">
-                <li>
-                  <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
-                </li>
-                <li><span className="mx-2">/</span></li>
-                <li className="text-white">Orders</li>
-              </ol>
-            </nav>
+         
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Orders</h1>
       </div>
