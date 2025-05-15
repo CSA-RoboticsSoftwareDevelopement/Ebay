@@ -298,8 +298,8 @@ export default function PluginPage() {
                 key={plugin.id}
                 className={`relative group w-full max-w-xs rounded-2xl p-4 border transition-all duration-300 overflow-hidden shadow-sm ${
                   plugin.comingSoon
-                    ? "bg-gradient-to-br from-gray-200 to-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
-                    : "bg-gradient-to-br from-white via-gray-50 to-white hover:shadow-lg hover:scale-[1.01]"
+                    ? "bg-black text-white border-gray-300 cursor-not-allowed"
+                    : "bg-black hover:shadow-lg hover:scale-[1.01]"
                 }`}
                 style={{
                   backdropFilter: "blur(6px)",
@@ -307,11 +307,11 @@ export default function PluginPage() {
                 }}
               >
                 {/* Shine effect */}
-                {!plugin.comingSoon && (
+                {/* {!plugin.comingSoon && (
                   <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition duration-300">
                     <div className="absolute -top-1/2 left-1/2 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-10 transform rotate-12 blur-2xl animate-pulse"></div>
                   </div>
-                )}
+                )} */}
 
                 {/* Installed badge */}
                 {isInstalled && (
@@ -322,7 +322,7 @@ export default function PluginPage() {
 
                 {/* Card content */}
                 <div className="space-y-3 z-10 relative">
-                  <div className="flex items-center gap-2 text-base font-semibold text-gray-800">
+                  <div className="flex items-center gap-2 text-base font-semibold text-white">
                     {getPluginIcon(plugin.name)}
                     <span className="truncate">{plugin.name}</span>
                   </div>
