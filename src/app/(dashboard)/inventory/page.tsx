@@ -22,6 +22,111 @@ export default function Products() {
   const [statusFilter, setStatusFilter] = useState("");
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+
+  const dummyProducts: Product[] = [
+  {
+    id: "dummy-1",
+    title: "Wireless Headphones",
+    description: "High-quality wireless headphones with noise cancellation.",
+    price: 89.99,
+    currency: "USD",
+    quantity: 10,
+    quantitySold: 4,
+    sellThroughRate: 0,
+    timeToSell: 0,
+    costPrice: 50,
+    shipping: 5,
+    ebayFees: 5,
+    profit: 30,
+    profitMargin: 33.7,
+    roi: 60,
+    imageUrl: "https://placehold.co/400x300?text=Headphones",
+    listingStatus: "Active",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    competitorData: {
+      id: "dummy-1",
+      avgPrice: 85,
+      avgShipping: 6,
+      lowestPrice: 79,
+      highestPrice: 99,
+      avgSellerFeedback: 4.8,
+      avgListingPosition: 1,
+      avgImageCount: 3,
+      competitorCount: 10,
+      lastUpdated: new Date(),
+    },
+  },
+  {
+    id: "dummy-2",
+    title: "Smartwatch",
+    description: "Fitness tracking smartwatch with heart rate monitor.",
+    price: 129.99,
+    currency: "USD",
+    quantity: 20,
+    quantitySold: 7,
+    sellThroughRate: 0,
+    timeToSell: 0,
+    costPrice: 70,
+    shipping: 5,
+    ebayFees: 8,
+    profit: 46,
+    profitMargin: 35.4,
+    roi: 65,
+    imageUrl: "https://placehold.co/400x300?text=Smartwatch",
+    listingStatus: "Active",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    competitorData: {
+      id: "dummy-2",
+      avgPrice: 125,
+      avgShipping: 6,
+      lowestPrice: 110,
+      highestPrice: 150,
+      avgSellerFeedback: 4.5,
+      avgListingPosition: 2,
+      avgImageCount: 4,
+      competitorCount: 15,
+      lastUpdated: new Date(),
+    },
+  },
+  {
+    id: "dummy-3",
+    title: "Headphones",
+    description: "Fitness tracking smartwatch with heart rate monitor.",
+    price: 129.99,
+    currency: "USD",
+    quantity: 20,
+    quantitySold: 7,
+    sellThroughRate: 0,
+    timeToSell: 0,
+    costPrice: 70,
+    shipping: 5,
+    ebayFees: 8,
+    profit: 46,
+    profitMargin: 35.4,
+    roi: 65,
+    imageUrl: "https://placehold.co/400x300?text=Smartwatch",
+    listingStatus: "Active",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    competitorData: {
+      id: "dummy-3",
+      avgPrice: 125,
+      avgShipping: 6,
+      lowestPrice: 110,
+      highestPrice: 150,
+      avgSellerFeedback: 4.5,
+      avgListingPosition: 2,
+      avgImageCount: 4,
+      competitorCount: 15,
+      lastUpdated: new Date(),
+    },
+  },
+
+];
+
   if (user?.id) {
     console.log("API URL:", EBAY_INVENTORY_API);
   }
@@ -167,18 +272,29 @@ export default function Products() {
     )
   );
 
-  if (!user?.id) {
-    return (
-      <div className="text-center text-gray-500 py-12">
-        <h2 className="text-xl font-semibold">
-          You must be logged in to view inventory.
-        </h2>
-        <p className="mt-2 text-sm">
-          Please log in to access your eBay inventory dashboard.
+ if (!user?.id) {
+  return (
+    <div>
+      <div className="text-center text-white py-6">
+        <h2 className="text-2xl text-white font-semibold">Guest Inventory Preview</h2>
+        <p className="mt-2 text-sm text-gray-400">
+          You're viewing a demo inventory. Log in to manage your own products.
         </p>
       </div>
-    );
-  }
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
+        {dummyProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onClick={() => {}}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
   if (loading) return <p>Loading products...</p>;
   if (error) {
