@@ -53,6 +53,9 @@ export default function LoginPage() {
   
       // ✅ Redirect to dashboard after successful login
       router.push('/dashboard');
+      setTimeout(() => {
+  window.location.reload();
+}, 100);
     } catch (err: unknown) {
       console.error('❌ Login Error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -63,6 +66,8 @@ export default function LoginPage() {
   
 
   if(useAuth().user) router.push('/dashboard');
+  
+  
 
   // ✅ Prevent rendering until hydration is complete
   if (!isMounted) return null;
