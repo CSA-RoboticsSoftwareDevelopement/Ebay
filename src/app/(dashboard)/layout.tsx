@@ -1,9 +1,11 @@
 "use client";
 
-import React from 'react';
-import { Sidebar } from './components/Sidebar';
-import { Header } from './components/Header';
+import React from "react";
+import { Sidebar } from "./components/Sidebar";
+import { Header } from "./components/Header";
 import { usePathname } from "next/navigation";
+import { PluginProvider } from "./plugin/PluginContext";
+ // ✅ Added
 
 export default function DashboardLayout({
   children,
@@ -32,14 +34,16 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex h-screen bg-black text-white">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header breadcrumbs={generateBreadcrumbs()} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
-          {children}
-        </main>
+    <PluginProvider> {/* ✅ Wrap in provider */}
+      <div className="flex h-screen bg-black text-white">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header breadcrumbs={generateBreadcrumbs()} />
+          <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </PluginProvider>
   );
 }

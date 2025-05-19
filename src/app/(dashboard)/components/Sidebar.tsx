@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "hooks/use-media-query";
 import { FirstTimeTooltip } from "./first-time-tooltip";
 import { ResizeHandle } from "./resize-handle";
+import { usePluginContext } from "../plugin/PluginContext";
 
 interface SidebarProps {
   className?: string;
@@ -71,6 +72,13 @@ export function Sidebar({ className }: SidebarProps) {
     }
   };
 
+  const { installedPluginIds } = usePluginContext(); // ✅
+
+  const pluginNavItems: NavItemType[] = [];
+
+
+
+
   React.useEffect(() => {
     if (isMobile) {
       setExpanded(false);
@@ -102,28 +110,45 @@ export function Sidebar({ className }: SidebarProps) {
     { icon: Package, label: "Products", href: "/inventory", active: activeItem === "/inventory" },
   ];
 
-  const pluginNavItems: NavItemType[] = [
-    {
+  // const pluginNavItems: NavItemType[] = [
+  //   {
+  //     icon: Search,
+  //     label: "Product Finder",
+  //     href: "/productFinder", // ✅ Your existing folder structure
+  //     active: activeItem === "/productFinder",
+  //     badge: "New",
+  //   },
+  //   {
+  //     icon: BarChart3,
+  //     label: "Analytics Pro",
+  //     href: "/analytics", // You can create this page
+  //     active: activeItem === "/analytics",
+  //   },
+  //   // {
+  //   //   icon: Store,
+  //   //   label: "Marketplace",
+  //   //   href: "/plugin", // You can create this page
+  //   //   active: activeItem === "/plugin",
+  //   // },
+  // ];
+if (installedPluginIds.includes(1)) { // 1 = Product Finder plugin id
+    pluginNavItems.push({
       icon: Search,
       label: "Product Finder",
-      href: "/productFinder", // ✅ Your existing folder structure
+      href: "/productFinder",
       active: activeItem === "/productFinder",
       badge: "New",
-    },
-    {
-      icon: BarChart3,
-      label: "Analytics Pro",
-      href: "/analytics", // You can create this page
-      active: activeItem === "/analytics",
-    },
-    // {
-    //   icon: Store,
-    //   label: "Marketplace",
-    //   href: "/plugin", // You can create this page
-    //   active: activeItem === "/plugin",
-    // },
-  ];
+    });
+  }
 
+  pluginNavItems.push({
+    icon: BarChart3,
+    label: "Analytics Pro",
+    href: "/analytics",
+    active: activeItem === "/analytics",
+  });
+
+  
   const mobileMenuVariants = {
     open: { x: 0, opacity: 1 },
     closed: { x: "-100%", opacity: 0 },

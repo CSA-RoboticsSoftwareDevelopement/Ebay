@@ -63,6 +63,7 @@ export default function PluginPage() {
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [filter, setFilter] = useState("all"); // "all", "paid", "installed"
+ // installedIds is a number array like [1, 2]
 
   // ✅ Fetch installed plugin IDs from backend
   interface Plugin {
