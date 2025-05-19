@@ -290,13 +290,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+        className="bg-neutral-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
         onClick={handleModalClick}
       >
         <div className="flex flex-col h-full">
           {/* Modal Header */}
           <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="text-xl font-bold truncate">{product.title}</h2>
+            <h2 className="text-white text-xl font-bold truncate">{product.title}</h2>
             <button
               className="text-gray-500 hover:text-gray-700 text-xl"
               onClick={onClose}
@@ -322,7 +322,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="col-span-2 bg-gray-100 p-2 rounded">
                   <p className="text-gray-600">Status</p>
-                  <p className="font-semibold">
+                  <p className="text-black 7font-semibold">
                     {product.listingStatus || "Unknown"}
                   </p>
                 </div>
@@ -421,7 +421,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {activeTab === "overview" && (
                   <div>
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium">
+                      <h3 className="text-white text-lg font-medium">
                         Cost & Profit Details
                       </h3>
                       {!isEditing ? (
@@ -433,7 +433,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         </button>
                       ) : (
                         <button
-                          className="text-sm bg-primary-yellow text-black px-3 py-1 rounded"
+                          className="text-black text-sm bg-primary-yellow text-black px-3 py-1 rounded"
                           onClick={handleSaveChanges}
                         >
                           Save
@@ -453,7 +453,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               name="costPrice"
                               value={editedValues.costPrice || ""}
                               onChange={handleInputChange}
-                              className="border rounded w-full p-2"
+                              className="border rounded w-full p-2 text-black caret-black"
                               step="0.01"
                             />
                           ) : (
@@ -471,7 +471,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                               name="ebayFees"
                               value={editedValues.ebayFees || ""} // Bind to edited value
                               onChange={handleInputChange} // Update on change
-                              className="border rounded w-full p-2"
+                              className="border rounded w-full p-2 text-black caret-black"
                               step="0.01"
                             />
                           ) : (
@@ -540,14 +540,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Performance Tab */}
                 {activeTab === "performance" && (
                   <div>
-                    <h3 className="text-lg font-medium mb-4">
+                    <h3 className="text-white text-lg font-medium mb-4">
                       Performance Metrics
                     </h3>
 
                     <div className="space-y-4">
                       <div className="bg-gray-100 p-4 rounded">
                         <h4 className="font-medium mb-2">Sell-Through Rate</h4>
-                        <p className="text-2xl font-bold">
+                        <p className="text-black text-2xl font-bold">
                           {formatPercentage(product.sellThroughRate)}
                         </p>
                         <p className="text-sm text-gray-600 mt-1">
@@ -558,7 +558,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                       <div className="bg-gray-100 p-4 rounded">
                         <h4 className="font-medium mb-2">Time to Sell</h4>
-                        <p className="text-2xl font-bold">
+                        <p className="text-black text-2xl font-bold">
                           {formatDays(product.timeToSell)}
                         </p>
                         <p className="text-sm text-gray-600 mt-1">
@@ -573,7 +573,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             <p className="text-sm text-gray-600">
                               Total Profit
                             </p>
-                            <p className="font-bold">
+                            <p className="text-black font-bold">
                               {formatCurrency(
                                 editedValues.profit ?? 0,
                                 product.currency
@@ -583,7 +583,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                           <div>
                             <p className="text-sm text-gray-600">ROI</p>
-                            <p className="font-semibold">
+                            <p className="text-black font-semibold">
                               {editedValues.roi != null
                                 ? `${(editedValues.roi / 10).toFixed(2)}%`
                                 : "N/A"}
@@ -593,7 +593,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             <p className="text-sm text-gray-600">
                               Profit Margin
                             </p>
-                            <p className="font-semibold">
+                            <p className="text-black font-semibold">
                               {formatPercentage(
                                 (editedValues.profitMargin ?? 0) / 100
                               )}
@@ -610,7 +610,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Images Tab */}
                 {activeTab === "images" && (
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Product Images</h3>
+                    <h3 className="text-white text-lg font-medium mb-4">Product Images</h3>
 
                     {product.additionalImages &&
                     product.additionalImages.length > 0 ? (
@@ -656,7 +656,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {activeTab === "settings" && (
                   <div>
-                    <h3 className="text-lg font-medium mb-4">
+                    <h3 className="text-white text-lg font-medium mb-4">
                       Product Settings
                     </h3>
                     <div className="space-y-4">

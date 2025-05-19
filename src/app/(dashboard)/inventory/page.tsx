@@ -4,12 +4,15 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link"; // Ensure you're using Next.js
 import ProductCard from "../../../components/productsTemplate/InventoryProductCard";
 import ProductDetailModal from "../../../components/productsTemplate/InventoryProductDetailModal";
+
 import AddProductModal from "../../../components/productsTemplate/AddProductModal"; // ✅ Import AddProductModal
 import { Product } from "../../../types/ProductTypes";
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 export default function Products() {
+
+
   const { user } = useAuth();
   const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user?.id}`;
   const [productsData, setProductsData] = useState<Product[]>([]);
@@ -24,6 +27,8 @@ export default function Products() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
 
+
+  
   const dummyProducts: Product[] = [
   {
     id: "dummy-1",
@@ -93,11 +98,11 @@ export default function Products() {
   },
   {
     id: "dummy-3",
-    title: "Headphones",
-    description: "Fitness tracking smartwatch with heart rate monitor.",
-    price: 129.99,
+    title: "Charger",
+    description: "Charger C type .",
+    price: 110.99,
     currency: "USD",
-    quantity: 20,
+    quantity: 10,
     quantitySold: 7,
     sellThroughRate: 0,
     timeToSell: 0,
@@ -107,7 +112,40 @@ export default function Products() {
     profit: 46,
     profitMargin: 35.4,
     roi: 65,
-    imageUrl: "https://placehold.co/400x300?text=Smartwatch",
+    imageUrl: "https://placehold.co/400x300?text=Charger",
+    listingStatus: "Active",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    competitorData: {
+      id: "dummy-3",
+      avgPrice: 125,
+      avgShipping: 6,
+      lowestPrice: 110,
+      highestPrice: 150,
+      avgSellerFeedback: 4.5,
+      avgListingPosition: 2,
+      avgImageCount: 4,
+      competitorCount: 15,
+      lastUpdated: new Date(),
+    },
+  },
+   {
+    id: "dummy-3",
+    title: "Extension",
+    description: "One Extension for all your charging .",
+    price: 110.99,
+    currency: "USD",
+    quantity: 10,
+    quantitySold: 7,
+    sellThroughRate: 0,
+    timeToSell: 0,
+    costPrice: 70,
+    shipping: 5,
+    ebayFees: 8,
+    profit: 46,
+    profitMargin: 35.4,
+    roi: 65,
+    imageUrl: "https://placehold.co/400x300?text=Extension",
     listingStatus: "Active",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -126,6 +164,25 @@ export default function Products() {
   },
 
 ];
+interface Product {
+  id: string;
+  name: string;
+  status: string;
+  description?: string;
+}
+
+interface User {
+  id?: string | null;
+  name?: string;
+}
+
+// Props or fetched user
+interface InventoryProps {
+  user: User | null;
+  dummyProducts: Product[];
+  fetchProducts: () => Promise<Product[]>; // function to fetch real products
+  availableStatuses: string[];
+}
 
   if (user?.id) {
     console.log("API URL:", EBAY_INVENTORY_API);
@@ -272,30 +329,38 @@ export default function Products() {
     )
   );
 
- if (!user?.id) {
-  return (
-    <div>
-      <div className="text-center text-white py-6">
-        <h2 className="text-2xl text-white font-semibold">Guest Inventory Preview</h2>
-        <p className="mt-2 text-sm text-gray-400">
-          You're viewing a demo inventory. Log in to manage your own products.
-        </p>
-      </div>
+  if (!user?.id) {
+    return (
+      <div>
+        <div className="text-center text-white py-6">
+          <h2 className="text-2xl text-white font-semibold">Guest Inventory Preview</h2>
+          <p className="mt-2 text-sm text-gray-400">
+            You're viewing a demo inventory. Log in to manage your own products.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
-        {dummyProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onClick={() => {}}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
+          {dummyProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onClick={() => setSelectedProductId(product.id)}
+            />
+          ))}
+        </div>
+
+        {selectedProductId && (
+          <ProductDetailModal
+            product={dummyProducts.find((p) => p.id === selectedProductId)!}
+            onClose={() => setSelectedProductId(null)}
+            onUpdateProduct={handleUpdateProduct}
           />
-        ))}
+        )}
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-
+  // Render loading and error states
   if (loading) return <p>Loading products...</p>;
   if (error) {
     return (
@@ -304,8 +369,7 @@ export default function Products() {
         <p>{error}</p>
         {error.includes("integration") && (
           <p className="mt-2 text-sm text-gray-600">
-            Go to your <strong>Account Settings</strong> to connect your eBay
-            account.
+            Go to your <strong>Account Settings</strong> to connect your eBay account.
           </p>
         )}
       </div>
@@ -439,6 +503,21 @@ export default function Products() {
           onUpdateProduct={handleUpdateProduct}
         />
       )}
+
+
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
+  {dummyProducts.map((product) => (
+    <ProductCard
+      key={product.id}
+      product={product}
+      onClick={() => setSelectedProductId(product.id)} // corrected
+    />
+  ))}
+</div>
+
+
+
+
     </div>
   );
 }

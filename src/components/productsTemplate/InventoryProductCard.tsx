@@ -32,7 +32,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onClick,
 }) => {
   const getStatusColor = (status?: string | null) => {
-    if (!status) return "bg-gray-500";
+    if (!status) return "bg-gray-900";
     const statusMap: Record<string, string> = {
       active: "bg-green-500",
       ended: "bg-red-500",
