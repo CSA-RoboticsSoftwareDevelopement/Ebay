@@ -326,7 +326,7 @@ if (installedPluginIds.includes(1)) { // 1 = Product Finder plugin id
             <div className="space-y-1">
               <NavItem
               icon={PersonStandingIcon} // Replace with the person icon you want to use
-              label="Admin"
+              label="Licence Keys "
               href="/admin/keys"
               active={activeItem === "/admin/keys"}
               expanded={expanded || mobileOpen}

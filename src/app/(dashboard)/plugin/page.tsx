@@ -204,19 +204,7 @@ export default function PluginPage() {
 
   return (
     <div className="">
-      <nav className="text-sm text-gray-400 mb-4">
-        <ol className="list-reset flex">
-          <li>
-            <Link href="/" className="hover:underline text-primary-yellow">
-              Home
-            </Link>
-          </li>
-          <li>
-            <span className="mx-2">/</span>
-          </li>
-          <li className="text-white">Marketplace</li>
-        </ol>
-      </nav>
+
 
       <h1 className="text-2xl font-bold mb-6 text-left text-white">
         Plugin Marketplace
