@@ -14,24 +14,35 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
 
-  const generateBreadcrumbs = () => {
-    const segments = pathname.split("/").filter(Boolean);
+const generateBreadcrumbs = () => {
+  let segments = pathname.split("/").filter(Boolean);
 
-    const breadcrumbs = [
-      { title: "Home", href: "/" },
-      ...segments.map((segment, index) => {
-        const href = "/" + segments.slice(0, index + 1).join("/");
-        const title = segment.charAt(0).toUpperCase() + segment.slice(1);
-        return {
-          title: decodeURIComponent(title.replace(/-/g, " ")),
-          href,
-          current: index === segments.length - 1,
-        };
-      }),
-    ];
+  // Check if the path is inside admin/keys/plans or admin/keys/pricing
+  // Adjust the exact path check as per your route structure
+  if (
+    segments[0] === "admin" &&
+    segments[1] === "keys" &&
+    (segments[2] === "plans" || segments[2] === "pricing")
+  ) {
+    // Remove "keys" segment
+    segments = [segments[0], ...segments.slice(2)];
+  }
 
-    return breadcrumbs;
-  };
+  const breadcrumbs = [
+    { title: "Home", href: "/" },
+    ...segments.map((segment, index) => {
+      const href = "/" + segments.slice(0, index + 1).join("/");
+      const title = segment.charAt(0).toUpperCase() + segment.slice(1);
+      return {
+        title: decodeURIComponent(title.replace(/-/g, " ")),
+        href,
+        current: index === segments.length - 1,
+      };
+    }),
+  ];
+
+  return breadcrumbs;
+};
 
   return (
     <PluginProvider> {/* ✅ Wrap in provider */}

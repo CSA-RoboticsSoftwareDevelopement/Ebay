@@ -175,15 +175,6 @@ const ProductFinder: React.FC = () => {
       {/* Header Section with Actions */}
       <div className="mb-6">
 
-       <nav className="text-sm text-gray-400 mb-2">
-         <ol className="list-reset flex">
-           <li>
-             <Link href="/" className="hover:underline text-primary-yellow">Home</Link>
-           </li>
-           <li><span className="mx-2">/</span></li>
-           <li className="text-white">Product Finder </li>
-         </ol>
-       </nav>
 
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
