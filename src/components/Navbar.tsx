@@ -199,7 +199,7 @@ export default function Navbar() {
         </Link>
 
         {/* Sign Up Button */}
-        <Link href="/signup">
+        <Link href="https://tally.so/r/m69ErJ">
           <motion.button
             className="bg-primary-yellow text-primary-black font-semibold px-6 py-2 rounded-full transition-all duration-300 hover:shadow-[0_2px_8px_rgba(255,195,0,0.4)]"
             whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
