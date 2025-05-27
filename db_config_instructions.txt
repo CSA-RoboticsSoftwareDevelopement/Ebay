@@ -1,0 +1,19 @@
+To fix the database connection error, follow these steps:
+
+1. Create or update the .env file in the root directory with the following settings:
+
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=root
+DB_NAME=inventory
+DB_PORT=8889
+
+JWT_SECRET=your-secret-key
+
+2. If you already have a .env file, make sure these values match what you provided.
+
+3. MAMP uses port 8889 by default for MySQL, so make sure the server is configured to use this port.
+
+4. If you need to change the database name from 'inventory' to 'ui_resale' (as seen in your SQL dump), update the DB_NAME accordingly.
+
+5. After updating the .env file, restart your server application. 
