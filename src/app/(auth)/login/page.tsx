@@ -7,55 +7,54 @@ import { useAuth } from '@/context/AuthContext';
 
 
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
+const COGNITO_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
+const CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+const REDIRECT_URI = process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI;
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false); // ✅ Fix: Prevent hydration mismatch
+  const { user } = useAuth();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // For line 55, replace 'any' with a proper type
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-  
+
     try {
       const res = await fetch(`${BACKEND_SERVER_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // ✅ Sends cookies with request
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
-  
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
-  
-      console.log('🔹 Login Success:', data.user);
-  
+
       const token = data.auth_token;
       if (token) {
-        // ✅ Store token in cookies
         document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax${
           window.location.protocol === 'https:' ? '; Secure' : ''
         }`;
-  
-        console.log('🔐 Token stored in cookies');
-      } else {
-        console.warn('⚠️ No auth_token received from API');
       }
-  
-      // ✅ Redirect to dashboard after successful login
+
       router.push('/dashboard');
-      setTimeout(() => {
-  window.location.reload();
-}, 100);
+      setTimeout(() => window.location.reload(), 100);
     } catch (err: unknown) {
       console.error('❌ Login Error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -63,30 +62,55 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-  
 
-  if(useAuth().user) router.push('/dashboard');
-  
-  
-
-  // ✅ Prevent rendering until hydration is complete
   if (!isMounted) return null;
 
   return (
-    <div className="card">
-      <div className="text-center mb-8">
+    <div className="card max-w-md mx-auto mt-10 p-6 shadow-md rounded-md">
+      <div className="text-center mb-6">
         <h1 className="text-2xl font-bold">Log in to Resale</h1>
-        <p className="text-neutral-gray-600 mt-2">
-          Enter your credentials to access your account
-        </p>
       </div>
 
       {error && (
-        <div className="bg-error/10 text-error p-4 rounded-md mb-6">
-          {error}
-        </div>
+        <div className="bg-red-100 text-red-700 p-4 rounded-md mb-4">{error}</div>
       )}
 
+      {/* SOCIAL LOGIN */}
+      <div className="flex flex-col gap-3 mb-6">
+        <a
+          href={`${COGNITO_DOMAIN}/oauth2/authorize?identity_provider=Google&response_type=CODE&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+profile`}
+          className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2 hover:bg-gray-50 transition"
+        >
+          <img
+            src="/assets/icons/google.png"
+            alt="Google"
+            width={37}
+            height={20}
+          />
+          <span className="text-sm text-gray-700 font-medium">Continue with Google</span>
+        </a>
+
+        <a
+          href={`${COGNITO_DOMAIN}/oauth2/authorize?identity_provider=Facebook&response_type=CODE&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+profile`}
+          className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2 hover:bg-gray-50 transition"
+        >
+          <img
+            src="/assets/icons/facebook.png"
+            alt="Facebook"
+            width={20}
+            height={20}
+          />
+          <span className="text-sm text-gray-700 font-medium">Continue with Facebook</span>
+        </a>
+      </div>
+
+      <div className="mt-4 mb-4 flex items-center gap-4">
+        <div className="flex-grow border-t border-gray-300" />
+        <span className="text-gray-500 text-sm">or continue with</span>
+        <div className="flex-grow border-t border-gray-300" />
+      </div>
+
+      {/* EMAIL LOGIN */}
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label htmlFor="email" className="label">Email Address</label>
@@ -101,10 +125,10 @@ export default function LoginPage() {
           />
         </div>
 
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-1">
+        <div className="mb-4">
+          <div className="flex justify-between items-center">
             <label htmlFor="password" className="label">Password</label>
-            <Link href="/forgot-password" className="text-sm">Forgot password?</Link>
+            <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">Forgot password?</Link>
           </div>
           <input
             id="password"
@@ -117,17 +141,18 @@ export default function LoginPage() {
           />
         </div>
 
-        <button type="submit" className="btn btn-primary w-full" disabled={loading}>
+        <button
+          type="submit"
+          className="btn btn-primary w-full"
+          disabled={loading}
+        >
           {loading ? 'Logging in...' : 'Log In'}
         </button>
       </form>
 
-<div className="mt-6 text-center">
-  <p className="text-neutral-gray-600">
-  <p>Don&apos;t have an account? <Link href="/signup">Sign up</Link></p>
-  </p>
-</div>
-
+      <div className="mt-6 text-center text-sm">
+        <p>Don&apos;t have an account? <Link href="/signup" className="text-blue-600 hover:underline">Sign up</Link></p>
+      </div>
     </div>
   );
 }

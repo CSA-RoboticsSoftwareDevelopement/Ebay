@@ -85,7 +85,7 @@ export default function Home() {
                   </p>
                   <div className="relative group">
                     <div className="absolute -inset-1 bg-gradient-to-r from-yellow-300 via-primary-yellow to-amber-500 rounded-full opacity-70 group-hover:opacity-100 blur group-hover:blur-md transition-all duration-500"></div>
-                    <Link href="/signup" className="relative block">
+                    <Link href="https://tally.so/r/m69ErJ" className="relative block">
                       <button className="relative w-full bg-primary-yellow text-primary-black rounded-full px-8 py-3 text-base font-semibold hover:bg-primary-yellow/90 transition-all duration-300 hover:shadow-lg">
                         Try us for free
                       </button>
@@ -116,7 +116,7 @@ export default function Home() {
               </p>
               <div className="relative group inline-block">
                 <div className="absolute -inset-1 bg-gradient-to-r from-yellow-300 via-primary-yellow to-amber-500 rounded-full opacity-70 group-hover:opacity-100 blur group-hover:blur-md transition-all duration-500"></div>
-                <Link href="/signup" className="relative block">
+                <Link href="https://tally.so/r/m69ErJ" className="relative block">
                   <button className="relative bg-primary-yellow text-primary-black rounded-full px-10 py-3.5 text-lg font-semibold hover:bg-primary-yellow/90 transition-all duration-300 hover:shadow-lg">
                     Try us for free
                   </button>
