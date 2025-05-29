@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useMediaQuery } from "hooks/use-media-query"
 import { useAuth } from "@/context/AuthContext"
 import Swal from "sweetalert2"
-import { useRouter } from "next/navigation"
+// import { useRouter } from "next/navigation"
 
 interface HeaderProps {
   className?: string
@@ -31,13 +31,12 @@ interface HeaderProps {
   subtitle?: string
 }
 
-export function Header({ className, breadcrumbs, title, subtitle }: HeaderProps) {
+export function Header({ className, breadcrumbs }: HeaderProps) {
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
 
 
   const { user, logout } = useAuth()
-  const router = useRouter()
   const username = user?.username || "User"
 
   const handleLogout = async () => {

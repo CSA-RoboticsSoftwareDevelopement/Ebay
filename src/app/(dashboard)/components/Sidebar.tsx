@@ -11,9 +11,9 @@ import {
   PlusCircle,
   Search, 
   BarChart3,
-  Store,
+  // Store,
   PersonStandingIcon,
-  DollarSign,
+  // DollarSign,
   DollarSignIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

@@ -1,9 +1,9 @@
 "use client";
-import { useRef } from "react";
+// import { useRef } from "react";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
-import Link from 'next/link'; // Ensure you're using Next.js
+// import Link from 'next/link'; // Ensure you're using Next.js
 import {
   FiGrid,
   FiList,
@@ -36,16 +36,6 @@ const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 // Mock data with enhanced fields for the product finder
 
-const CategoryPills = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (scrollRef.current) {
-      // Scroll horizontally based on vertical wheel
-      scrollRef.current.scrollLeft += e.deltaY;
-    }
-  };
-}
 const ProductFinder: React.FC = () => {
   const [productsData, setProductsData] = useState<RecommendedProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,42 +57,71 @@ const ProductFinder: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch(`${BACKEND_SERVER_URL}/api/product-finder/all-products`);
-        const json = await res.json();
-  
-        if (json.success) {
-          const allProducts: RecommendedProduct[] = json.data.flatMap((file: any) =>
-            file.productDetails.map((p: any, idx: number) => ({
-              id: `${p.asin}-${file.category}-${idx}`, // This ensures uniqueness
-              title: p.title,
-              price: p.price || "0.00",
-              currency: p.currency || "$",
-              imagecsv: p.imagesCSV,
-              rating: p.rating || Math.floor(Math.random() * 5) + 1,
-              category: p.category || file.category,
-              condition: p.condition || "New",
-              opportunityScore: p.opportunityScore || 0,
-            }))
-            
-          );
-  
-          setProductsData(allProducts);
-  
-          // Optional: derive categories dynamically if needed
-          // setCategories([...new Set(["All Categories", ...allProducts.map(p => p.category)])]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch products:", err);
-      } finally {
-        setLoading(false);
+  // Define interfaces to replace 'any'
+interface ProductDetail {
+  asin: string;
+  title: string;
+  price?: string;
+  currency?: string;
+  imagesCSV: string;
+  rating?: number;
+  category?: string;
+  condition?: string;
+  opportunityScore?: number;
+    description?: string;  // add this
+}
+
+interface FileData {
+  category: string;
+  productDetails: ProductDetail[];
+  condition?: string;
+  opportunityScore?: number;
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: FileData[];
+}
+
+// Your useEffect hook
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch(`${BACKEND_SERVER_URL}/api/product-finder/all-products`);
+      const json: ApiResponse = await res.json();
+
+      if (json.success) {
+        const allProducts: RecommendedProduct[] = json.data.flatMap((file) =>
+  file.productDetails.map((p, idx) => ({
+    id: `${p.asin}-${file.category}-${idx}`, // unique ID
+    title: p.title,
+    price: p.price || "0.00",
+    currency: p.currency || "$",
+    imagecsv: p.imagesCSV,
+    rating: p.rating ?? Math.floor(Math.random() * 5) + 1,
+    category: p.category || file.category,
+    condition: p.condition || "New",
+    opportunityScore: p.opportunityScore || 0,
+    description: p.description || "",  // <-- add this line
+  }))
+);
+
+
+        setProductsData(allProducts);
+
+        // Optional: dynamically set categories if needed
+        // setCategories([...new Set(["All Categories", ...allProducts.map(p => p.category)])]);
       }
-    };
-  
-    fetchProducts();
-  }, []);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProducts();
+}, []);
+
   
 
   if (authLoading) {
@@ -661,10 +680,11 @@ const ProductFinder: React.FC = () => {
           <h3 className="text-lg font-medium text-neutral-gray-900 mb-1">
             No products found
           </h3>
-          <p className="text-neutral-gray-500 mb-4">
-            Try adjusting your search or filters to find what you're
-            looking for.
-          </p>
+<p className="text-neutral-gray-500 mb-4">
+  Try adjusting your search or filters to find what you&apos;re
+  looking for.
+</p>
+
           <button
             className="text-primary-yellow hover:underline font-medium"
             onClick={() => {

@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link"; // Ensure you're using Next.js
+// import Link from "next/link"; // Ensure you're using Next.js
 import ProductCard from "../../../components/productsTemplate/InventoryProductCard";
 import ProductDetailModal from "../../../components/productsTemplate/InventoryProductDetailModal";
 
 import AddProductModal from "../../../components/productsTemplate/AddProductModal"; // ✅ Import AddProductModal
-import { Product } from "../../../types/ProductTypes";
+// import { Product } from "../../../types/ProductTypes";
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
@@ -48,8 +48,11 @@ export default function Products() {
     roi: 60,
     imageUrl: "https://placehold.co/400x300?text=Headphones",
     listingStatus: "Active",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+createdAt: new Date().toISOString(),
+updatedAt: new Date().toISOString(),
+
+
+
     competitorData: {
       id: "dummy-1",
       avgPrice: 85,
@@ -62,6 +65,8 @@ export default function Products() {
       competitorCount: 10,
       lastUpdated: new Date(),
     },
+    condition: "New",       // <-- Add this line
+    category: "Electronics" // <-- Add this line
   },
   {
     id: "dummy-2",
@@ -81,8 +86,10 @@ export default function Products() {
     roi: 65,
     imageUrl: "https://placehold.co/400x300?text=Smartwatch",
     listingStatus: "Active",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+createdAt: new Date().toISOString(),
+updatedAt: new Date().toISOString(),
+
+
     competitorData: {
       id: "dummy-2",
       avgPrice: 125,
@@ -95,6 +102,8 @@ export default function Products() {
       competitorCount: 15,
       lastUpdated: new Date(),
     },
+    condition: "New",       // <-- Add this line
+    category: "Electronics" // <-- Add this line
   },
   {
     id: "dummy-3",
@@ -114,8 +123,11 @@ export default function Products() {
     roi: 65,
     imageUrl: "https://placehold.co/400x300?text=Charger",
     listingStatus: "Active",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+createdAt: new Date().toISOString(),
+updatedAt: new Date().toISOString(),
+
+
+
     competitorData: {
       id: "dummy-3",
       avgPrice: 125,
@@ -128,6 +140,8 @@ export default function Products() {
       competitorCount: 15,
       lastUpdated: new Date(),
     },
+    condition: "New",       // <-- Add this line
+    category: "Electronics" // <-- Add this line
   },
    {
     id: "dummy-3",
@@ -147,8 +161,10 @@ export default function Products() {
     roi: 65,
     imageUrl: "https://placehold.co/400x300?text=Extension",
     listingStatus: "Active",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+createdAt: new Date().toISOString(),
+updatedAt: new Date().toISOString(),
+
+
     competitorData: {
       id: "dummy-3",
       avgPrice: 125,
@@ -161,28 +177,61 @@ export default function Products() {
       competitorCount: 15,
       lastUpdated: new Date(),
     },
+    condition: "New",       // <-- Add this line
+    category: "Electronics" // <-- Add this line
   },
 
 ];
+
 interface Product {
   id: string;
-  name: string;
-  status: string;
-  description?: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  quantity: number;
+  quantitySold: number;
+  sellThroughRate: number;
+  timeToSell: number;
+  costPrice: number;
+  shipping: number;
+  ebayFees: number;
+  profit: number;
+  profitMargin: number;
+  roi: number;
+  imageUrl: string;
+  listingStatus: string;
+createdAt: string;
+updatedAt: string;
+
+  competitorData: {
+    id: string;
+    avgPrice: number;
+    avgShipping: number;
+    lowestPrice: number;
+    highestPrice: number;
+    avgSellerFeedback: number;
+    avgListingPosition: number;
+    avgImageCount: number;
+    competitorCount: number;
+    lastUpdated: Date ;
+  };
+  condition: string;  // <-- Add this line
+  category: string;   // <-- Add this line
 }
 
-interface User {
-  id?: string | null;
-  name?: string;
-}
+// interface User {
+//   id?: string | null;
+//   name?: string;
+// }
 
 // Props or fetched user
-interface InventoryProps {
-  user: User | null;
-  dummyProducts: Product[];
-  fetchProducts: () => Promise<Product[]>; // function to fetch real products
-  availableStatuses: string[];
-}
+// interface InventoryProps {
+//   user: User | null;
+//   dummyProducts: Product[];
+//   fetchProducts: () => Promise<Product[]>; // function to fetch real products
+//   availableStatuses: string[];
+// }
 
   if (user?.id) {
     console.log("API URL:", EBAY_INVENTORY_API);
@@ -334,9 +383,10 @@ interface InventoryProps {
       <div>
         <div className="text-center text-white py-6">
           <h2 className="text-2xl text-white font-semibold">Guest Inventory Preview</h2>
-          <p className="mt-2 text-sm text-gray-400">
-            You're viewing a demo inventory. Log in to manage your own products.
-          </p>
+<p className="mt-2 text-sm text-gray-400">
+  You&apos;re viewing a demo inventory. Log in to manage your own products.
+</p>
+
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
