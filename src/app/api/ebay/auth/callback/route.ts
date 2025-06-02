@@ -74,17 +74,17 @@ export async function GET(request: NextRequest) {
     );
 
   //  ✅ Close the popup and notify the parent window
-    return new NextResponse(
-      `<html>
-        <body>
-          <script>
-            window.opener.postMessage({ status: "success" }, "*");
-            window.close();
-          </script>
-        </body>
-      </html>`,
-      { headers: { "Content-Type": "text/html" } }
-    );
+    // return new NextResponse(
+    //   `<html>
+    //     <body>
+    //       <script>
+    //         window.opener.postMessage({ status: "success" }, "*");
+    //         window.close();
+    //       </script>
+    //     </body>
+    //   </html>`,
+    //   { headers: { "Content-Type": "text/html" } }
+    // );
 
   } catch (error) {
     const apiError = error as { response?: { data?: unknown } };

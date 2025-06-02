@@ -33,7 +33,9 @@ module.exports = (db) => {
           refresh_token: refreshToken,
           scope:
             "https://api.ebay.com/oauth/api_scope/sell.inventory " +
-            "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+            "https://api.ebay.com/oauth/api_scope/sell.fulfillment"+
+  "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+
         }),
         {
           headers: {

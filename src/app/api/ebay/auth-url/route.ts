@@ -31,6 +31,7 @@ export async function GET(request: Request) {
       "https://api.ebay.com/oauth/api_scope",
       "https://api.ebay.com/oauth/api_scope/sell.inventory",
       "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+      "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
     ].join(" "); // ✅ Ensures correct formatting
 
     // Include userId in the state parameter to pass it back to the callback

@@ -11,6 +11,8 @@ const ebayPlans =  require("./plans");
 const productFinder = require('./productFinder');
 const path = require("path");
 const fs = require("fs"); // ✅ Add this line
+const ebayAnalytics = require('./ebayAnalytics');
+const dashboardService = require('./dashboardService');
 
 require("dotenv").config();
 
@@ -347,6 +349,10 @@ app.use("/api/ebay", ebayRoutes(db));
 app.use("/api/ebay/products", ebayProducts(db));
 app.use("/api/plugin",ebayPlugin(db));
 app.use("/api/plans", ebayPlans(db));
+// ✅ Use eBay Analytics API Routes
+app.use("/api/ebay/analytics", ebayAnalytics(db));
+// ✅ Use Dashboard Service API Routes
+app.use("/api/dashboard", dashboardService(db));
 
 
 
