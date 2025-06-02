@@ -35,7 +35,6 @@ export default function LogoCarousel() {
     return () => clearInterval(interval);
   }, []);
 
-  const currentLogo = logos[currentIndex];
 
   return (
     <div className="flex items-center justify-center h-10">
@@ -44,7 +43,7 @@ export default function LogoCarousel() {
           className="flex transition-transform duration-500 ease-in-out"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
-          {logos.map((logo, index) => (
+          {logos.map((logo) => (
             <div 
               key={logo.alt}
               className="flex items-center justify-center min-w-full h-10"
