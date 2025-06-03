@@ -1,24 +1,48 @@
 const express = require("express");
 const cors = require("cors");
+const axios = require("axios");
+const querystring = require("querystring");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const mysql = require("mysql2/promise");
 const ebayRoutes = require("./ebayOperations"); // ✅ Import eBay API routes
 const ebayProducts = require("./ebayProducts");
-const ebayPlugin  = require("./plugin");
-const ebayPlans =  require("./plans");
-const productFinder = require('./productFinder');
+const ebayPlugin = require("./plugin");
+const ebayPlans = require("./plans");
+const productFinder = require("./productFinder");
 const path = require("path");
 const fs = require("fs"); // ✅ Add this line
-const ebayAnalytics = require('./ebayAnalytics');
-const dashboardService = require('./dashboardService');
+const ebayAnalytics = require("./ebayAnalytics");
+const dashboardService = require("./dashboardService");
 
 require("dotenv").config();
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+// MySQL DB Setup
+const {
+  NEXT_PUBLIC_COGNITO_DOMAIN,
+  NEXT_PUBLIC_COGNITO_CLIENT_ID,
+  NEXT_PUBLIC_COGNITO_REDIRECT_URI,
+  NEXT_PUBLIC_COGNITO_LOGOUT_URI,
+  NEXT_PUBLIC_COGNITO_CLIENT_SECRET,
+  DB_HOST,
+  DB_USER,
+  DB_PASSWORD,
+  DB_NAME,
+} = process.env;
+// Helper
+const getBasicAuthHeader = () => {
+  if (!NEXT_PUBLIC_COGNITO_CLIENT_SECRET) return null;
+  return (
+    "Basic " +
+    Buffer.from(
+      `${NEXT_PUBLIC_COGNITO_CLIENT_ID}:${NEXT_PUBLIC_COGNITO_CLIENT_SECRET}`
+    ).toString("base64")
+  );
+};
 
 // ✅ MySQL Database Connection
 const db = mysql.createPool({
@@ -104,7 +128,9 @@ app.post("/api/login", async (req, res) => {
 
     if (licenseStatus !== "Activated") {
       console.log(`❌ Login blocked: License not activated for ${email}`);
-      return res.status(403).json({ message: `Your license is ${licenseStatus}` });
+      return res
+        .status(403)
+        .json({ message: `Your license is ${licenseStatus}` });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -129,7 +155,6 @@ app.post("/api/login", async (req, res) => {
     );
 
     return res.json({ message: "Login successful", auth_token, user });
-
   } catch (err) {
     console.error("❌ Server Error:", err);
     return res
@@ -137,8 +162,133 @@ app.post("/api/login", async (req, res) => {
       .json({ message: "Internal Server Error", error: err.toString() });
   }
 });
+// 🔁 Callback route: Cognito redirects here after login
+app.get("/callback", async (req, res) => {
+  const code = req.query.code;
+  const state = req.query.state;
 
+  if (!code) return res.status(400).send("Authorization code not found");
 
+  try {
+    // Exchange code for tokens
+    const tokenResponse = await axios.post(
+      `${NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/token`,
+      querystring.stringify({
+        grant_type: "authorization_code",
+        client_id: NEXT_PUBLIC_COGNITO_CLIENT_ID,
+        code,
+        redirect_uri: NEXT_PUBLIC_COGNITO_REDIRECT_URI,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          ...(getBasicAuthHeader() && { Authorization: getBasicAuthHeader() }),
+        },
+      }
+    );
+
+    const { access_token } = tokenResponse.data;
+
+    // Get user info from Cognito
+    const userInfoResponse = await axios.get(
+      `${NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/userInfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      }
+    );
+
+    const user = userInfoResponse.data;
+
+    const username = user.nickname || user.email.split("@")[0];
+    const email = user.email;
+    const provider_name = state || "Unknown";
+    const provider_type = "OAuth2";
+    const user_id = user.sub;
+    const name = user.name || username;
+    const is_admin = 0;
+    const created_at = new Date();
+    const updated_at = new Date();
+
+    // Upsert user into DB
+    const query = `
+      INSERT INTO users 
+      (username, email, password, is_admin, created_at, updated_at, provider_name, provider_type, user_id, name)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE 
+        updated_at = VALUES(updated_at),
+        provider_name = VALUES(provider_name),
+        provider_type = VALUES(provider_type),
+        name = VALUES(name)
+    `;
+
+    const values = [
+      username,
+      email,
+      "", // no password for OAuth
+      is_admin,
+      created_at,
+      updated_at,
+      provider_name,
+      provider_type,
+      user_id,
+      name,
+    ];
+
+    await db.query(query, values);
+
+    // Fetch inserted/updated user (so we can get user id etc.)
+    const [rows] = await db.query(
+      "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (rows.length === 0) {
+      return res.status(500).send("User not found after upsert");
+    }
+
+    const dbUser = rows[0];
+
+    // Generate your own JWT token for session
+    const auth_token = jwt.sign(
+      { id: dbUser.id, email: dbUser.email, is_admin: dbUser.is_admin },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Save session or token if you want
+    await db.query(
+      `INSERT INTO sessions (user_id, auth_token, expires_at)
+       VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+       ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+      [dbUser.id, auth_token]
+    );
+
+    // Set cookie with token for frontend auth
+    res.cookie("auth_token", auth_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: "lax",
+      path: "/",
+    });
+
+    // Redirect to frontend dashboard with user info as query params (or just redirect)
+    // You can also redirect and have frontend fetch user info by token instead for cleaner approach
+
+    const dashboardUrl = `${
+      process.env.FRONTEND_URL
+    }/dashboard?username=${encodeURIComponent(
+      dbUser.username
+    )}&email=${encodeURIComponent(dbUser.email)}`;
+
+    return res.redirect(dashboardUrl);
+  } catch (error) {
+    console.error("❌ Callback Error:", error);
+    return res.status(500).send("Internal Server Error");
+  }
+});
 
 // ✅ Get All Logged-in Users (Debugging)
 app.get("/api/users", async (req, res) => {
@@ -259,8 +409,6 @@ app.patch("/api/renew-key", async (req, res) => {
   }
 });
 
-
-
 // ✅ Logout API
 app.post("/api/signup", async (req, res) => {
   try {
@@ -316,7 +464,6 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
-
 app.post("/api/auth/logout", async (req, res) => {
   try {
     const auth_token =
@@ -347,28 +494,30 @@ app.post("/api/auth/logout", async (req, res) => {
 app.use("/api/ebay", ebayRoutes(db));
 // ✅ Use eBay Products API Routes
 app.use("/api/ebay/products", ebayProducts(db));
-app.use("/api/plugin",ebayPlugin(db));
+app.use("/api/plugin", ebayPlugin(db));
 app.use("/api/plans", ebayPlans(db));
 // ✅ Use eBay Analytics API Routes
 app.use("/api/ebay/analytics", ebayAnalytics(db));
 // ✅ Use Dashboard Service API Routes
 app.use("/api/dashboard", dashboardService(db));
 
-
-
 // Get all product details from JSON files in productfinder/<category> folders
-app.get('/api/product-finder/all-products', async (req, res) => {
+app.get("/api/product-finder/all-products", async (req, res) => {
   try {
     const baseDir = path.join(__dirname, "productfinder");
     const allProducts = [];
 
     if (!fs.existsSync(baseDir)) {
-      return res.status(404).json({ success: false, message: "productfinder directory not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "productfinder directory not found" });
     }
 
-    const categories = fs.readdirSync(baseDir).filter(folder =>
-      fs.statSync(path.join(baseDir, folder)).isDirectory()
-    );
+    const categories = fs
+      .readdirSync(baseDir)
+      .filter((folder) =>
+        fs.statSync(path.join(baseDir, folder)).isDirectory()
+      );
 
     for (const category of categories) {
       const categoryPath = path.join(baseDir, category);
@@ -383,7 +532,7 @@ app.get('/api/product-finder/all-products', async (req, res) => {
             allProducts.push({
               category,
               fileName: file,
-              productDetails: parsed.productDetails || []
+              productDetails: parsed.productDetails || [],
             });
           } catch (err) {
             console.error(`❌ Error parsing JSON from ${file}:`, err.message);
@@ -395,14 +544,14 @@ app.get('/api/product-finder/all-products', async (req, res) => {
     res.json({
       success: true,
       totalFiles: allProducts.length,
-      data: allProducts
+      data: allProducts,
     });
   } catch (error) {
     console.error("❌ Failed to load product details:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -410,10 +559,9 @@ app.get('/api/product-finder/all-products', async (req, res) => {
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    // Start product finder after server starts
-    productFinder.main().catch(error => {
-        console.error('Product Finder Error:', error);
-    });
+  console.log(`🚀 Server running on port ${PORT}`);
+  // Start product finder after server starts
+  productFinder.main().catch((error) => {
+    console.error("Product Finder Error:", error);
+  });
 });
-

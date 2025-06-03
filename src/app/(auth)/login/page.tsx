@@ -12,6 +12,27 @@ const CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
 const REDIRECT_URI = process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI;
 
 export default function LoginPage() {
+
+
+    const handleLogin = (provider: 'Google' | 'Facebook') => {
+    const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
+    const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+    const redirectUri = process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI;
+
+    const loginUrl = `${domain}/oauth2/authorize?` +
+      new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId!,
+        redirect_uri: redirectUri!,
+        identity_provider: provider,
+        scope: 'openid profile email',
+        state: provider.toLowerCase(),
+      });
+
+    window.location.href = loginUrl;
+  };
+
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -76,33 +97,35 @@ export default function LoginPage() {
       )}
 
       {/* SOCIAL LOGIN */}
-      <div className="flex flex-col gap-3 mb-6">
-        <a
-          href={`${COGNITO_DOMAIN}/oauth2/authorize?identity_provider=Google&response_type=CODE&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+profile`}
-          className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2 hover:bg-gray-50 transition"
-        >
-          <img
-            src="/assets/icons/google.png"
-            alt="Google"
-            width={37}
-            height={20}
-          />
-          <span className="text-sm text-gray-700 font-medium">Continue with Google</span>
-        </a>
+ {/* SOCIAL LOGIN */}
+<div className="flex flex-col gap-3 mb-6">
+  <a
+    href={`${COGNITO_DOMAIN}/oauth2/authorize?identity_provider=Google&response_type=CODE&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+profile`}
+    className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2 hover:bg-gray-50 transition"
+  >
+    <img
+      src="/assets/icons/google.png"
+      alt="Google"
+      width={37}
+      height={20}
+    />
+    <span className="text-sm text-gray-700 font-medium">Continue with Google</span>
+  </a>
 
-        <a
-          href={`${COGNITO_DOMAIN}/oauth2/authorize?identity_provider=Facebook&response_type=CODE&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+profile`}
-          className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2 hover:bg-gray-50 transition"
-        >
-          <img
-            src="/assets/icons/facebook.png"
-            alt="Facebook"
-            width={20}
-            height={20}
-          />
-          <span className="text-sm text-gray-700 font-medium">Continue with Facebook</span>
-        </a>
-      </div>
+  <a
+    href={`${COGNITO_DOMAIN}/oauth2/authorize?identity_provider=Facebook&response_type=CODE&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+profile`}
+    className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2 hover:bg-gray-50 transition"
+  >
+    <img
+      src="/assets/icons/facebook.png"
+      alt="Facebook"
+      width={20}
+      height={20}
+    />
+    <span className="text-sm text-gray-700 font-medium">Continue with Facebook</span>
+  </a>
+</div>
+
 
       <div className="mt-4 mb-4 flex items-center gap-4">
         <div className="flex-grow border-t border-gray-300" />
