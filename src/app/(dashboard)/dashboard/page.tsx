@@ -348,55 +348,41 @@ export default function Dashboard() {
 
   // Function to fetch metrics data based on timeframe
   const fetchMetricsData = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    setError(null);
-    try {
-      // Make an API call to fetch real metrics data from our platform-agnostic dashboard service
-      const response = await axios.get(`${BACKEND_SERVER_URL}/api/dashboard/metrics`, {
-        params: {
-          timeframe,
-          userId: user.id
-        },
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}`
-        }
-      });
-      
-      if (response.data && response.data.metrics) {
-        setMetrics(response.data.metrics);
-        
-        // Check if all metrics are zero
-        const allZeros = response.data.metrics.every(metric => {
-          const numericValue = parseFloat(metric.value.replace(/[$%]/g, ''));
-          return numericValue === 0;
-        });
-        
-        if (allZeros) {
-          setError('No data available. Connect a platform like eBay to see your metrics.');
-        }
-      } else {
-        throw new Error("Invalid response format");
+  if (!user) return;
+
+  setLoading(true);
+  setError(null);
+  try {
+    const response = await axios.get(`${BACKEND_SERVER_URL}/api/dashboard/metrics`, {
+      params: { timeframe, userId: user.id },
+      withCredentials: true,
+      headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}` }
+    });
+
+    if (response.data && response.data.metrics) {
+      console.log('Fetched metrics:', response.data.metrics);  // <--- Here
+      setMetrics(response.data.metrics);
+
+      const allZeros = false; // Your logic here...
+
+      if (allZeros) {
+        setError('No data available. Connect a platform like eBay to see your metrics.');
       }
-    } catch (error) {
-      console.error('Error fetching dashboard metrics:', error);
-      setError('Unable to load dashboard metrics. Connect a platform like eBay to see your data.');
-      toast.error('Failed to load metrics data');
-      
-      // Keep using initial zeros instead of mock data
-      setMetrics(initialMetrics);
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error("Invalid response format");
     }
-  };
+  } catch (error) {
+    // error handling...
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Effect to fetch metrics when timeframe changes or user loads
-useEffect(() => {
-  fetchMetricsData();
-}, [timeframe, user, fetchMetricsData]);
-
+  useEffect(() => {
+    fetchMetricsData();
+  }, [timeframe, user]);
 
   // Handle timeframe change
   const handleTimeframeChange = (newTimeframe: string) => {

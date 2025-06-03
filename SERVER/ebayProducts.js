@@ -26,16 +26,19 @@ module.exports = (db) => {
 
       console.log(`🔄 Refreshing Access Token for User ${userId}...`);
 
+      const scopes = [
+        "https://api.ebay.com/oauth/api_scope",
+        "https://api.ebay.com/oauth/api_scope/sell.inventory",
+        "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
+        "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+      ].join(" ");
+
       const response = await axios.post(
         `${EBAY_API_URL}/identity/v1/oauth2/token`,
         qs.stringify({
           grant_type: "refresh_token",
           refresh_token: refreshToken,
-          scope:
-            "https://api.ebay.com/oauth/api_scope/sell.inventory " +
-            "https://api.ebay.com/oauth/api_scope/sell.fulfillment"+
-  "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
-
+          scope: scopes, // ✅ Correct format
         }),
         {
           headers: {
@@ -218,50 +221,50 @@ module.exports = (db) => {
   router.get("/inventory/item/:sku", async (req, res) => {
     try {
       const { sku } = req.params;
-  
+
       if (!sku) {
         return res
           .status(400)
           .json({ error: "SKU is required in the URL path" });
       }
-  
+
       // Fetch the first available user (you can adjust this per project need)
       const [users] = await db.query(
         "SELECT `user_id` FROM `ebay_accounts` LIMIT 1"
       );
-  
+
       if (!users.length) {
         return res.status(404).json({ error: "No eBay accounts found" });
       }
-  
+
       const user_id = users[0].user_id;
       const accessToken = await getValidAccessToken(user_id);
-  
+
       if (!accessToken) {
         return res
           .status(401)
           .json({ error: "Access token is expired or missing" });
       }
-  
+
       const itemUrl = `${EBAY_API_URL}/sell/inventory/v1/inventory_item/${sku}`;
-  
+
       console.log(`🔍 Fetching full inventory item: ${sku}`);
-  
+
       const response = await axios.get(itemUrl, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
       });
-  
+
       // Ensure availability fields exist in the response
       const { availability } = response.data;
-  
-      const pickupAtLocationAvailability = 
+
+      const pickupAtLocationAvailability =
         availability?.pickupAtLocationAvailability || []; // Default to an empty array
       const shipToLocationAvailability =
         availability?.shipToLocationAvailability || {}; // Default to an empty object
-  
+
       // Construct the response
       const data = {
         sku,
@@ -272,7 +275,7 @@ module.exports = (db) => {
           shipToLocationAvailability,
         },
       };
-  
+
       // Send the full response with default availability if no data
       res.json(data);
     } catch (error) {
@@ -280,22 +283,22 @@ module.exports = (db) => {
         "❌ Error fetching inventory item:",
         error.response?.data || error.message
       );
-  
+
       res.status(error.response?.status || 500).json({
         error:
           error.response?.data?.message || "Failed to fetch inventory item",
       });
     }
   });
-  
+
   router.put("/inventory/stock/:sku", async (req, res) => {
     try {
       const { sku } = req.params;
-  
+
       if (!sku) {
         return res.status(400).json({ error: "SKU is required in the path" });
       }
-  
+
       // Extract full request body
       const {
         quantity = 0,
@@ -307,32 +310,32 @@ module.exports = (db) => {
         packageWeightAndSize = {},
         price, // ✅ New: extract price
       } = req.body;
-  
+
       // Get eBay user
       const [users] = await db.query(
         "SELECT `user_id` FROM `ebay_accounts` LIMIT 1"
       );
       if (!users.length)
         return res.status(404).json({ error: "No eBay account found" });
-  
+
       const user_id = users[0].user_id;
       const accessToken = await getValidAccessToken(user_id);
       if (!accessToken)
         return res
           .status(401)
           .json({ error: "Access token expired or missing" });
-  
+
       const url = `${EBAY_API_URL}/sell/inventory/v1/inventory_item/${sku}`;
-  
+
       console.log(`⚙️ Updating inventory item for SKU ${sku}`);
-  
+
       // Prepare headers
       const headers = {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
         "Content-Language": "en-US",
       };
-  
+
       // Prepare inventory item body
       const requestBody = {
         availability: {
@@ -347,14 +350,14 @@ module.exports = (db) => {
         packageWeightAndSize,
         locale: "en-US",
       };
-  
+
       console.log("🔍 Inventory Item Body:", requestBody);
-  
+
       // Update inventory item first
       const inventoryResponse = await axios.put(url, requestBody, {
         headers,
       });
-  
+
       // Optionally: handle price here (if applicable)
       if (price && price.value && price.currency) {
         console.log(
@@ -363,7 +366,7 @@ module.exports = (db) => {
         // You would typically use this to create/update an offer later
         // You could even store this in your DB or queue it for async processing
       }
-  
+
       res.json({
         success: true,
         message: `Inventory for SKU ${sku} updated successfully`,
@@ -380,8 +383,6 @@ module.exports = (db) => {
       });
     }
   });
-  
-  
 
   router.post("/inventory/add", async (req, res) => {
     try {
@@ -550,18 +551,23 @@ module.exports = (db) => {
     try {
       // Extract details from the request body
       const { id, sku, cost_price, ebay_fees } = req.body;
-  
+
       // Check if required fields are provided
       if (!sku || !cost_price || !ebay_fees) {
-        return res.status(400).json({ error: "Missing required fields: sku, cost_price, ebay_fees" });
+        return res.status(400).json({
+          error: "Missing required fields: sku, cost_price, ebay_fees",
+        });
       }
-  
+
       // Get the current time for created_at and updated_at
       const currentTime = new Date();
-  
+
       // Check if the product with the given SKU already exists
-      const [existingProduct] = await db.query("SELECT * FROM `products` WHERE `sku` = ?", [sku]);
-  
+      const [existingProduct] = await db.query(
+        "SELECT * FROM `products` WHERE `sku` = ?",
+        [sku]
+      );
+
       // If the product exists, perform an update
       if (existingProduct.length > 0) {
         // Update the existing product with new values
@@ -569,7 +575,7 @@ module.exports = (db) => {
           "UPDATE `products` SET `sku` = ?, `cost_price` = ?, `ebay_fees` = ?, `updated_at` = ? WHERE `sku` = ?",
           [sku, cost_price, ebay_fees, currentTime, sku]
         );
-  
+
         if (updateResult[0].affectedRows > 0) {
           return res.json({
             success: true,
@@ -583,16 +589,18 @@ module.exports = (db) => {
             },
           });
         } else {
-          return res.status(400).json({ error: "Product update failed or no changes detected." });
+          return res
+            .status(400)
+            .json({ error: "Product update failed or no changes detected." });
         }
       }
-  
+
       // If the product does not exist, insert a new product
       const [insertResult] = await db.query(
         "INSERT INTO `products` (`sku`, `cost_price`, `ebay_fees`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?)",
         [sku, cost_price, ebay_fees, currentTime, currentTime]
       );
-  
+
       // Return success response with the inserted product's ID
       res.json({
         success: true,
@@ -611,31 +619,28 @@ module.exports = (db) => {
       res.status(500).json({ error: "Failed to process product" });
     }
   });
-  
-// Endpoint to get all product details from the database
-router.get("/productsdata", async (req, res) => {
-  try {
-    // Query the database to get all products
-    const [products] = await db.query("SELECT * FROM `products`");
 
-    // Check if products are found
-    if (products.length > 0) {
-      res.json({
-        success: true,
-        message: "Products retrieved successfully",
-        data: products,
-      });
-    } else {
-      res.status(404).json({ error: "No products found" });
+  // Endpoint to get all product details from the database
+  router.get("/productsdata", async (req, res) => {
+    try {
+      // Query the database to get all products
+      const [products] = await db.query("SELECT * FROM `products`");
+
+      // Check if products are found
+      if (products.length > 0) {
+        res.json({
+          success: true,
+          message: "Products retrieved successfully",
+          data: products,
+        });
+      } else {
+        res.status(404).json({ error: "No products found" });
+      }
+    } catch (error) {
+      console.error("❌ Error fetching products:", error.message);
+      res.status(500).json({ error: "Failed to fetch products" });
     }
-  } catch (error) {
-    console.error("❌ Error fetching products:", error.message);
-    res.status(500).json({ error: "Failed to fetch products" });
-  }
-});
-
-
-
+  });
 
   return router;
 };

@@ -11,8 +11,6 @@ import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
 export default function Products() {
-
-
   const { user } = useAuth();
   const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user?.id}`;
   const [productsData, setProductsData] = useState<Product[]>([]);
@@ -26,212 +24,202 @@ export default function Products() {
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-
-
-  
   const dummyProducts: Product[] = [
-  {
-    id: "dummy-1",
-    title: "Wireless Headphones",
-    description: "High-quality wireless headphones with noise cancellation.",
-    price: 89.99,
-    currency: "USD",
-    quantity: 10,
-    quantitySold: 4,
-    sellThroughRate: 0,
-    timeToSell: 0,
-    costPrice: 50,
-    shipping: 5,
-    ebayFees: 5,
-    profit: 30,
-    profitMargin: 33.7,
-    roi: 60,
-    imageUrl: "https://placehold.co/400x300?text=Headphones",
-    listingStatus: "Active",
-createdAt: new Date().toISOString(),
-updatedAt: new Date().toISOString(),
-
-
-
-    competitorData: {
+    {
       id: "dummy-1",
-      avgPrice: 85,
-      avgShipping: 6,
-      lowestPrice: 79,
-      highestPrice: 99,
-      avgSellerFeedback: 4.8,
-      avgListingPosition: 1,
-      avgImageCount: 3,
-      competitorCount: 10,
-      lastUpdated: new Date(),
+      title: "Wireless Headphones",
+      description: "High-quality wireless headphones with noise cancellation.",
+      price: 89.99,
+      currency: "USD",
+      quantity: 10,
+      quantitySold: 4,
+      sellThroughRate: 0,
+      timeToSell: 0,
+      costPrice: 50,
+      shipping: 5,
+      ebayFees: 5,
+      profit: 30,
+      profitMargin: 33.7,
+      roi: 60,
+      imageUrl: "https://placehold.co/400x300?text=Headphones",
+      listingStatus: "Active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+
+      competitorData: {
+        id: "dummy-1",
+        avgPrice: 85,
+        avgShipping: 6,
+        lowestPrice: 79,
+        highestPrice: 99,
+        avgSellerFeedback: 4.8,
+        avgListingPosition: 1,
+        avgImageCount: 3,
+        competitorCount: 10,
+        lastUpdated: new Date(),
+      },
+      condition: "New", // <-- Add this line
+      category: "Electronics", // <-- Add this line
     },
-    condition: "New",       // <-- Add this line
-    category: "Electronics" // <-- Add this line
-  },
-  {
-    id: "dummy-2",
-    title: "Smartwatch",
-    description: "Fitness tracking smartwatch with heart rate monitor.",
-    price: 129.99,
-    currency: "USD",
-    quantity: 20,
-    quantitySold: 7,
-    sellThroughRate: 0,
-    timeToSell: 0,
-    costPrice: 70,
-    shipping: 5,
-    ebayFees: 8,
-    profit: 46,
-    profitMargin: 35.4,
-    roi: 65,
-    imageUrl: "https://placehold.co/400x300?text=Smartwatch",
-    listingStatus: "Active",
-createdAt: new Date().toISOString(),
-updatedAt: new Date().toISOString(),
-
-
-    competitorData: {
+    {
       id: "dummy-2",
-      avgPrice: 125,
-      avgShipping: 6,
-      lowestPrice: 110,
-      highestPrice: 150,
-      avgSellerFeedback: 4.5,
-      avgListingPosition: 2,
-      avgImageCount: 4,
-      competitorCount: 15,
-      lastUpdated: new Date(),
+      title: "Smartwatch",
+      description: "Fitness tracking smartwatch with heart rate monitor.",
+      price: 129.99,
+      currency: "USD",
+      quantity: 20,
+      quantitySold: 7,
+      sellThroughRate: 0,
+      timeToSell: 0,
+      costPrice: 70,
+      shipping: 5,
+      ebayFees: 8,
+      profit: 46,
+      profitMargin: 35.4,
+      roi: 65,
+      imageUrl: "https://placehold.co/400x300?text=Smartwatch",
+      listingStatus: "Active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+
+      competitorData: {
+        id: "dummy-2",
+        avgPrice: 125,
+        avgShipping: 6,
+        lowestPrice: 110,
+        highestPrice: 150,
+        avgSellerFeedback: 4.5,
+        avgListingPosition: 2,
+        avgImageCount: 4,
+        competitorCount: 15,
+        lastUpdated: new Date(),
+      },
+      condition: "New", // <-- Add this line
+      category: "Electronics", // <-- Add this line
     },
-    condition: "New",       // <-- Add this line
-    category: "Electronics" // <-- Add this line
-  },
-  {
-    id: "dummy-3",
-    title: "Charger",
-    description: "Charger C type .",
-    price: 110.99,
-    currency: "USD",
-    quantity: 10,
-    quantitySold: 7,
-    sellThroughRate: 0,
-    timeToSell: 0,
-    costPrice: 70,
-    shipping: 5,
-    ebayFees: 8,
-    profit: 46,
-    profitMargin: 35.4,
-    roi: 65,
-    imageUrl: "https://placehold.co/400x300?text=Charger",
-    listingStatus: "Active",
-createdAt: new Date().toISOString(),
-updatedAt: new Date().toISOString(),
-
-
-
-    competitorData: {
+    {
       id: "dummy-3",
-      avgPrice: 125,
-      avgShipping: 6,
-      lowestPrice: 110,
-      highestPrice: 150,
-      avgSellerFeedback: 4.5,
-      avgListingPosition: 2,
-      avgImageCount: 4,
-      competitorCount: 15,
-      lastUpdated: new Date(),
+      title: "Charger",
+      description: "Charger C type .",
+      price: 110.99,
+      currency: "USD",
+      quantity: 10,
+      quantitySold: 7,
+      sellThroughRate: 0,
+      timeToSell: 0,
+      costPrice: 70,
+      shipping: 5,
+      ebayFees: 8,
+      profit: 46,
+      profitMargin: 35.4,
+      roi: 65,
+      imageUrl: "https://placehold.co/400x300?text=Charger",
+      listingStatus: "Active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+
+      competitorData: {
+        id: "dummy-4",
+        avgPrice: 125,
+        avgShipping: 6,
+        lowestPrice: 110,
+        highestPrice: 150,
+        avgSellerFeedback: 4.5,
+        avgListingPosition: 2,
+        avgImageCount: 4,
+        competitorCount: 15,
+        lastUpdated: new Date(),
+      },
+      condition: "New", // <-- Add this line
+      category: "Electronics", // <-- Add this line
     },
-    condition: "New",       // <-- Add this line
-    category: "Electronics" // <-- Add this line
-  },
-   {
-    id: "dummy-3",
-    title: "Extension",
-    description: "One Extension for all your charging .",
-    price: 110.99,
-    currency: "USD",
-    quantity: 10,
-    quantitySold: 7,
-    sellThroughRate: 0,
-    timeToSell: 0,
-    costPrice: 70,
-    shipping: 5,
-    ebayFees: 8,
-    profit: 46,
-    profitMargin: 35.4,
-    roi: 65,
-    imageUrl: "https://placehold.co/400x300?text=Extension",
-    listingStatus: "Active",
-createdAt: new Date().toISOString(),
-updatedAt: new Date().toISOString(),
+    {
+      id: "dummy-4",
+      title: "Extension",
+      description: "One Extension for all your charging .",
+      price: 110.99,
+      currency: "USD",
+      quantity: 10,
+      quantitySold: 7,
+      sellThroughRate: 0,
+      timeToSell: 0,
+      costPrice: 70,
+      shipping: 5,
+      ebayFees: 8,
+      profit: 46,
+      profitMargin: 35.4,
+      roi: 65,
+      imageUrl: "https://placehold.co/400x300?text=Extension",
+      listingStatus: "Active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
 
-
-    competitorData: {
-      id: "dummy-3",
-      avgPrice: 125,
-      avgShipping: 6,
-      lowestPrice: 110,
-      highestPrice: 150,
-      avgSellerFeedback: 4.5,
-      avgListingPosition: 2,
-      avgImageCount: 4,
-      competitorCount: 15,
-      lastUpdated: new Date(),
+      competitorData: {
+        id: "dummy-5",
+        avgPrice: 125,
+        avgShipping: 6,
+        lowestPrice: 110,
+        highestPrice: 150,
+        avgSellerFeedback: 4.5,
+        avgListingPosition: 2,
+        avgImageCount: 4,
+        competitorCount: 15,
+        lastUpdated: new Date(),
+      },
+      condition: "New", // <-- Add this line
+      category: "Electronics", // <-- Add this line
     },
-    condition: "New",       // <-- Add this line
-    category: "Electronics" // <-- Add this line
-  },
+  ];
 
-];
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  currency: string;
-  quantity: number;
-  quantitySold: number;
-  sellThroughRate: number;
-  timeToSell: number;
-  costPrice: number;
-  shipping: number;
-  ebayFees: number;
-  profit: number;
-  profitMargin: number;
-  roi: number;
-  imageUrl: string;
-  listingStatus: string;
-createdAt: string;
-updatedAt: string;
-
-  competitorData: {
+  interface Product {
     id: string;
-    avgPrice: number;
-    avgShipping: number;
-    lowestPrice: number;
-    highestPrice: number;
-    avgSellerFeedback: number;
-    avgListingPosition: number;
-    avgImageCount: number;
-    competitorCount: number;
-    lastUpdated: Date ;
-  };
-  condition: string;  // <-- Add this line
-  category: string;   // <-- Add this line
-}
+    title: string;
+    description: string;
+    price: number;
+    currency: string;
+    quantity: number;
+    quantitySold: number;
+    sellThroughRate: number;
+    timeToSell: number;
+    costPrice: number;
+    shipping: number;
+    ebayFees: number;
+    profit: number;
+    profitMargin: number;
+    roi: number;
+    imageUrl: string;
+    listingStatus: string;
+    createdAt: string;
+    updatedAt: string;
 
-// interface User {
-//   id?: string | null;
-//   name?: string;
-// }
+    competitorData: {
+      id: string;
+      avgPrice: number;
+      avgShipping: number;
+      lowestPrice: number;
+      highestPrice: number;
+      avgSellerFeedback: number;
+      avgListingPosition: number;
+      avgImageCount: number;
+      competitorCount: number;
+      lastUpdated: Date;
+    };
+    condition: string; // <-- Add this line
+    category: string; // <-- Add this line
+  }
 
-// Props or fetched user
-// interface InventoryProps {
-//   user: User | null;
-//   dummyProducts: Product[];
-//   fetchProducts: () => Promise<Product[]>; // function to fetch real products
-//   availableStatuses: string[];
-// }
+  // interface User {
+  //   id?: string | null;
+  //   name?: string;
+  // }
+
+  // Props or fetched user
+  // interface InventoryProps {
+  //   user: User | null;
+  //   dummyProducts: Product[];
+  //   fetchProducts: () => Promise<Product[]>; // function to fetch real products
+  //   availableStatuses: string[];
+  // }
 
   if (user?.id) {
     console.log("API URL:", EBAY_INVENTORY_API);
@@ -309,7 +297,12 @@ updatedAt: string;
           },
         }));
 
-        setProductsData(formattedProducts);
+        if (formattedProducts.length > 0) {
+          setProductsData(formattedProducts);
+        } else {
+          setError("No inventory found. Showing demo data.");
+          setProductsData(dummyProducts);
+        }
         setLoading(false);
       } catch (err: unknown) {
         if (err instanceof Error) {
@@ -382,11 +375,13 @@ updatedAt: string;
     return (
       <div>
         <div className="text-center text-white py-6">
-          <h2 className="text-2xl text-white font-semibold">Guest Inventory Preview</h2>
-<p className="mt-2 text-sm text-gray-400">
-  You&apos;re viewing a demo inventory. Log in to manage your own products.
-</p>
-
+          <h2 className="text-2xl text-white font-semibold">
+            Guest Inventory Preview
+          </h2>
+          <p className="mt-2 text-sm text-gray-400">
+            You&apos;re viewing a demo inventory. Log in to manage your own
+            products.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
@@ -419,7 +414,8 @@ updatedAt: string;
         <p>{error}</p>
         {error.includes("integration") && (
           <p className="mt-2 text-sm text-gray-600">
-            Go to your <strong>Account Settings</strong> to connect your eBay account.
+            Go to your <strong>Account Settings</strong> to connect your eBay
+            account.
           </p>
         )}
       </div>
@@ -428,7 +424,6 @@ updatedAt: string;
 
   return (
     <div className="">
-      
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Inventory</h1>
         <button
@@ -554,20 +549,7 @@ updatedAt: string;
         />
       )}
 
-
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
-  {dummyProducts.map((product) => (
-    <ProductCard
-      key={product.id}
-      product={product}
-      onClick={() => setSelectedProductId(product.id)} // corrected
-    />
-  ))}
-</div>
-
-
-
-
+      
     </div>
   );
 }
