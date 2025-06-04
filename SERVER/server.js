@@ -277,11 +277,7 @@ app.get("/callback", async (req, res) => {
     // Redirect to frontend dashboard with user info as query params (or just redirect)
     // You can also redirect and have frontend fetch user info by token instead for cleaner approach
 
-    const dashboardUrl = `${
-      process.env.FRONTEND_URL
-    }/dashboard?username=${encodeURIComponent(
-      dbUser.username
-    )}&email=${encodeURIComponent(dbUser.email)}`;
+    const dashboardUrl = `${process.env.FRONTEND_URL}/dashboard`;
 
     return res.redirect(dashboardUrl);
   } catch (error) {
