@@ -29,7 +29,8 @@ export default function SignupPage() {
         redirect_uri: REDIRECT_URI!,
         identity_provider: provider,
         scope: 'openid profile email',
-        state: provider.toLowerCase(),
+        state: 'signup',
+
       });
 
     window.location.href = loginUrl;

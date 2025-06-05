@@ -165,7 +165,7 @@ app.post("/api/login", async (req, res) => {
 // 🔁 Callback route: Cognito redirects here after login
 app.get("/callback", async (req, res) => {
   const code = req.query.code;
-  const state = req.query.state;
+  const state = req.query.state; // "signup" or "login"
 
   if (!code) return res.status(400).send("Authorization code not found");
 
@@ -200,86 +200,123 @@ app.get("/callback", async (req, res) => {
     );
 
     const user = userInfoResponse.data;
-
-    const username = user.nickname || user.email.split("@")[0];
     const email = user.email;
-    const provider_name = state || "Unknown";
-    const provider_type = "OAuth2";
-    const user_id = user.sub;
-    const name = user.name || username;
-    const is_admin = 0;
-    const created_at = new Date();
-    const updated_at = new Date();
 
-    // Upsert user into DB
-    const query = `
-      INSERT INTO users 
-      (username, email, password, is_admin, created_at, updated_at, provider_name, provider_type, user_id, name)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE 
-        updated_at = VALUES(updated_at),
-        provider_name = VALUES(provider_name),
-        provider_type = VALUES(provider_type),
-        name = VALUES(name)
-    `;
-
-    const values = [
-      username,
-      email,
-      "", // no password for OAuth
-      is_admin,
-      created_at,
-      updated_at,
-      provider_name,
-      provider_type,
-      user_id,
-      name,
-    ];
-
-    await db.query(query, values);
-
-    // Fetch inserted/updated user (so we can get user id etc.)
+    // Check if user exists
     const [rows] = await db.query(
       "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
       [email]
     );
 
-    if (rows.length === 0) {
-      return res.status(500).send("User not found after upsert");
+    if (state === "login") {
+      // For login, user must exist
+      if (rows.length === 0) {
+        return res.send(`
+    <script>
+      alert("User not registered. Please signup first.");
+      window.location.href = "${process.env.FRONTEND_URL}/signup";
+    </script>
+  `);
+      }
+
+      const dbUser = rows[0];
+
+      // Generate JWT token and set cookie
+      const auth_token = jwt.sign(
+        { id: dbUser.id, email: dbUser.email, is_admin: dbUser.is_admin },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      await db.query(
+        `INSERT INTO sessions (user_id, auth_token, expires_at)
+         VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+         ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+        [dbUser.id, auth_token]
+      );
+
+      res.cookie("auth_token", auth_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: "lax",
+        path: "/",
+      });
+
+      return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
     }
 
-    const dbUser = rows[0];
+    if (state === "signup") {
+      // For signup, create user if not exists
+      const username = user.nickname || user.email.split("@")[0];
+      const provider_name =
+        user.identities?.[0]?.providerName || "OAuthProvider";
+      // or Facebook, depending on IDP
+      const provider_type = "OAuth2";
+      const user_id = user.sub;
+      const name = user.name || username;
+      const is_admin = 0;
+      const created_at = new Date();
+      const updated_at = new Date();
 
-    // Generate your own JWT token for session
-    const auth_token = jwt.sign(
-      { id: dbUser.id, email: dbUser.email, is_admin: dbUser.is_admin },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+      const query = `
+        INSERT INTO users 
+        (username, email, password, is_admin, created_at, updated_at, provider_name, provider_type, user_id, name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+          updated_at = VALUES(updated_at),
+          provider_name = VALUES(provider_name),
+          provider_type = VALUES(provider_type),
+          name = VALUES(name)
+      `;
 
-    // Save session or token if you want
-    await db.query(
-      `INSERT INTO sessions (user_id, auth_token, expires_at)
-       VALUES (?, ?, NOW() + INTERVAL 7 DAY)
-       ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
-      [dbUser.id, auth_token]
-    );
+      const values = [
+        username,
+        email,
+        "", // no password
+        is_admin,
+        created_at,
+        updated_at,
+        provider_name,
+        provider_type,
+        user_id,
+        name,
+      ];
 
-    // Set cookie with token for frontend auth
-    res.cookie("auth_token", auth_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: "lax",
-      path: "/",
-    });
+      await db.query(query, values);
 
-    // Redirect to frontend dashboard with user info as query params (or just redirect)
-    // You can also redirect and have frontend fetch user info by token instead for cleaner approach
+      const [newRows] = await db.query(
+        "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
+        [email]
+      );
 
-    const dashboardUrl = `${process.env.FRONTEND_URL}/dashboard`;
+      const dbUser = newRows[0];
 
-    return res.redirect(dashboardUrl);
+      const auth_token = jwt.sign(
+        { id: dbUser.id, email: dbUser.email, is_admin: dbUser.is_admin },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      await db.query(
+        `INSERT INTO sessions (user_id, auth_token, expires_at)
+         VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+         ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+        [dbUser.id, auth_token]
+      );
+
+      res.cookie("auth_token", auth_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: "lax",
+        path: "/",
+      });
+
+      return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+    }
+
+    return res.status(400).send("Invalid state parameter");
   } catch (error) {
     console.error("❌ Callback Error:", error);
     return res.status(500).send("Internal Server Error");

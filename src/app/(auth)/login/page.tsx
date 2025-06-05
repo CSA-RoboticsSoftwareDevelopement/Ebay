@@ -19,7 +19,7 @@ export default function LoginPage() {
         redirect_uri: REDIRECT_URI!,
         identity_provider: provider,
         scope: 'openid profile email',
-        state: provider.toLowerCase(),
+       state: 'login',
       });
 
     window.location.href = loginUrl;
