@@ -5,6 +5,10 @@ import { useState } from 'react';
 import axios from 'axios';
 
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
+const COGNITO_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
+const CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+const REDIRECT_URI = process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI;
+
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
@@ -15,6 +19,21 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false); // ✅ Added missing `loading` state
+
+
+  const handleLogin = (provider: 'Google' | 'Facebook') => {
+    const loginUrl = `${COGNITO_DOMAIN}/oauth2/authorize?` +
+      new URLSearchParams({
+        response_type: 'code',
+        client_id: CLIENT_ID!,
+        redirect_uri: REDIRECT_URI!,
+        identity_provider: provider,
+        scope: 'openid profile email',
+        state: provider.toLowerCase(),
+      });
+
+    window.location.href = loginUrl;
+  };
 
   // ✅ Validate Signup Key with API
   const validateKey = async (e: React.FormEvent) => {
@@ -84,16 +103,55 @@ export default function SignupPage() {
     <div className="card">
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold">Create your Resale account</h1>
-        <p className="text-neutral-gray-600 mt-2">
-          {step === 1 ? 'Enter your signup key to get started' : 'Complete your account information'}
-        </p>
+
       </div>
+
+
+
+{step === 2 && (
+  <>
+    {/* SOCIAL LOGIN */}
+    <div className="flex flex-col gap-3 mb-6">
+      <button
+        onClick={() => handleLogin('Google')}
+        className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2 hover:bg-gray-50 transition"
+      >
+        <img
+          src="/assets/icons/google.png"
+          alt="Google"
+          width={37}
+          height={20}
+        />
+        <span className="text-sm text-gray-700 font-medium">Continue with Google</span>
+      </button>
+
+      <button
+        onClick={() => handleLogin('Facebook')}
+        className="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2 hover:bg-gray-50 transition"
+      >
+        <img
+          src="/assets/icons/facebook.png"
+          alt="Facebook"
+          width={20}
+          height={20}
+        />
+        <span className="text-sm text-gray-700 font-medium">Continue with Facebook</span>
+      </button>
+    </div>
+
+  </>
+)}
 
       {error && (
         <div className="bg-error/10 text-error p-4 rounded-md mb-6">
           {error}
         </div>
       )}
+
+        <p className="text-neutral-gray-600 mt-2">
+          {step === 1 ? 'Enter your signup key to get started' : 'Complete your account information'}
+        </p>
+
 
       {step === 1 ? (
         <form onSubmit={validateKey}>
