@@ -105,9 +105,8 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ message: "Please enter all fields" });
     }
 
-    // Fetch user info (without licence column)
     const [users] = await db.query(
-      `SELECT id, email, password, IFNULL(is_admin, 0) AS is_admin FROM users WHERE email = ?`,
+      `SELECT id, username, email, password, IFNULL(is_admin, 0) AS is_admin FROM users WHERE email = ?`,
       [email]
     );
 
@@ -142,7 +141,7 @@ app.post("/api/login", async (req, res) => {
     console.log(`✅ User logged in: ${email} (Admin: ${user.is_admin})`);
 
     const auth_token = jwt.sign(
-      { id: user.id, email: user.email, is_admin: user.is_admin },
+      { id: user.id, username: user.username, email: user.email, is_admin: user.is_admin },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -154,6 +153,7 @@ app.post("/api/login", async (req, res) => {
       [user.id, auth_token]
     );
 
+    console.log("auth_token data from backend", user)
     return res.json({ message: "Login successful", auth_token, user });
   } catch (err) {
     console.error("❌ Server Error:", err);
@@ -162,6 +162,7 @@ app.post("/api/login", async (req, res) => {
       .json({ message: "Internal Server Error", error: err.toString() });
   }
 });
+
 // 🔁 Callback route: Cognito redirects here after login
 app.get("/callback", async (req, res) => {
   const code = req.query.code;
@@ -442,7 +443,7 @@ app.patch("/api/renew-key", async (req, res) => {
   }
 });
 
-// ✅ Logout API
+// ✅ SignUp API
 app.post("/api/signup", async (req, res) => {
   try {
     console.log("Signup Request:", req.body);

@@ -79,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
           headers: { Authorization: `Bearer ${storedToken}` },
         });
+        console.log("auth data",response.data)
 
         if (response.data.user && response.data.token) {
           setAuthTokenAndUser(response.data.token, response.data.user);
