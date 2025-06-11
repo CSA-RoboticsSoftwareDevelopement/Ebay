@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/config/database"; // Import database connection
 
+function formatDateToMySQL(datetime) {
+  return datetime.toISOString().slice(0, 19).replace("T", " ");
+}
+
 // Generate a random signup key
 const generateRandomKey = () => {
   return `${Math.random().toString(36).substr(2, 15).toUpperCase()}`;
@@ -19,10 +23,10 @@ export async function POST(req) {
     }
 
     const key = generateRandomKey();
-    const createdAt = new Date().toISOString();
-    const expiresAt = new Date(
-      Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000
-    ).toISOString();
+    const createdAt = formatDateToMySQL(new Date());
+    const expiresAt = formatDateToMySQL(
+      new Date(Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000)
+    );
 
     const [result] = await pool.execute(
       `INSERT INTO license_key (license_key, status, payment_mode, payment_date, created_at, expires_at)
@@ -50,7 +54,6 @@ export async function POST(req) {
     );
   }
 }
-
 
 // ✅ Handle GET request (Fetch Keys)
 export async function GET() {
@@ -84,9 +87,10 @@ export async function DELETE(req) {
     }
 
     // ✅ Delete from database
-    const [result] = await pool.execute("DELETE FROM license_key WHERE id = ?", [
-      id,
-    ]);
+    const [result] = await pool.execute(
+      "DELETE FROM license_key WHERE id = ?",
+      [id]
+    );
 
     if (result.affectedRows === 0) {
       return NextResponse.json({ error: "Key not found." }, { status: 404 });

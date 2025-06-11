@@ -37,6 +37,7 @@ export function Header({ className, breadcrumbs }: HeaderProps) {
 
 
   const { user, logout } = useAuth()
+  console.log("user", user)
   const username = user?.username || "User"
 
   const handleLogout = async () => {

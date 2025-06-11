@@ -55,6 +55,7 @@ export default function AdminKeysPage() {
     try {
       setIsLoading(true);
       const response = await axios.get("/api/admin/keys");
+      console.log(response.data.keys);
 
       interface ApiKey {
         id: string;
