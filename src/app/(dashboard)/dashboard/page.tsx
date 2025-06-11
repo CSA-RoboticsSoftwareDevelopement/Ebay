@@ -344,6 +344,20 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   
+
+
+
+  useEffect(() => {
+    if (window.location.hash === '#_=_') {
+      if (history.replaceState) {
+        history.replaceState(null, '', window.location.href.split('#')[0]);
+      } else {
+        window.location.hash = '';
+      }
+    }
+  }, []);
+
+
   const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
   // Function to fetch metrics data based on timeframe
