@@ -224,7 +224,7 @@ app.get("/callback", async (req, res) => {
 
       // Generate JWT token and set cookie
       const auth_token = jwt.sign(
-        { id: dbUser.id, email: dbUser.email, is_admin: dbUser.is_admin },
+        { id: dbUser.id, username:dbUser.username, email: dbUser.email, is_admin: dbUser.is_admin },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -236,15 +236,17 @@ app.get("/callback", async (req, res) => {
         [dbUser.id, auth_token]
       );
 
-      res.cookie("auth_token", auth_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: "lax",
-        path: "/",
-      });
+      // res.cookie("auth_token", auth_token, {
+      //   httpOnly: true,
+      //   secure: process.env.NODE_ENV === "production",
+      //   maxAge: 7 * 24 * 60 * 60 * 1000,
+      //   sameSite: "lax",
+      //   path: "/",
+      // });
 
-      return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+      // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+         return res.redirect(`${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`);
+
     }
 
     if (state === "signup") {
@@ -306,15 +308,17 @@ app.get("/callback", async (req, res) => {
         [dbUser.id, auth_token]
       );
 
-      res.cookie("auth_token", auth_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: "lax",
-        path: "/",
-      });
+      // res.cookie("auth_token", auth_token, {
+      //   httpOnly: true,
+      //   secure: process.env.NODE_ENV === "production",
+      //   maxAge: 7 * 24 * 60 * 60 * 1000,
+      //   sameSite: "lax",
+      //   path: "/",
+      // });
 
-      return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+      // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+         return res.redirect(`${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`);
+
     }
 
     return res.status(400).send("Invalid state parameter");

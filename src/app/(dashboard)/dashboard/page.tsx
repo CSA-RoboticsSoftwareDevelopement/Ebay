@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, ResponsiveContainer, Tooltip as RechartsTooltip, TooltipProps } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext'; // Make sure this path is correct
 import { 
   Tooltip, 
   TooltipContent, 
@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/tooltip";
 import { Info, Loader2, ChevronDown, Calendar, Sparkles, Clock, Zap, TrendingUp } from "lucide-react";
 import toast from "react-hot-toast";
+import { useRouter } from 'next/navigation'; // Import useRouter
 
-// Define types for metric data
+// Define types for metric data (Keeping your original types)
 type MetricDataPoint = {
   name: string;
   value: number;
@@ -340,68 +341,128 @@ const ComingSoonSection = () => {
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('last30');
   const [metrics, setMetrics] = useState<Metric[]>(initialMetrics);
-  const [loading, setLoading] = useState(true);
+  // Keep the loading state for metrics separate from overall auth loading if needed
+  const [metricsLoading, setMetricsLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
   
+  // Destructure what you need from useAuth
+  const { user, authToken, loading: authLoading, setAuthTokenAndUser } = useAuth();
+  const router = useRouter();
 
+  const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
-
+  // Effect to handle auth_token from URL hash after Cognito redirect
   useEffect(() => {
-    if (window.location.hash === '#_=_') {
+    const hash = window.location.hash;
+    if (hash.includes('auth_token=')) {
+      const token = hash.split('auth_token=')[1].split('&')[0]; // Extract only the token part
+
+      const fetchUserDataAndSetContext = async () => {
+        try {
+          // Use the captured token to fetch full user details from your backend's session endpoint
+          const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.data.user) {
+            // Use the centralized function from AuthContext to set token and user data
+            setAuthTokenAndUser(token, response.data.user);
+            toast.success("Logged in successfully via Cognito!");
+          } else {
+            console.error("No user data returned from /api/auth/session after Cognito callback.");
+            toast.error("Failed to retrieve user data after login.");
+            // If user data is missing, it's safer to redirect to login
+            router.push('/login'); 
+          }
+        } catch (err) {
+          console.error("Error fetching user data from /api/auth/session after Cognito callback:", err);
+          toast.error("Error during Cognito login process. Please try again.");
+          // Redirect to login on error
+          router.push('/login'); 
+        } finally {
+          // Always clean the URL hash after processing, regardless of success or failure
+          // This prevents the token from lingering in the URL history
+          if (history.replaceState) {
+            history.replaceState(null, '', window.location.href.split('#')[0]);
+          } else {
+            window.location.hash = ''; // Fallback for older browsers
+          }
+        }
+      };
+
+      fetchUserDataAndSetContext();
+    }
+    // Clean up the #_=_ hash if it appears from some OAuth providers
+    else if (hash === '#_=_') {
       if (history.replaceState) {
         history.replaceState(null, '', window.location.href.split('#')[0]);
       } else {
         window.location.hash = '';
       }
     }
-  }, []);
-
-
-  const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
+    // No need to call checkAuth() explicitly here, as AuthProvider's useEffect will handle initial check
+  }, [setAuthTokenAndUser, router, BACKEND_SERVER_URL]); // Add dependencies
 
   // Function to fetch metrics data based on timeframe
   const fetchMetricsData = async () => {
-  if (!user) return;
-
-  setLoading(true);
-  setError(null);
-  try {
-    const response = await axios.get(`${BACKEND_SERVER_URL}/api/dashboard/metrics`, {
-      params: { timeframe, userId: user.id },
-      withCredentials: true,
-      headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}` }
-    });
-
-    if (response.data && response.data.metrics) {
-      console.log('Fetched metrics:', response.data.metrics);  // <--- Here
-      setMetrics(response.data.metrics);
-
-      const allZeros = false; // Your logic here...
-
-      if (allZeros) {
-        setError('No data available. Connect a platform like eBay to see your metrics.');
-      }
-    } else {
-      throw new Error("Invalid response format");
+    // Ensure user and authToken are available from the context before fetching data
+    if (!user || !authToken) {
+      console.warn("User or AuthToken not available, skipping metrics fetch.");
+      setMetricsLoading(false); // Set metrics loading to false if pre-conditions not met
+      return; 
     }
-  } catch (error) {
-    // error handling...
-  } finally {
-    setLoading(false);
-  }
-};
 
+    setMetricsLoading(true); // Set loading for metrics
+    setError(null); // Clear previous errors
+    try {
+      const response = await axios.get(`${BACKEND_SERVER_URL}/api/dashboard/metrics`, {
+        params: { timeframe, userId: user.id }, // Use user.id from context
+        headers: { Authorization: `Bearer ${authToken}` } // Use authToken from context
+      });
 
-  // Effect to fetch metrics when timeframe changes or user loads
+      if (response.data && response.data.metrics) {
+        setMetrics(response.data.metrics);
+
+        // Example logic for 'no data available' message
+        const allZeros = response.data.metrics.every(metric => 
+          metric.chartData.every(dataPoint => dataPoint.value === 0) &&
+          metric.value === '$0.00' && metric.change === '0%'
+        ); 
+
+        if (allZeros) {
+          setError('No data available. Connect a platform like eBay to see your metrics.');
+        } else {
+            setError(null); // Clear error if data is present
+        }
+
+      } else {
+        throw new Error("Invalid response format from metrics API");
+      }
+    } catch (err) {
+      console.error("Error fetching metrics:", err);
+      toast.error("Failed to load dashboard metrics.");
+      setError("Failed to load metrics. Please try again.");
+    } finally {
+      setMetricsLoading(false); // Always stop loading for metrics
+    }
+  };
+
+  // Effect to fetch metrics when timeframe changes or user/authToken changes
+  // Only fetch data if user and authToken are populated (meaning user is logged in)
   useEffect(() => {
-    fetchMetricsData();
-  }, [timeframe, user]);
+    if (user && authToken) {
+      fetchMetricsData();
+    }
+  }, [timeframe, user, authToken]); // Depend on user and authToken from context
 
   // Handle timeframe change
   const handleTimeframeChange = (newTimeframe: string) => {
     setTimeframe(newTimeframe);
   };
+
+  // Overall loading check for UI (e.g., show a full page spinner)
+  // Combine auth loading with metrics loading
+  const overallLoading = authLoading || metricsLoading;
 
   return (
     <div className="space-y-8">
@@ -415,7 +476,7 @@ export default function Dashboard() {
           Dashboard Overview
         </motion.h1>
         <div className="flex items-center gap-4">
-          {loading && (
+          {overallLoading && ( // Use overallLoading for this indicator
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -428,7 +489,7 @@ export default function Dashboard() {
           <AnimatedTimeframeDropdown 
             timeframe={timeframe}
             onTimeframeChange={handleTimeframeChange}
-            loading={loading}
+            loading={overallLoading} // Pass overallLoading to dropdown
           />
         </div>
       </div>
@@ -446,7 +507,7 @@ export default function Dashboard() {
       )}
 
       {/* Metrics Grid */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 ${loading ? 'opacity-70' : ''}`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 ${overallLoading ? 'opacity-70' : ''}`}>
         {metrics.map((metric, index) => (
           <MetricCard key={metric.name} metric={metric} index={index} />
         ))}
