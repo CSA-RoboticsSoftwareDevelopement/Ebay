@@ -290,19 +290,31 @@ app.post("/verify", async (req, res) => {
 // 🔁 Callback route: Cognito redirects here after login
 app.get("/callback", async (req, res) => {
   const code = req.query.code;
-  const state = req.query.state; // "signup" or "login"
+  const rawState = req.query.state;
+  let state = "";
+  let signupKeyFromCognito = null;
 
-  if (!code) return res.status(400).send("Authorization code not found");
+  if (rawState) {
+    const parts = rawState.split("|");
+    state = parts[0]; // "signup" or "login"
+    if (parts.length > 1) {
+      signupKeyFromCognito = parts[1];
+    }
+  }
+
+  if (!code) {
+    console.log("❌ Authorization code not found in callback.");
+    return res.status(400).send("Authorization code not found");
+  }
 
   try {
-    // Exchange code for tokens
     const tokenResponse = await axios.post(
-      `${NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/token`,
+      `${process.env.NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/token`,
       querystring.stringify({
         grant_type: "authorization_code",
-        client_id: NEXT_PUBLIC_COGNITO_CLIENT_ID,
+        client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
         code,
-        redirect_uri: NEXT_PUBLIC_COGNITO_REDIRECT_URI,
+        redirect_uri: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI,
       }),
       {
         headers: {
@@ -314,9 +326,8 @@ app.get("/callback", async (req, res) => {
 
     const { access_token } = tokenResponse.data;
 
-    // Get user info from Cognito
     const userInfoResponse = await axios.get(
-      `${NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/userInfo`,
+      `${process.env.NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/userInfo`,
       {
         headers: {
           Authorization: `Bearer ${access_token}`,
@@ -327,26 +338,43 @@ app.get("/callback", async (req, res) => {
     const user = userInfoResponse.data;
     const email = user.email;
 
-    // Check if user exists
     const [rows] = await db.query(
       "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
       [email]
     );
 
     if (state === "login") {
-      // For login, user must exist
       if (rows.length === 0) {
+        console.log(`❌ Cognito Login failed: User ${email} not found in DB.`);
         return res.send(`
-    <script>
-      alert("User not registered. Please signup first.");
-      window.location.href = "${process.env.FRONTEND_URL}/signup";
-    </script>
-  `);
+          <script>
+            alert("User not registered. Please signup first.");
+            window.location.href = "${process.env.FRONTEND_URL}/signup";
+          </script>
+        `);
       }
 
       const dbUser = rows[0];
 
-      // Generate JWT token and set cookie
+      const [licenseRows] = await db.query(
+        "SELECT status FROM license_key WHERE user_id = ?",
+        [dbUser.id]
+      );
+
+      const licenseStatus = licenseRows[0]?.status || "Not Found";
+
+      if (licenseStatus !== "Activated") {
+        console.log(
+          `❌ Cognito Login blocked: License not activated for ${email}. Status: ${licenseStatus}`
+        );
+        return res.send(`
+          <script>
+            alert("Your license is ${licenseStatus}. Please activate it to proceed.");
+            window.location.href = "${process.env.FRONTEND_URL}/license-activation";
+          </script>
+        `);
+      }
+
       const auth_token = jwt.sign(
         {
           id: dbUser.id,
@@ -365,68 +393,142 @@ app.get("/callback", async (req, res) => {
         [dbUser.id, auth_token]
       );
 
-      // res.cookie("auth_token", auth_token, {
-      //   httpOnly: true,
-      //   secure: process.env.NODE_ENV === "production",
-      //   maxAge: 7 * 24 * 60 * 60 * 1000,
-      //   sameSite: "lax",
-      //   path: "/",
-      // });
-
-      // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+      console.log(
+        `✅ Cognito User logged in: ${email} (Admin: ${dbUser.is_admin})`
+      );
       return res.redirect(
         `${process.env.FRONTEND_URL}/verify-otp?email=${email}`
       );
     }
 
     if (state === "signup") {
-      // For signup, create user if not exists
-      const username = user.nickname || user.email.split("@")[0];
-      const provider_name =
-        user.identities?.[0]?.providerName || "OAuthProvider";
-      // or Facebook, depending on IDP
-      const provider_type = "OAuth2";
-      const user_id = user.sub;
-      const name = user.name || username;
-      const is_admin = 0;
-      const created_at = new Date();
-      const updated_at = new Date();
+      if (!signupKeyFromCognito) {
+        console.log(
+          "❌ Signup key missing from state parameter for Cognito signup."
+        );
+        return res.status(400).send("Signup key missing for social signup.");
+      }
 
-      const query = `
-        INSERT INTO users 
-        (username, email, password, is_admin, created_at, updated_at, provider_name, provider_type, user_id, name)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-          updated_at = VALUES(updated_at),
-          provider_name = VALUES(provider_name),
-          provider_type = VALUES(provider_type),
-          name = VALUES(name)
-      `;
+      let dbUser;
 
-      const values = [
-        username,
-        email,
-        "", // no password
-        is_admin,
-        created_at,
-        updated_at,
-        provider_name,
-        provider_type,
-        user_id,
-        name,
-      ];
+      if (rows.length === 0) {
+        const username = user.nickname || user.email.split("@")[0];
+        const provider_name =
+          user.identities?.[0]?.providerName || "OAuthProvider";
+        const provider_type = "OAuth2";
+        const cognito_user_id = user.sub;
+        const name = user.name || username;
 
-      await db.query(query, values);
+        const query = `
+          INSERT INTO users
+          (username, email, password, is_admin, created_at, updated_at, provider_name, provider_type, user_id, name)
+          VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?)
+        `;
 
-      const [newRows] = await db.query(
-        "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
-        [email]
+        const values = [
+          username,
+          email,
+          "", // No password for OAuth
+          0,
+          provider_name,
+          provider_type,
+          cognito_user_id,
+          name,
+        ];
+
+        const [insertResult] = await db.query(query, values);
+
+        const [newRows] = await db.query(
+          "SELECT id, username, email, is_admin, name FROM users WHERE id = ?",
+          [insertResult.insertId]
+        );
+
+        dbUser = newRows[0];
+
+        console.log(
+          `✅ New user ${email} created via Cognito signup (ID: ${dbUser.id})`
+        );
+      } else {
+        dbUser = rows[0];
+
+        await db.query(
+          `UPDATE users SET updated_at = NOW(), provider_name = ?, provider_type = ?, user_id = ?, name = ? WHERE id = ?`,
+          [
+            user.identities?.[0]?.providerName || "OAuthProvider",
+            "OAuth2",
+            user.sub,
+            user.name || user.nickname || user.email.split("@")[0],
+            dbUser.id,
+          ]
+        );
+
+        console.log(
+          `ℹ️ Existing user ${email} logged in/signed up via Cognito.`
+        );
+      }
+
+      const [keyRows] = await db.execute(
+        "SELECT id, status FROM license_key WHERE license_key = ?",
+        [signupKeyFromCognito]
       );
 
-      const dbUser = newRows[0];
+      if (keyRows.length === 0) {
+        console.log(
+          `❌ Cognito Signup blocked: Invalid signup key provided: ${signupKeyFromCognito}`
+        );
+        return res.send(`
+          <script>
+            alert("Invalid signup key. Please try again or contact support.");
+            window.location.href = "${process.env.FRONTEND_URL}/signup";
+          </script>
+        `);
+      }
+
+      const keyData = keyRows[0];
+
+      if (keyData.status !== "Not Activated") {
+        console.log(
+          `❌ Cognito Signup blocked: Signup key ${signupKeyFromCognito} already used or expired. Status: ${keyData.status}`
+        );
+        return res.send(`
+          <script>
+            alert("Signup key is already used or expired. Please try again or contact support.");
+            window.location.href = "${process.env.FRONTEND_URL}/signup";
+          </script>
+        `);
+      }
+
+      console.log(
+        `ℹ️ Attempting to activate license key ${keyData.id} for user ${dbUser.id}`
+      );
+
+      try {
+        await db.execute(
+          "UPDATE license_key SET user_id = ?, status = 'Activated' WHERE id = ?",
+          [dbUser.id, keyData.id]
+        );
+        console.log(
+          `✅ License key ${signupKeyFromCognito} activated for user ${email} (ID: ${dbUser.id})`
+        );
+      } catch (licenseUpdateError) {
+        console.error(
+          `❌ Error activating license key ${signupKeyFromCognito} for user ${email}:`,
+          licenseUpdateError
+        );
+        return res.send(`
+          <script>
+            alert("Failed to activate license. Please contact support.");
+            window.location.href = "${process.env.FRONTEND_URL}/signup";
+          </script>
+        `);
+      }
 
       const auth_token = jwt.sign(
-        { id: dbUser.id, email: dbUser.email, is_admin: dbUser.is_admin },
+        {
+          id: dbUser.id,
+          email: dbUser.email,
+          is_admin: dbUser.is_admin,
+        },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -438,20 +540,12 @@ app.get("/callback", async (req, res) => {
         [dbUser.id, auth_token]
       );
 
-      // res.cookie("auth_token", auth_token, {
-      //   httpOnly: true,
-      //   secure: process.env.NODE_ENV === "production",
-      //   maxAge: 7 * 24 * 60 * 60 * 1000,
-      //   sameSite: "lax",
-      //   path: "/",
-      // });
-
-      // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
       return res.redirect(
         `${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`
       );
     }
 
+    console.log(`❌ Invalid state parameter in callback: ${state}`);
     return res.status(400).send("Invalid state parameter");
   } catch (error) {
     console.error("❌ Callback Error:", error);

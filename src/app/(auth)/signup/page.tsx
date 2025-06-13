@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -18,23 +19,40 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false); // ✅ Added missing `loading` state
+  const [loading, setLoading] = useState(false); // ✅ Added missing loading state
 
 
-  const handleLogin = (provider: 'Google' | 'Facebook') => {
-    const loginUrl = `${COGNITO_DOMAIN}/oauth2/authorize?` +
-      new URLSearchParams({
-        response_type: 'code',
-        client_id: CLIENT_ID!,
-        redirect_uri: REDIRECT_URI!,
-        identity_provider: provider,
-        scope: 'openid profile email',
-        state: 'signup',
+  // const handleLogin = (provider: 'Google' | 'Facebook') => {
+  //   const loginUrl = ${COGNITO_DOMAIN}/oauth2/authorize? +
+  //     new URLSearchParams({
+  //       response_type: 'code',
+  //       client_id: CLIENT_ID!,
+  //       redirect_uri: REDIRECT_URI!,
+  //       identity_provider: provider,
+  //       scope: 'openid profile email',
+  //       state: 'signup',
 
-      });
+  //     });
 
-    window.location.href = loginUrl;
-  };
+  //   window.location.href = loginUrl;
+  // };
+
+const handleLogin = (provider: 'Google' | 'Facebook') => {
+  // Ensure signupKey is available here, e.g., from state
+  const stateParam = `signup|${signupKey}`; // Pass the signupKey here as a string
+
+  const loginUrl = `${COGNITO_DOMAIN}/oauth2/authorize?` +
+    new URLSearchParams({
+      response_type: 'code',
+      client_id: CLIENT_ID!,
+      redirect_uri: REDIRECT_URI!,
+      identity_provider: provider,
+      scope: 'openid profile email',
+      state: stateParam, // Use the combined state as a string
+    });
+
+  window.location.href = loginUrl;
+};
 
   // ✅ Validate Signup Key with API
   const validateKey = async (e: React.FormEvent) => {
