@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext"
 import Swal from "sweetalert2"
 // import { useRouter } from "next/navigation"
 
+
 interface HeaderProps {
   className?: string
   breadcrumbs?: {
@@ -34,9 +35,10 @@ interface HeaderProps {
 export function Header({ className, breadcrumbs }: HeaderProps) {
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
-
+   
 
   const { user, logout } = useAuth()
+  
   console.log("user", user)
   const username = user?.username || "User"
 

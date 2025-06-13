@@ -5,6 +5,7 @@ const querystring = require("querystring");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const nodemailer = require("nodemailer");
 const mysql = require("mysql2/promise");
 const ebayRoutes = require("./ebayOperations"); // ✅ Import eBay API routes
 const ebayProducts = require("./ebayProducts");
@@ -141,7 +142,12 @@ app.post("/api/login", async (req, res) => {
     console.log(`✅ User logged in: ${email} (Admin: ${user.is_admin})`);
 
     const auth_token = jwt.sign(
-      { id: user.id, username: user.username, email: user.email, is_admin: user.is_admin },
+      {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        is_admin: user.is_admin,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -153,13 +159,131 @@ app.post("/api/login", async (req, res) => {
       [user.id, auth_token]
     );
 
-    console.log("auth_token data from backend", user)
+    console.log("auth_token data from backend", user);
     return res.json({ message: "Login successful", auth_token, user });
   } catch (err) {
     console.error("❌ Server Error:", err);
     return res
       .status(500)
       .json({ message: "Internal Server Error", error: err.toString() });
+  }
+});
+
+// 2) Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// Utility to generate 6-digit OTP
+function generateOtp() {
+  return "" + Math.floor(100000 + Math.random() * 900000);
+}
+
+// POST /login → generate & send OTP
+app.post("/post_login", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required." });
+
+  try {
+    // Check user exists
+    const [users] = await db.query(
+      "SELECT username FROM users WHERE email = ? LIMIT 1",
+      [email]
+    );
+    if (users.length === 0) {
+      return res.status(404).json({ error: "No user with that email." });
+    }
+
+    // Create OTP
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    // Save to user_otps
+    await db.query(
+      `INSERT INTO user_otps (email, otp, expires_at) VALUES (?, ?, ?)`,
+      [email, otp, expiresAt]
+    );
+
+    // Send email
+    await transporter.sendMail({
+      from: `"Resale" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your One-Time Login Code",
+      text: `Hello,\n\nYour OTP is: ${otp}\nIt will expire in 10 minutes.\n\nIf you didn't request this, ignore this email.`,
+    });
+
+    res.json({ message: "OTP sent." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error." });
+  }
+});
+
+// POST /verify → check OTP
+app.post("/verify", async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp)
+    return res.status(400).json({ error: "Email and OTP required." });
+
+  try {
+    const [rows] = await db.query(
+      `SELECT id, expires_at, used FROM user_otps
+       WHERE email = ? AND otp = ? LIMIT 1`,
+      [email, otp]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: "Invalid OTP." });
+    }
+
+    const record = rows[0];
+    if (record.used) {
+      return res.status(400).json({ error: "OTP already used." });
+    }
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({ error: "OTP expired." });
+    }
+
+    // Mark OTP as used
+    await db.query(`UPDATE user_otps SET used = 1 WHERE id = ?`, [record.id]);
+
+    // Fetch user data
+    const [users] = await db.query(
+      "SELECT id, username, email, is_admin FROM users WHERE email = ? LIMIT 1",
+      [email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const user = users[0];
+
+    // Generate token
+    const auth_token = jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // Save session
+    await db.query(
+      `INSERT INTO sessions (user_id, auth_token, expires_at)
+       VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+       ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+      [user.id, auth_token]
+    );
+
+    return res.json({
+      message: "OTP verified. Login successful.",
+      auth_token,
+      user,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error." });
   }
 });
 
@@ -224,7 +348,12 @@ app.get("/callback", async (req, res) => {
 
       // Generate JWT token and set cookie
       const auth_token = jwt.sign(
-        { id: dbUser.id, username:dbUser.username, email: dbUser.email, is_admin: dbUser.is_admin },
+        {
+          id: dbUser.id,
+          username: dbUser.username,
+          email: dbUser.email,
+          is_admin: dbUser.is_admin,
+        },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -245,8 +374,9 @@ app.get("/callback", async (req, res) => {
       // });
 
       // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
-         return res.redirect(`${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`);
-
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/verify-otp?email=${email}`
+      );
     }
 
     if (state === "signup") {
@@ -317,8 +447,9 @@ app.get("/callback", async (req, res) => {
       // });
 
       // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
-         return res.redirect(`${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`);
-
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`
+      );
     }
 
     return res.status(400).send("Invalid state parameter");
@@ -457,7 +588,6 @@ app.post("/api/signup", async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // 1. Validate key
     const [keyRows] = await db.execute(
       "SELECT id, status FROM license_key WHERE license_key = ?",
       [signupKey]
@@ -475,10 +605,8 @@ app.post("/api/signup", async (req, res) => {
         .json({ message: "Signup key is already used or expired." });
     }
 
-    // 2. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Insert user
     const [insertResult] = await db.execute(
       "INSERT INTO users (email, password, username, created_at) VALUES (?, ?, ?, NOW())",
       [email, hashedPassword, name]
@@ -486,15 +614,28 @@ app.post("/api/signup", async (req, res) => {
 
     const userId = insertResult.insertId;
 
-    // 4. Link user to the admin_key and activate it
     await db.execute(
       "UPDATE license_key SET user_id = ?, status = 'Activated' WHERE id = ?",
       [userId, keyData.id]
     );
 
+    // ✅ Generate token immediately after signup
+    const user = { id: userId, email, username: name, is_admin: 0 };
+    const auth_token = jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    await db.query(
+      `INSERT INTO sessions (user_id, auth_token, expires_at)
+       VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+       ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+      [userId, auth_token]
+    );
+
     return res.status(201).json({
-      message: "User created and key activated successfully",
-      userId,
+      message: "User created, key activated, and logged in successfully",
+      auth_token,
+      user,
     });
   } catch (error) {
     console.error("Signup Error:", error);

@@ -52,66 +52,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Function to check authentication status, prioritizing session storage
-  const checkAuth = useCallback(async () => {
-    setLoading(true); // Start loading
+const checkAuth = useCallback(async () => {
+  setLoading(true);
 
-    try {
-      const storedToken = sessionStorage.getItem("authToken");
-      const storedUserString = sessionStorage.getItem("user"); // Get the user object as a string
+  try {
+    const storedToken = sessionStorage.getItem("authToken");
+    const storedUserString = sessionStorage.getItem("user");
 
-      if (storedToken && storedUserString) {
-        try {
-          const parsedUser: User = JSON.parse(storedUserString);
-          setAuthToken(storedToken);
-          setUser(parsedUser);
-          setLoading(false); // Stop loading after successful restoration
-          return; // Exit early if session restored from storage
-        } catch (parseError) {
-          console.error("❌ Failed to parse stored user data from session storage:", parseError);
-          // If parsing fails, fall through to try backend validation or clear session
-        }
+    if (storedToken && storedUserString) {
+      try {
+        const parsedUser: User = JSON.parse(storedUserString);
+        setAuthToken(storedToken);
+        setUser(parsedUser);
+        setLoading(false);
+        return;
+      } catch (parseError) {
+        console.error("❌ Failed to parse stored user data:", parseError);
       }
+    }
 
-      // If no valid stored token or user data (or parsing failed),
-      // attempt to validate with the backend if a token exists.
-      if (storedToken) {
-        console.log("🔹 Attempting to validate session with backend...");
-        const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
-        console.log("auth data",response.data)
+    if (storedToken) {
+      console.log("🔹 Validating session with backend...");
+      const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
 
-        if (response.data.user && response.data.token) {
-          setAuthTokenAndUser(response.data.token, response.data.user);
-          console.log("✅ Session validated successfully with backend.");
-        } else {
-          // Backend didn't return valid user/token, so clear session
-          console.warn("⚠️ Backend validation failed. Clearing session.");
-          sessionStorage.clear();
-          setUser(null);
-          setAuthToken(null);
-        }
+      if (response.data.user) {
+        setUser(response.data.user);
+        setAuthToken(storedToken); // Reuse existing token
+        sessionStorage.setItem("user", JSON.stringify(response.data.user));
+        console.log("✅ Session restored from backend");
       } else {
-        // No stored token at all, ensure session is completely clear
-        console.log("ℹ️ No stored token found. Ensuring session is clear.");
+        console.warn("⚠️ No valid session found.");
         sessionStorage.clear();
         setUser(null);
         setAuthToken(null);
       }
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.warn("⚠️ Unauthorized: Token invalid or expired. Clearing session.");
-      } else {
-        console.error("❌ Authentication check failed during backend call:", error);
-      }
-      // Always clear invalid session or on any error during check
+    } else {
       sessionStorage.clear();
       setUser(null);
       setAuthToken(null);
-    } finally {
-      setLoading(false); // Always stop loading in the finally block
     }
-  }, [setAuthTokenAndUser]);
+  } catch (error) {
+    console.error("❌ checkAuth failed:", error);
+    sessionStorage.clear();
+    setUser(null);
+    setAuthToken(null);
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
 
   // Effect to run checkAuth when the component mounts
   useEffect(() => {
