@@ -97,16 +97,18 @@ export default function VerifyOtpPage() {
           />
         </div>
 
-<div className="mb-4 flex items-center text-sm text-gray-500">
+<div className="mb-4 text-left text-sm text-gray-500">
+  <span>Didn’t receive the OTP? </span>
   <button
     onClick={handleResendOtp}
     disabled={resending}
-    className="text-yellow-500 font-medium hover:underline mr-2"
+    className="text-yellow-500 font-medium hover:underline"
   >
     {resending ? 'Resending...' : 'Resend OTP'}
   </button>
-  <span>Didn’t receive the code?</span>
 </div>
+
+
 
         <button
           className="btn btn-primary w-full text-base py-2"
