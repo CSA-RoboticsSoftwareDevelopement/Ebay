@@ -13,18 +13,17 @@ export default function VerifyOtpPage() {
   const [otp, setOtp] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const otpSentRef = useRef(false);
   const { checkAuth } = useAuth();
 
-
-useEffect(() => {
-  if (emailFromQuery && !otpSentRef.current) {
-    setEmail(emailFromQuery);
-    sendOtp(emailFromQuery);
-    otpSentRef.current = true;
-  }
-}, [emailFromQuery]);
-
+  useEffect(() => {
+    if (emailFromQuery && !otpSentRef.current) {
+      setEmail(emailFromQuery);
+      sendOtp(emailFromQuery);
+      otpSentRef.current = true;
+    }
+  }, [emailFromQuery]);
 
   const sendOtp = async (emailToSend: string) => {
     try {
@@ -36,61 +35,89 @@ useEffect(() => {
       console.log('📧 OTP sent to:', emailToSend);
     } catch (err) {
       console.error('❌ Failed to send OTP', err);
+      setMessage('Failed to send OTP. Please try again.');
     }
   };
 
-const handleVerify = async () => {
-  setLoading(true);
-  setMessage('');
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_SERVER_URL}/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp }),
-    });
+  const handleResendOtp = async () => {
+    setResending(true);
+    setMessage('');
+    try {
+      await sendOtp(email);
+      setMessage('📨 OTP resent successfully!');
+    } catch (err: any) {
+      setMessage(err.message || 'Failed to resend OTP.');
+    } finally {
+      setResending(false);
+    }
+  };
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'OTP verification failed');
+  const handleVerify = async () => {
+    setLoading(true);
+    setMessage('');
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_SERVER_URL}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
 
-    sessionStorage.setItem("authToken", data.auth_token);
-    sessionStorage.setItem("user", JSON.stringify(data.user));
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'OTP verification failed');
 
-    await checkAuth(); // 🔁 refresh context with new user
+      sessionStorage.setItem("authToken", data.auth_token);
+      sessionStorage.setItem("user", JSON.stringify(data.user));
 
-    setMessage('OTP verified! Redirecting...');
-    setTimeout(() => router.push('/dashboard'), 1000);
-  } catch (err: any) {
-    setMessage(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+      await checkAuth();
 
-
+      setMessage('✅ OTP verified! Redirecting...');
+      setTimeout(() => router.push('/dashboard'), 1000);
+    } catch (err: any) {
+      setMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="card max-w-md mx-auto mt-10 p-6 shadow-md rounded-md">
-      <h1 className="text-2xl font-bold mb-4 text-center">Verify OTP</h1>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
+      <div className="card max-w-md w-full p-6 shadow-md rounded-md bg-white">
+        <h1 className="text-2xl font-bold mb-6 text-center">Two-Step Verification</h1>
 
-      {/* Hidden email input */}
-      <input type="hidden" value={email} />
+        <input type="hidden" value={email} />
 
-      <div className="mb-4">
-        <label className="label">OTP</label>
-        <input
-          type="text"
-          className="input w-full"
-          value={otp}
-          onChange={(e) => setOtp(e.target.value)}
-          required
-        />
+        <div className="mb-4">
+          <input
+            type="text"
+            className="input w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500"
+            placeholder="Enter OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            required
+          />
+        </div>
+
+<div className="mb-4 flex items-center text-sm text-gray-500">
+  <button
+    onClick={handleResendOtp}
+    disabled={resending}
+    className="text-yellow-500 font-medium hover:underline mr-2"
+  >
+    {resending ? 'Resending...' : 'Resend OTP'}
+  </button>
+  <span>Didn’t receive the code?</span>
+</div>
+
+        <button
+          className="btn btn-primary w-full text-base py-2"
+          onClick={handleVerify}
+          disabled={loading}
+        >
+          {loading ? 'Verifying...' : 'Verify '}
+        </button>
+
+        {message && <div className="mt-4 text-center text-sm text-red-600">{message}</div>}
       </div>
-
-      <button className="btn btn-primary w-full" onClick={handleVerify} disabled={loading}>
-        {loading ? 'Verifying...' : 'Verify OTP'}
-      </button>
-
-      {message && <div className="mt-4 text-center text-sm text-red-600">{message}</div>}
     </div>
   );
 }
