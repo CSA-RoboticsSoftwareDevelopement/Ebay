@@ -14,6 +14,7 @@ export default function VerifyOtpPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [countdown, setCountdown] = useState(0); // <-- NEW: countdown timer
   const otpSentRef = useRef(false);
   const { checkAuth } = useAuth();
 
@@ -24,6 +25,15 @@ export default function VerifyOtpPage() {
       otpSentRef.current = true;
     }
   }, [emailFromQuery]);
+
+  // NEW: Countdown logic
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const sendOtp = async (emailToSend: string) => {
     try {
@@ -42,6 +52,7 @@ export default function VerifyOtpPage() {
   const handleResendOtp = async () => {
     setResending(true);
     setMessage('');
+    setCountdown(10); // <-- NEW: start countdown at 10
     try {
       await sendOtp(email);
       setMessage('📨 OTP resent successfully!');
@@ -97,25 +108,30 @@ export default function VerifyOtpPage() {
           />
         </div>
 
-<div className="mb-4 text-left text-sm text-gray-500">
-  <span>Didn’t receive the OTP? </span>
-  <button
-    onClick={handleResendOtp}
-    disabled={resending}
-    className="text-yellow-500 font-medium hover:underline"
-  >
-    {resending ? 'Resending...' : 'Resend OTP'}
-  </button>
-</div>
+        <div className="mb-2 text-left text-sm text-gray-500">
+          <span>Didn’t receive the OTP? </span>
+          <button
+            onClick={handleResendOtp}
+            disabled={resending}
+            className="text-yellow-500 font-medium hover:underline"
+          >
+            {resending ? 'Resending...' : 'Resend OTP'}
+          </button>
+        </div>
 
-
+        {/* NEW: Show countdown */}
+        {countdown > 0 && (
+          <div className="mb-4 text-left text-xs text-gray-400">
+             Resend available in: <span className="font-medium">{countdown}s</span>
+          </div>
+        )}
 
         <button
           className="btn btn-primary w-full text-base py-2"
           onClick={handleVerify}
           disabled={loading}
         >
-          {loading ? 'Verifying...' : 'Verify '}
+          {loading ? 'Verifying...' : 'Verify'}
         </button>
 
         {message && <div className="mt-4 text-center text-sm text-red-600">{message}</div>}
