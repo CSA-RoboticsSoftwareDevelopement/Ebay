@@ -108,6 +108,7 @@ export function Sidebar({ className }: SidebarProps) {
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", active: activeItem === "/dashboard" },
     { icon: ShoppingCart, label: "Orders", href: "/orders", active: activeItem === "/orders", badge: 12 },
     { icon: Package, label: "Products", href: "/inventory", active: activeItem === "/inventory" },
+    { icon: ShoppingCart, label: "Optimizer", href: "/optimizer", active: activeItem === "/optimizer" },
   ];
 
   // const pluginNavItems: NavItemType[] = [
