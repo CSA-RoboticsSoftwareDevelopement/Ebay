@@ -233,77 +233,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Function to check authentication status, prioritizing session storage
-  const checkAuth = useCallback(async () => {
-    setLoading(true); // Ensure loading is true at the start of checkAuth
+const checkAuth = useCallback(async () => {
+  setLoading(true);
 
-    try {
-      if (!isMounted) { // Do not proceed if not mounted yet
+  try {
+    const storedToken = sessionStorage.getItem("authToken");
+    const storedUserString = sessionStorage.getItem("user");
+
+    if (storedToken && storedUserString) {
+      try {
+        const parsedUser: User = JSON.parse(storedUserString);
+        setAuthToken(storedToken);
+        setUser(parsedUser);
+        setLoading(false);
         return;
+      } catch (parseError) {
+        console.error("❌ Failed to parse stored user data:", parseError);
       }
+    }
 
-      const storedToken = sessionStorage.getItem("authToken");
-      const storedUserString = sessionStorage.getItem("user");
+    if (storedToken) {
+      console.log("🔹 Validating session with backend...");
+      const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
 
-      if (storedToken && storedUserString) {
-        try {
-          const parsedUser: User = JSON.parse(storedUserString);
-          // Ensure is_admin is boolean when parsing from storage
-          const processedParsedUser: User = {
-            ...parsedUser,
-            is_admin: typeof parsedUser.is_admin === 'number' ? Boolean(parsedUser.is_admin) : parsedUser.is_admin
-          };
-          setAuthToken(storedToken);
-          setUser(processedParsedUser);
-          console.log("✅ Session restored from Session Storage.");
-          setLoading(false); // Set loading to false here if successful from storage
-          return; // Exit early if successfully loaded from storage
-        } catch (parseError) {
-          console.error("❌ Failed to parse stored user data:", parseError);
-          // If parse fails, clear only the problematic items
-          sessionStorage.removeItem('authToken');
-          sessionStorage.removeItem('user');
-        }
-      }
-
-      // If no valid data in session storage or parse failed, try backend session check
-      if (storedToken) { // Only attempt backend if we have a token to send
-        console.log("🔹 Validating session with backend...");
-        const response = await axios.get(`${BACKEND_SERVER_URL}/api/auth/session`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
-
-        if (response.data.user) {
-          // Ensure is_admin is boolean when receiving from backend
-          const backendUser: User = {
-            ...response.data.user,
-            is_admin: typeof response.data.user.is_admin === 'number' ? Boolean(response.data.user.is_admin) : response.data.user.is_admin
-          };
-          setUser(backendUser);
-          setAuthToken(storedToken); // Reuse existing token
-          sessionStorage.setItem("user", JSON.stringify(backendUser)); // Update stored user data
-          console.log("✅ Session restored from backend.");
-        } else {
-          console.warn("⚠️ Backend reported no valid session found.");
-          sessionStorage.removeItem('authToken');
-          sessionStorage.removeItem('user');
-          setUser(null);
-          setAuthToken(null);
-        }
+      if (response.data.user) {
+        setUser(response.data.user);
+        setAuthToken(storedToken); // Reuse existing token
+        sessionStorage.setItem("user", JSON.stringify(response.data.user));
+        console.log("✅ Session restored from backend");
       } else {
-        // No token at all, ensure states are null
+        console.warn("⚠️ No valid session found.");
+        sessionStorage.clear();
         setUser(null);
         setAuthToken(null);
       }
-    } catch (error) {
-      console.error("❌ checkAuth failed during backend validation:", error);
-      sessionStorage.removeItem('authToken');
-      sessionStorage.removeItem('user');
+    } else {
+      sessionStorage.clear();
       setUser(null);
       setAuthToken(null);
-    } finally {
-      setLoading(false); // Ensure loading is always set to false at the end
     }
-  }, [isMounted]); // Dependency on isMounted to ensure browser APIs are ready
+  } catch (error) {
+    console.error("❌ checkAuth failed:", error);
+    sessionStorage.clear();
+    setUser(null);
+    setAuthToken(null);
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
 
   // Effect to run checkAuth when the component mounts
   useEffect(() => {
