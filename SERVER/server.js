@@ -828,7 +828,39 @@ app.get("/api/product-finder/all-products", async (req, res) => {
     });
   }
 });
+// Function to fetch a new access token using the Refresh Token
+async function getAccessToken() {
+  const params = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: process.env.REFRESH_TOKEN,
+    client_id: process.env.LWA_CLIENT_ID,
+    client_secret: process.env.LWA_CLIENT_SECRET,
+  });
 
+  const headers = {
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+
+  const response = await axios.post(
+    "https://api.amazon.com/auth/o2/token",
+    params,
+    { headers }
+  );
+
+  return response.data;
+}
+
+app.get("/getAccessToken", async (req, res) => {
+  try {
+    const tokenData = await getAccessToken();
+    res.json(tokenData);
+  } catch (error) {
+    console.error("Token fetch error:", error.response?.data || error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data || error.message,
+    });
+  }
+});
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

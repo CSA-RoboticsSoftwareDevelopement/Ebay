@@ -633,6 +633,16 @@ export default function Settings() {
           </div>
         )}
 
+    {/* Amazon Connect Button */}
+    <div className="mt-6">
+      <button
+        onClick={() => window.open('/amazon-auth', '_blank')}
+        className="px-6 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400"
+      >
+        Connect to Amazon
+      </button>
+    </div>
+ 
         {/* Preferences Tab */}
         {activeTab === "preferences" && (
             <div className="space-y-6">
