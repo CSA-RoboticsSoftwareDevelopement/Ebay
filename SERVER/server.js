@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
@@ -15,6 +16,7 @@ const path = require("path");
 const fs = require("fs"); // ✅ Add this line
 const ebayAnalytics = require("./ebayAnalytics");
 const dashboardService = require("./dashboardService");
+const nodemailer = require("nodemailer");
 
 require("dotenv").config();
 
@@ -26,13 +28,9 @@ const {
   NEXT_PUBLIC_COGNITO_DOMAIN,
   NEXT_PUBLIC_COGNITO_CLIENT_ID,
   NEXT_PUBLIC_COGNITO_REDIRECT_URI,
-  NEXT_PUBLIC_COGNITO_LOGOUT_URI,
   NEXT_PUBLIC_COGNITO_CLIENT_SECRET,
-  DB_HOST,
-  DB_USER,
-  DB_PASSWORD,
-  DB_NAME,
 } = process.env;
+
 // Helper
 const getBasicAuthHeader = () => {
   if (!NEXT_PUBLIC_COGNITO_CLIENT_SECRET) return null;
@@ -72,6 +70,20 @@ app.use(
     credentials: true,
   })
 );
+// ✅ Nodemailer Setup
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
+
+// Utility to generate 6-digit OTP
+function generateOtp() {
+  return "" + Math.floor(100000 + Math.random() * 900000);
+}
+
 
 // ✅ JWT Token Verification
 const verifyToken = (token) => {
@@ -163,6 +175,110 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// POST /login → generate & send OTP
+app.post("/post_login", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required." });
+
+  try {
+    // Check user exists
+    const [users] = await db.query(
+      "SELECT username FROM users WHERE email = ? LIMIT 1",
+      [email]
+    );
+    if (users.length === 0) {
+      return res.status(404).json({ error: "No user with that email." });
+    }
+
+    // Create OTP
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    // Save to user_otps
+    await db.query(
+      `INSERT INTO user_otps (email, otp, expires_at) VALUES (?, ?, ?)`,
+      [email, otp, expiresAt]
+    );
+
+    // Send email
+    await transporter.sendMail({
+      from: `"Resale" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your One-Time Login Code",
+      text: `Hello,\n\nYour OTP is: ${otp}\nIt will expire in 10 minutes.\n\nIf you didn't request this, ignore this email.`,
+    });
+
+    res.json({ message: "OTP sent." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error." });
+  }
+});
+
+// POST /verify → check OTP
+app.post("/verify", async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp)
+    return res.status(400).json({ error: "Email and OTP required." });
+
+  try {
+    const [rows] = await db.query(
+      `SELECT id, expires_at, used FROM user_otps
+       WHERE email = ? AND otp = ? LIMIT 1`,
+      [email, otp]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: "Invalid OTP." });
+    }
+
+    const record = rows[0];
+    if (record.used) {
+      return res.status(400).json({ error: "OTP already used." });
+    }
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({ error: "OTP expired." });
+    }
+
+    // Mark OTP as used
+    await db.query(`UPDATE user_otps SET used = 1 WHERE id = ?`, [record.id]);
+
+    // Fetch user data
+    const [users] = await db.query(
+      "SELECT id, username, email, is_admin FROM users WHERE email = ? LIMIT 1",
+      [email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const user = users[0];
+
+    // Generate token
+    const auth_token = jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // Save session
+    await db.query(
+      `INSERT INTO sessions (user_id, auth_token, expires_at)
+       VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+       ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+      [user.id, auth_token]
+    );
+
+    return res.json({
+      message: "OTP verified. Login successful.",
+      auth_token,
+      user,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error." });
+  }
+});
+
 // ✅ SignUp API
 app.post("/api/signup", async (req, res) => {
   try {
@@ -217,171 +333,6 @@ app.post("/api/signup", async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
-// // 🔁 Callback route: Cognito redirects here after login
-// app.get("/callback", async (req, res) => {
-//   const code = req.query.code;
-//   const state = req.query.state; // "signup" or "login"
-
-//   if (!code) return res.status(400).send("Authorization code not found");
-
-//   try {
-//     // Exchange code for tokens
-//     const tokenResponse = await axios.post(
-//       `${NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/token`,
-//       querystring.stringify({
-//         grant_type: "authorization_code",
-//         client_id: NEXT_PUBLIC_COGNITO_CLIENT_ID,
-//         code,
-//         redirect_uri: NEXT_PUBLIC_COGNITO_REDIRECT_URI,
-//       }),
-//       {
-//         headers: {
-//           "Content-Type": "application/x-www-form-urlencoded",
-//           ...(getBasicAuthHeader() && { Authorization: getBasicAuthHeader() }),
-//         },
-//       }
-//     );
-
-//     const { access_token } = tokenResponse.data;
-
-//     // Get user info from Cognito
-//     const userInfoResponse = await axios.get(
-//       `${NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/userInfo`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${access_token}`,
-//         },
-//       }
-//     );
-
-//     const user = userInfoResponse.data;
-//     const email = user.email;
-
-//     // Check if user exists
-//     const [rows] = await db.query(
-//       "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
-//       [email]
-//     );
-
-//     if (state === "login") {
-//       // For login, user must exist
-//       if (rows.length === 0) {
-//         return res.send(`
-//     <script>
-//       alert("User not registered. Please signup first.");
-//       window.location.href = "${process.env.FRONTEND_URL}/signup";
-//     </script>
-//   `);
-//       }
-
-//       const dbUser = rows[0];
-
-//       // Generate JWT token and set cookie
-//       const auth_token = jwt.sign(
-//         { id: dbUser.id, username:dbUser.username, email: dbUser.email, is_admin: dbUser.is_admin },
-//         process.env.JWT_SECRET,
-//         { expiresIn: "7d" }
-//       );
-
-//       await db.query(
-//         `INSERT INTO sessions (user_id, auth_token, expires_at)
-//          VALUES (?, ?, NOW() + INTERVAL 7 DAY)
-//          ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
-//         [dbUser.id, auth_token]
-//       );
-
-//       // res.cookie("auth_token", auth_token, {
-//       //   httpOnly: true,
-//       //   secure: process.env.NODE_ENV === "production",
-//       //   maxAge: 7 * 24 * 60 * 60 * 1000,
-//       //   sameSite: "lax",
-//       //   path: "/",
-//       // });
-
-//       // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
-//          return res.redirect(`${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`);
-
-//     }
-
-//     if (state === "signup") {
-//       // For signup, create user if not exists
-//       const username = user.nickname || user.email.split("@")[0];
-//       const provider_name =
-//         user.identities?.[0]?.providerName || "OAuthProvider";
-//       // or Facebook, depending on IDP
-//       const provider_type = "OAuth2";
-//       const user_id = user.sub;
-//       const name = user.name || username;
-//       const is_admin = 0;
-//       const created_at = new Date();
-//       const updated_at = new Date();
-
-//       const query = `
-//         INSERT INTO users 
-//         (username, email, password, is_admin, created_at, updated_at, provider_name, provider_type, user_id, name)
-//         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-//         ON DUPLICATE KEY UPDATE 
-//           updated_at = VALUES(updated_at),
-//           provider_name = VALUES(provider_name),
-//           provider_type = VALUES(provider_type),
-//           name = VALUES(name)
-//       `;
-
-//       const values = [
-//         username,
-//         email,
-//         "", // no password
-//         is_admin,
-//         created_at,
-//         updated_at,
-//         provider_name,
-//         provider_type,
-//         user_id,
-//         name,
-//       ];
-
-//       await db.query(query, values);
-
-//       const [newRows] = await db.query(
-//         "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
-//         [email]
-//       );
-
-//       const dbUser = newRows[0];
-
-//       const auth_token = jwt.sign(
-//         { id: dbUser.id, email: dbUser.email, is_admin: dbUser.is_admin },
-//         process.env.JWT_SECRET,
-//         { expiresIn: "7d" }
-//       );
-
-//       await db.query(
-//         `INSERT INTO sessions (user_id, auth_token, expires_at)
-//          VALUES (?, ?, NOW() + INTERVAL 7 DAY)
-//          ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
-//         [dbUser.id, auth_token]
-//       );
-
-//       // res.cookie("auth_token", auth_token, {
-//       //   httpOnly: true,
-//       //   secure: process.env.NODE_ENV === "production",
-//       //   maxAge: 7 * 24 * 60 * 60 * 1000,
-//       //   sameSite: "lax",
-//       //   path: "/",
-//       // });
-
-//       // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
-//          return res.redirect(`${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`);
-
-//     }
-
-//     return res.status(400).send("Invalid state parameter");
-//   } catch (error) {
-//     console.error("❌ Callback Error:", error);
-//     return res.status(500).send("Internal Server Error");
-//   }
-// });
 
 // 🔁 Callback route: Cognito redirects here after login
 app.get("/callback", async (req, res) => {
@@ -642,7 +593,6 @@ app.get("/callback", async (req, res) => {
     return res.status(500).send("Internal Server Error");
   }
 });
-
 
 // ✅ Get All Logged-in Users (Debugging)
 app.get("/api/users", async (req, res) => {
