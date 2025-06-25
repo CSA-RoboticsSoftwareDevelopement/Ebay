@@ -47,9 +47,9 @@ const handleGetAccessToken = async () => {
       <div className="max-w-xl w-full bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-2xl font-bold mb-4">Amazon SP-API Access Token</h2>
 
-        {/* {user && (
-        //  <p className="mb-2 text-sm text-gray-400">Logged in as: {user.email}</p>
-        )} */}
+        {user && (
+          <p className="mb-2 text-sm text-gray-400">Logged in as: {user.email}</p>
+        )} 
 
         <button
           onClick={handleGetAccessToken}
