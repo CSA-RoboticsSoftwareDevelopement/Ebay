@@ -1155,10 +1155,40 @@ async function getAccessToken() {
   return response.data;
 }
 
+// ✅ FINAL CODE - ROUTE to save amazon token linked to user_id
 app.get("/getAccessToken", async (req, res) => {
   try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ error: "Missing email" });
+    }
+
+    // 🔑 1. FIND USER BY EMAIL to get user_id
+    const [userRows] = await db.execute(
+      `SELECT id, email FROM users WHERE email = ? LIMIT 1`,
+      [email]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user_id = userRows[0].id;
+
+    // 🔑 2. GENERATE Amazon token
     const tokenData = await getAccessToken();
-    res.json(tokenData);
+    const { access_token, expires_in, token_type } = tokenData;
+    const refresh_token = process.env.REFRESH_TOKEN;
+
+    // 🔑 3. SAVE to amazon_tokens
+    await db.execute(
+      `INSERT INTO amazon_tokens (user_id, email, refresh_token, access_token, token_type, expires_in)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [user_id, email, refresh_token, access_token, token_type, expires_in]
+    );
+
+    res.json({ success: true, tokenData });
   } catch (error) {
     console.error("Token fetch error:", error.response?.data || error.message);
     res.status(error.response?.status || 500).json({
@@ -1166,6 +1196,7 @@ app.get("/getAccessToken", async (req, res) => {
     });
   }
 });
+
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
