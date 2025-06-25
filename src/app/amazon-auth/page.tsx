@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,11 +9,14 @@ export default function AmazonAuthPage() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    // const storedUser = localStorage.getItem('user');
+        const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
   }, []);
+
+  console.log("amazon auth",user)
 
 const handleGetAccessToken = async () => {
   if (!user || !user.email) {
