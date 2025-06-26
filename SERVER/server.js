@@ -882,6 +882,23 @@ app.get("/getAccessToken", async (req, res) => {
   res.json(tokenData);
 });
 
+// Example: /api/amazon/profile
+app.get("/api/amazon/profile", async (req, res) => {
+  const { user_id } = req.query;
+  const [rows] = await db.execute(
+    "SELECT * FROM amazon_tokens WHERE user_id = ? LIMIT 1",
+    [user_id]
+  );
+  if (rows.length === 0) return res.json({ amazonProfile: null });
+  res.json({ amazonProfile: rows[0] });
+});
+
+app.delete("/api/amazon/disconnect", async (req, res) => {
+  const { user_id } = req.body;
+  await db.execute("DELETE FROM amazon_tokens WHERE user_id = ?", [user_id]);
+  res.json({ message: "Amazon account disconnected." });
+});
+
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
