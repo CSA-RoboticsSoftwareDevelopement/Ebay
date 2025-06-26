@@ -25,10 +25,16 @@ app.use(express.json());
 app.use(cookieParser());
 // MySQL DB Setup
 const {
+  NEXT_PUBLIC_COGNITO_DOMAIN,
   NEXT_PUBLIC_COGNITO_CLIENT_ID,
+  NEXT_PUBLIC_COGNITO_REDIRECT_URI,
+  NEXT_PUBLIC_COGNITO_LOGOUT_URI,
   NEXT_PUBLIC_COGNITO_CLIENT_SECRET,
+  DB_HOST,
+  DB_USER,
+  DB_PASSWORD,
+  DB_NAME,
 } = process.env;
-
 // Helper
 const getBasicAuthHeader = () => {
   if (!NEXT_PUBLIC_COGNITO_CLIENT_SECRET) return null;
@@ -68,20 +74,6 @@ app.use(
     credentials: true,
   })
 );
-// ✅ Nodemailer Setup
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
-
-// Utility to generate 6-digit OTP
-function generateOtp() {
-  return "" + Math.floor(100000 + Math.random() * 900000);
-}
-
 
 // ✅ JWT Token Verification
 const verifyToken = (token) => {
@@ -178,343 +170,19 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// ✅ SignUp API
-app.post("/api/signup", async (req, res) => {
-  try {
-    console.log("Signup Request:", req.body);
-    const { signupKey, email, password, name } = req.body;
-
-    if (!signupKey || !email || !password || !name) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    const [keyRows] = await db.execute(
-      "SELECT id, status FROM license_key WHERE license_key = ?",
-      [signupKey]
-    );
-
-    if (keyRows.length === 0) {
-      return res.status(404).json({ message: "Invalid signup key." });
-    }
-
-    const keyData = keyRows[0];
-
-    if (keyData.status !== "Not Activated") {
-      return res
-        .status(403)
-        .json({ message: "Signup key is already used or expired." });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const [insertResult] = await db.execute(
-      "INSERT INTO users (email, password, username, created_at) VALUES (?, ?, ?, NOW())",
-      [email, hashedPassword, name]
-    );
-
-    const userId = insertResult.insertId;
-
-    await db.execute(
-      "UPDATE license_key SET user_id = ?, status = 'Activated' WHERE id = ?",
-      [userId, keyData.id]
-    );
-
-    // ✅ Generate token immediately after signup
-    const user = { id: userId, email, username: name, is_admin: 0 };
-    const auth_token = jwt.sign(user, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    await db.query(
-      `INSERT INTO sessions (user_id, auth_token, expires_at)
-       VALUES (?, ?, NOW() + INTERVAL 7 DAY)
-       ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
-      [userId, auth_token]
-    );
-
-    return res.status(201).json({
-      message: "User created, key activated, and logged in successfully",
-      auth_token,
-      user,
-    });
-  } catch (error) {
-    console.error("Signup Error:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
-  }
+// 2) Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
 });
 
-// 🔁 Callback route: Cognito redirects here after login
-app.get("/callback", async (req, res) => {
-  const code = req.query.code;
-  const rawState = req.query.state;
-  let state = "";
-  let signupKeyFromCognito = null;
-
-  if (rawState) {
-    const parts = rawState.split("|");
-    state = parts[0]; // "signup" or "login"
-    if (parts.length > 1) {
-      signupKeyFromCognito = parts[1];
-    }
-  }
-
-  if (!code) {
-    console.log("❌ Authorization code not found in callback.");
-    return res.status(400).send("Authorization code not found");
-  }
-
-  try {
-    const tokenResponse = await axios.post(
-      `${process.env.NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/token`,
-      querystring.stringify({
-        grant_type: "authorization_code",
-        client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
-        code,
-        redirect_uri: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI,
-      }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          ...(getBasicAuthHeader() && { Authorization: getBasicAuthHeader() }),
-        },
-      }
-    );
-
-    const { access_token } = tokenResponse.data;
-
-    const userInfoResponse = await axios.get(
-      `${process.env.NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/userInfo`,
-      {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-      }
-    );
-
-    const user = userInfoResponse.data;
-    const email = user.email;
-
-    const [rows] = await db.query(
-      "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
-      [email]
-    );
-
-    if (state === "login") {
-      if (rows.length === 0) {
-        console.log(`❌ Cognito Login failed: User ${email} not found in DB.`);
-        return res.send(`
-          <script>
-            alert("User not registered. Please signup first.");
-            window.location.href = "${process.env.FRONTEND_URL}/signup";
-          </script>
-        `);
-      }
-
-      const dbUser = rows[0];
-
-      const [licenseRows] = await db.query(
-        "SELECT status FROM license_key WHERE user_id = ?",
-        [dbUser.id]
-      );
-
-      const licenseStatus = licenseRows[0]?.status || "Not Found";
-
-      if (licenseStatus !== "Activated") {
-        console.log(
-          `❌ Cognito Login blocked: License not activated for ${email}. Status: ${licenseStatus}`
-        );
-        return res.send(`
-          <script>
-            alert("Your license is ${licenseStatus}. Please activate it to proceed.");
-            window.location.href = "${process.env.FRONTEND_URL}/license-activation";
-          </script>
-        `);
-      }
-
-      const auth_token = jwt.sign(
-        {
-          id: dbUser.id,
-          username: dbUser.username,
-          email: dbUser.email,
-          is_admin: dbUser.is_admin,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      // Store session token
-      await db.query(
-        `INSERT INTO sessions (user_id, auth_token, expires_at)
-         VALUES (?, ?, NOW() + INTERVAL 7 DAY)
-         ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
-        [dbUser.id, auth_token]
-      );
-
-      console.log(
-        `✅ Cognito User logged in: ${email} (Admin: ${dbUser.is_admin})`
-      );
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/verify-otp?email=${email}`
-      );
-    }
-
-    if (state === "signup") {
-      if (!signupKeyFromCognito) {
-        console.log(
-          "❌ Signup key missing from state parameter for Cognito signup."
-        );
-        return res.status(400).send("Signup key missing for social signup.");
-      }
-
-      let dbUser;
-      const username = user.nickname || user.email.split("@")[0]; // Determine username from Cognito data
-
-      if (rows.length === 0) {
-        // New user via Cognito signup
-        const provider_name =
-          user.identities?.[0]?.providerName || "OAuthProvider";
-        const provider_type = "OAuth2";
-        const cognito_user_id = user.sub;
-
-        // Modified: Removed 'name' field from insert query
-        const query = `
-          INSERT INTO users
-          (username, email, password, is_admin, created_at, updated_at, provider_name, provider_type, user_id)
-          VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)
-        `;
-
-        const values = [
-          username,
-          email,
-          "", // No password for OAuth users
-          0, // Default to non-admin
-          provider_name,
-          provider_type,
-          cognito_user_id,
-        ];
-
-        const [insertResult] = await db.query(query, values);
-
-        const [newRows] = await db.query(
-          "SELECT id, username, email, is_admin, name FROM users WHERE id = ?",
-          [insertResult.insertId]
-        );
-
-        dbUser = newRows[0];
-
-        console.log(
-          `✅ New user ${email} created via Cognito signup (ID: ${dbUser.id})`
-        );
-      } else {
-        // Existing user logging in/signing up via Cognito
-        dbUser = rows[0];
-
-        // Modified: Removed 'name' field from update query
-        await db.query(
-          `UPDATE users SET updated_at = NOW(), provider_name = ?, provider_type = ?, user_id = ? WHERE id = ?`,
-          [
-            user.identities?.[0]?.providerName || "OAuthProvider",
-            "OAuth2",
-            user.sub,
-            dbUser.id,
-          ]
-        );
-
-        console.log(
-          `ℹ️ Existing user ${email} logged in/signed up via Cognito.`
-        );
-      }
-
-      const [keyRows] = await db.execute(
-        "SELECT id, status FROM license_key WHERE license_key = ?",
-        [signupKeyFromCognito]
-      );
-
-      if (keyRows.length === 0) {
-        console.log(
-          `❌ Cognito Signup blocked: Invalid signup key provided: ${signupKeyFromCognito}`
-        );
-        return res.send(`
-          <script>
-            alert("Invalid signup key. Please try again or contact support.");
-            window.location.href = "${process.env.FRONTEND_URL}/signup";
-          </script>
-        `);
-      }
-
-      const keyData = keyRows[0];
-
-      if (keyData.status !== "Not Activated") {
-        console.log(
-          `❌ Cognito Signup blocked: Signup key ${signupKeyFromCognito} already used or expired. Status: ${keyData.status}`
-        );
-        return res.send(`
-          <script>
-            alert("Signup key is already used or expired. Please try again or contact support.");
-            window.location.href = "${process.env.FRONTEND_URL}/signup";
-          </script>
-        `);
-      }
-
-      console.log(
-        `ℹ️ Attempting to activate license key ${keyData.id} for user ${dbUser.id}`
-      );
-
-      try {
-        await db.execute(
-          "UPDATE license_key SET user_id = ?, status = 'Activated' WHERE id = ?",
-          [dbUser.id, keyData.id]
-        );
-        console.log(
-          `✅ License key ${signupKeyFromCognito} activated for user ${email} (ID: ${dbUser.id})`
-        );
-      } catch (licenseUpdateError) {
-        console.error(
-          `❌ Error activating license key ${signupKeyFromCognito} for user ${email}:`,
-          licenseUpdateError
-        );
-        return res.send(`
-          <script>
-            alert("Failed to activate license. Please contact support.");
-            window.location.href = "${process.env.FRONTEND_URL}/signup";
-          </script>
-        `);
-      }
-
-      // Generate JWT token
-      const auth_token = jwt.sign(
-        {
-          id: dbUser.id,
-          email: dbUser.email,
-          is_admin: dbUser.is_admin,
-          // Include username in the token if it's used for display
-          username: dbUser.username || username, // Use dbUser.username if available, otherwise the derived one
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      // Store session token
-      await db.query(
-        `INSERT INTO sessions (user_id, auth_token, expires_at)
-         VALUES (?, ?, NOW() + INTERVAL 7 DAY)
-         ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
-        [dbUser.id, auth_token]
-      );
-
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`
-      );
-    }
-
-    console.log(`❌ Invalid state parameter in callback: ${state}`);
-    return res.status(400).send("Invalid state parameter");
-
-  } catch (error) {
-    console.error("❌ Callback Error:", error);
-    return res.status(500).send("Internal Server Error");
-  }
-});
+// Utility to generate 6-digit OTP
+function generateOtp() {
+  return "" + Math.floor(100000 + Math.random() * 900000);
+}
 
 // POST /login → generate & send OTP
 app.post("/post_login", async (req, res) => {
@@ -617,6 +285,272 @@ app.post("/verify", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error." });
+  }
+});
+
+// 🔁 Callback route: Cognito redirects here after login
+app.get("/callback", async (req, res) => {
+  const code = req.query.code;
+  const rawState = req.query.state;
+  let state = "";
+  let signupKeyFromCognito = null;
+
+  if (rawState) {
+    const parts = rawState.split("|");
+    state = parts[0]; // "signup" or "login"
+    if (parts.length > 1) {
+      signupKeyFromCognito = parts[1];
+    }
+  }
+
+  if (!code) {
+    console.log("❌ Authorization code not found in callback.");
+    return res.status(400).send("Authorization code not found");
+  }
+
+  try {
+    const tokenResponse = await axios.post(
+      `${process.env.NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/token`,
+      querystring.stringify({
+        grant_type: "authorization_code",
+        client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
+        code,
+        redirect_uri: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          ...(getBasicAuthHeader() && { Authorization: getBasicAuthHeader() }),
+        },
+      }
+    );
+
+    const { access_token } = tokenResponse.data;
+
+    const userInfoResponse = await axios.get(
+      `${process.env.NEXT_PUBLIC_COGNITO_DOMAIN}/oauth2/userInfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      }
+    );
+
+    const user = userInfoResponse.data;
+    const email = user.email;
+
+    const [rows] = await db.query(
+      "SELECT id, username, email, is_admin, name FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (state === "login") {
+      if (rows.length === 0) {
+        console.log(`❌ Cognito Login failed: User ${email} not found in DB.`);
+        return res.send(`
+          <script>
+            alert("User not registered. Please signup first.");
+            window.location.href = "${process.env.FRONTEND_URL}/signup";
+          </script>
+        `);
+      }
+
+      const dbUser = rows[0];
+
+      const [licenseRows] = await db.query(
+        "SELECT status FROM license_key WHERE user_id = ?",
+        [dbUser.id]
+      );
+
+      const licenseStatus = licenseRows[0]?.status || "Not Found";
+
+      if (licenseStatus !== "Activated") {
+        console.log(
+          `❌ Cognito Login blocked: License not activated for ${email}. Status: ${licenseStatus}`
+        );
+        return res.send(`
+          <script>
+            alert("Your license is ${licenseStatus}. Please activate it to proceed.");
+            window.location.href = "${process.env.FRONTEND_URL}/license-activation";
+          </script>
+        `);
+      }
+
+      const auth_token = jwt.sign(
+        {
+          id: dbUser.id,
+          username: dbUser.username,
+          email: dbUser.email,
+          is_admin: dbUser.is_admin,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      await db.query(
+        `INSERT INTO sessions (user_id, auth_token, expires_at)
+         VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+         ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+        [dbUser.id, auth_token]
+      );
+
+      console.log(
+        `✅ Cognito User logged in: ${email} (Admin: ${dbUser.is_admin})`
+      );
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/verify-otp?email=${email}`
+      );
+    }
+
+    if (state === "signup") {
+      if (!signupKeyFromCognito) {
+        console.log(
+          "❌ Signup key missing from state parameter for Cognito signup."
+        );
+        return res.status(400).send("Signup key missing for social signup.");
+      }
+
+      let dbUser;
+
+      if (rows.length === 0) {
+        const username = user.nickname || user.email.split("@")[0];
+        const provider_name =
+          user.identities?.[0]?.providerName || "OAuthProvider";
+        const provider_type = "OAuth2";
+        const cognito_user_id = user.sub;
+        const name = user.name || username;
+
+        const query = `
+          INSERT INTO users
+          (username, email, password, is_admin, created_at, updated_at, provider_name, provider_type, user_id, name)
+          VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?)
+        `;
+
+        const values = [
+          username,
+          email,
+          "", // No password for OAuth
+          0,
+          provider_name,
+          provider_type,
+          cognito_user_id,
+          name,
+        ];
+
+        const [insertResult] = await db.query(query, values);
+
+        const [newRows] = await db.query(
+          "SELECT id, username, email, is_admin, name FROM users WHERE id = ?",
+          [insertResult.insertId]
+        );
+
+        dbUser = newRows[0];
+
+        console.log(
+          `✅ New user ${email} created via Cognito signup (ID: ${dbUser.id})`
+        );
+      } else {
+        dbUser = rows[0];
+
+        await db.query(
+          `UPDATE users SET updated_at = NOW(), provider_name = ?, provider_type = ?, user_id = ?, name = ? WHERE id = ?`,
+          [
+            user.identities?.[0]?.providerName || "OAuthProvider",
+            "OAuth2",
+            user.sub,
+            user.name || user.nickname || user.email.split("@")[0],
+            dbUser.id,
+          ]
+        );
+
+        console.log(
+          `ℹ️ Existing user ${email} logged in/signed up via Cognito.`
+        );
+      }
+
+      const [keyRows] = await db.execute(
+        "SELECT id, status FROM license_key WHERE license_key = ?",
+        [signupKeyFromCognito]
+      );
+
+      if (keyRows.length === 0) {
+        console.log(
+          `❌ Cognito Signup blocked: Invalid signup key provided: ${signupKeyFromCognito}`
+        );
+        return res.send(`
+          <script>
+            alert("Invalid signup key. Please try again or contact support.");
+            window.location.href = "${process.env.FRONTEND_URL}/signup";
+          </script>
+        `);
+      }
+
+      const keyData = keyRows[0];
+
+      if (keyData.status !== "Not Activated") {
+        console.log(
+          `❌ Cognito Signup blocked: Signup key ${signupKeyFromCognito} already used or expired. Status: ${keyData.status}`
+        );
+        return res.send(`
+          <script>
+            alert("Signup key is already used or expired. Please try again or contact support.");
+            window.location.href = "${process.env.FRONTEND_URL}/signup";
+          </script>
+        `);
+      }
+
+      console.log(
+        `ℹ️ Attempting to activate license key ${keyData.id} for user ${dbUser.id}`
+      );
+
+      try {
+        await db.execute(
+          "UPDATE license_key SET user_id = ?, status = 'Activated' WHERE id = ?",
+          [dbUser.id, keyData.id]
+        );
+        console.log(
+          `✅ License key ${signupKeyFromCognito} activated for user ${email} (ID: ${dbUser.id})`
+        );
+      } catch (licenseUpdateError) {
+        console.error(
+          `❌ Error activating license key ${signupKeyFromCognito} for user ${email}:`,
+          licenseUpdateError
+        );
+        return res.send(`
+          <script>
+            alert("Failed to activate license. Please contact support.");
+            window.location.href = "${process.env.FRONTEND_URL}/signup";
+          </script>
+        `);
+      }
+
+      const auth_token = jwt.sign(
+        {
+          id: dbUser.id,
+          email: dbUser.email,
+          is_admin: dbUser.is_admin,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      await db.query(
+        `INSERT INTO sessions (user_id, auth_token, expires_at)
+         VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+         ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+        [dbUser.id, auth_token]
+      );
+
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/dashboard#auth_token=${auth_token}`
+      );
+    }
+
+    console.log(`❌ Invalid state parameter in callback: ${state}`);
+    return res.status(400).send("Invalid state parameter");
+  } catch (error) {
+    console.error("❌ Callback Error:", error);
+    return res.status(500).send("Internal Server Error");
   }
 });
 
@@ -739,6 +673,71 @@ app.patch("/api/renew-key", async (req, res) => {
   }
 });
 
+// ✅ SignUp API
+app.post("/api/signup", async (req, res) => {
+  try {
+    console.log("Signup Request:", req.body);
+    const { signupKey, email, password, name } = req.body;
+
+    if (!signupKey || !email || !password || !name) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const [keyRows] = await db.execute(
+      "SELECT id, status FROM license_key WHERE license_key = ?",
+      [signupKey]
+    );
+
+    if (keyRows.length === 0) {
+      return res.status(404).json({ message: "Invalid signup key." });
+    }
+
+    const keyData = keyRows[0];
+
+    if (keyData.status !== "Not Activated") {
+      return res
+        .status(403)
+        .json({ message: "Signup key is already used or expired." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const [insertResult] = await db.execute(
+      "INSERT INTO users (email, password, username, created_at) VALUES (?, ?, ?, NOW())",
+      [email, hashedPassword, name]
+    );
+
+    const userId = insertResult.insertId;
+
+    await db.execute(
+      "UPDATE license_key SET user_id = ?, status = 'Activated' WHERE id = ?",
+      [userId, keyData.id]
+    );
+
+    // ✅ Generate token immediately after signup
+    const user = { id: userId, email, username: name, is_admin: 0 };
+    const auth_token = jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    await db.query(
+      `INSERT INTO sessions (user_id, auth_token, expires_at)
+       VALUES (?, ?, NOW() + INTERVAL 7 DAY)
+       ON DUPLICATE KEY UPDATE auth_token = VALUES(auth_token), expires_at = VALUES(expires_at)`,
+      [userId, auth_token]
+    );
+
+    return res.status(201).json({
+      message: "User created, key activated, and logged in successfully",
+      auth_token,
+      user,
+    });
+  } catch (error) {
+    console.error("Signup Error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 app.post("/api/auth/logout", async (req, res) => {
   try {
     const auth_token =
@@ -830,6 +829,7 @@ app.get("/api/product-finder/all-products", async (req, res) => {
     });
   }
 });
+
 // Function to fetch a new access token using the Refresh Token
 async function getAccessToken() {
   const params = new URLSearchParams({

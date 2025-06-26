@@ -1,13 +1,16 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("dotenv").config();
 const axios = require("axios");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const router = express.Router();
 
 const app = express();
 app.use(express.json());
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000
+
+
+
 const TOKEN_PATH = path.resolve("token.json");
 
 // Fetch a new access token from Amazon
@@ -155,6 +158,7 @@ app.post("/add-item", async (req, res) => {
     });
   }
 });
+
 app.delete("/delete-item/:sellerSku", async (req, res) => {
   try {
     const access_token = await getValidAccessToken();
@@ -327,11 +331,6 @@ app.post("/submit-inventory-feed", async (req, res) => {
   }
 });
 
-
-
-
-
-
 // Auto-refresh token every 55 minutes
 const AUTO_REFRESH_INTERVAL = 55 * 60 * 1000;
 setInterval(async () => {
@@ -355,6 +354,11 @@ setInterval(async () => {
     );
   }
 })();
+
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);

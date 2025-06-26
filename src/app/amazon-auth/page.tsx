@@ -9,14 +9,11 @@ export default function AmazonAuthPage() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // const storedUser = localStorage.getItem('user');
-        const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
   }, []);
-
-  console.log("amazon auth",user)
 
 const handleGetAccessToken = async () => {
   if (!user || !user.email) {
@@ -53,7 +50,7 @@ const handleGetAccessToken = async () => {
 
         {user && (
           <p className="mb-2 text-sm text-gray-400">Logged in as: {user.email}</p>
-        )} 
+        )}
 
         <button
           onClick={handleGetAccessToken}
