@@ -2,61 +2,64 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export default function AmazonAuthPage() {
   const [tokenData, setTokenData] = useState<any>(null);
   const [error, setError] = useState<string>('');
-  const [user, setUser] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
 
+  // ✅ Get user_id from URL query params
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
-const handleGetAccessToken = async () => {
-  if (!user || !user.email) {
-    setError("User email not found.");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_SERVER_URL}/getAccessToken?email=${encodeURIComponent(user.email)}`
-    );
-    const data = await response.json();
-
-    if (response.ok) {
-      setTokenData(data);
-      setError('');
-
-      // ✅ Redirect this current popup window to Amazon in the SAME window
-      window.location.href = 'https://solutionproviderportal.amazon.com/';
+    const idFromUrl = searchParams.get("user_id");
+    if (idFromUrl) {
+      setUserId(idFromUrl);
+      console.log("✅ Got user_id from URL:", idFromUrl);
     } else {
-      setError(JSON.stringify(data, null, 2));
+      console.error("❌ No user_id in URL");
+      setError("Missing user ID in URL.");
     }
-  } catch (err: any) {
-    setError(err.message);
-  }
-};
+    setLoading(false);
+  }, [searchParams]);
 
+  const handleGetAccessToken = async () => {
+    if (!userId) {
+      setError("User ID not found.");
+      return;
+    }
 
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_SERVER_URL}/getAccessToken?user_id=${userId}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        setTokenData(data);
+        setError('');
+        window.location.href = 'https://solutionproviderportal.amazon.com/';
+      } else {
+        setError(JSON.stringify(data, null, 2));
+      }
+    } catch (err: any) {
+      console.error("❌ Fetch error:", err);
+      setError(err.message || "Unexpected error occurred.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-900 text-white">
       <div className="max-w-xl w-full bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-2xl font-bold mb-4">Amazon SP-API Access Token</h2>
 
-        {user && (
-          <p className="mb-2 text-sm text-gray-400">Logged in as: {user.email}</p>
-        )}
-
         <button
           onClick={handleGetAccessToken}
-          className="px-4 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400"
+          disabled={loading || !userId}
+          className="px-4 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Get Amazon Access Token
+          {loading ? "Loading..." : "Get Amazon Access Token"}
         </button>
 
         {tokenData && (

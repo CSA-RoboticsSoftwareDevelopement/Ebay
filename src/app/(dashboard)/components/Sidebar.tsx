@@ -141,12 +141,12 @@ if (installedPluginIds.includes(1)) { // 1 = Product Finder plugin id
     });
   }
 
-  pluginNavItems.push({
-    icon: BarChart3,
-    label: "Analytics Pro",
-    href: "/analytics",
-    active: activeItem === "/analytics",
-  });
+  // pluginNavItems.push({
+  //   icon: BarChart3,
+  //   label: "Analytics Pro",
+  //   href: "/analytics",
+  //   active: activeItem === "/analytics",
+  // });
 
   
   const mobileMenuVariants = {

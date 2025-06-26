@@ -440,7 +440,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     type="text"
                     name="title"
                     placeholder="Product Title"
-                    className="w-full border px-3 py-2 rounded-lg"
+                     className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                     value={formData.title}
                     onChange={handleChange}
                     required
@@ -454,7 +454,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   <textarea
                     name="description"
                     placeholder="Enter product description"
-                    className="w-full border px-3 py-2 rounded-lg"
+                    className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                     rows={4}
                     value={formData.description}
                     onChange={handleChange}
@@ -470,7 +470,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       type="number"
                       name="price"
                       placeholder="Price"
-                      className="w-full border px-3 py-2 rounded-lg"
+                      className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                       value={formData.price}
                       onChange={handleChange}
                       required
@@ -484,7 +484,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       type="number"
                       name="quantity"
                       placeholder="Quantity"
-                      className="w-full border px-3 py-2 rounded-lg"
+                      className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                       value={formData.quantity}
                       onChange={handleChange}
                       required
@@ -503,7 +503,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     type="text"
                     name="category"
                     placeholder="Enter category"
-                    className="w-full border px-3 py-2 rounded-lg"
+                    className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                     value={formData.category}
                     onChange={handleChange}
                     required
@@ -515,7 +515,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   </label>
                   <select
                     name="condition"
-                    className="w-full border px-3 py-2 rounded-lg"
+                    className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                     value={formData.condition}
                     onChange={handleChange}
                     required
@@ -536,7 +536,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                         <input
                           type="text"
                           placeholder={`Image URL ${index + 1}`}
-                          className="w-full border px-3 py-2 rounded-lg"
+                          className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                           value={image}
                           onChange={(e) => handleImageChange(index, e.target.value)}
                           required={index === 0}
@@ -606,7 +606,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                               type="text"
                               value={variation.name}
                               onChange={(e) => handleVariationChange(vIndex, 'name', e.target.value)}
-                              className="w-full border px-3 py-2 rounded-lg"
+                              className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                               placeholder="e.g., Size, Color"
                               required={hasVariations}
                             />
@@ -632,7 +632,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                                 type="text"
                                 value={option.name}
                                 onChange={(e) => handleVariationOptionChange(vIndex, oIndex, 'name', e.target.value)}
-                                className="flex-1 border px-3 py-2 rounded-lg"
+                                className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                                 placeholder="Option name (e.g., Small, Red)"
                                 required={hasVariations}
                               />
@@ -640,7 +640,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                                 type="number"
                                 value={option.quantity}
                                 onChange={(e) => handleVariationOptionChange(vIndex, oIndex, 'quantity', e.target.value)}
-                                className="w-24 border px-3 py-2 rounded-lg"
+                                className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                                 placeholder="Qty"
                                 min="0"
                                 required={hasVariations}
@@ -770,7 +770,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     </label>
                     <select
                       name="conditionId"
-                      className="w-full border px-3 py-2 rounded-lg"
+                      className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                       value={ebayData.conditionId}
                       onChange={handleEbayChange}
                       required={platforms.ebay}
@@ -797,7 +797,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     </label>
                     <select
                       name="listingFormat"
-                      className="w-full border px-3 py-2 rounded-lg"
+                      className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                       value={ebayData.listingFormat}
                       onChange={handleEbayChange}
                     >
@@ -828,7 +828,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       type="text"
                       name="subtitle"
                       placeholder="eBay Subtitle (additional fees may apply)"
-                      className="w-full border px-3 py-2 rounded-lg"
+                      className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                       value={ebayData.subtitle || ""}
                       onChange={handleEbayChange}
                     />
@@ -860,7 +860,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                         </label>
                         <select
                           name="fulfillmentPolicyId"
-                          className="w-full border px-3 py-2 rounded-lg"
+                          className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                           value={ebayData.fulfillmentPolicyId || ""}
                           onChange={handleEbayChange}
                         >
@@ -875,7 +875,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                         </label>
                         <select
                           name="returnPolicyId"
-                          className="w-full border px-3 py-2 rounded-lg"
+                          className="w-full border px-3 py-2 rounded-lg text-black caret-black"
                           value={ebayData.returnPolicyId || ""}
                           onChange={handleEbayChange}
                         >

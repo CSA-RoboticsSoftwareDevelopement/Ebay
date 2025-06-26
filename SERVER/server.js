@@ -854,44 +854,51 @@ async function getAccessToken() {
 
 // ✅ FINAL CODE - ROUTE to save amazon token linked to user_id
 app.get("/getAccessToken", async (req, res) => {
-  try {
-    const { email } = req.query;
+  const { user_id } = req.query;
 
-    if (!email) {
-      return res.status(400).json({ error: "Missing email" });
-    }
+  if (!user_id) return res.status(400).json({ error: "Missing user_id" });
 
-    // 🔑 1. FIND USER BY EMAIL to get user_id
-    const [userRows] = await db.execute(
-      `SELECT id, email FROM users WHERE email = ? LIMIT 1`,
-      [email]
-    );
+  const [rows] = await db.execute(
+    "SELECT email FROM users WHERE id = ? LIMIT 1",
+    [user_id]
+  );
+  if (rows.length === 0)
+    return res.status(404).json({ error: "User not found" });
 
-    if (userRows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
+  const email = rows[0].email;
 
-    const user_id = userRows[0].id;
+  const tokenData = await getAccessToken(); // <- your own logic here
+  await db.execute(
+    `INSERT INTO amazon_tokens (user_id, email, access_token, refresh_token, token_type, expires_in)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      user_id,
+      email,
+      tokenData.access_token,
+      process.env.REFRESH_TOKEN,
+      tokenData.token_type,
+      tokenData.expires_in,
+    ]
+  );
 
-    // 🔑 2. GENERATE Amazon token
-    const tokenData = await getAccessToken();
-    const { access_token, expires_in, token_type } = tokenData;
-    const refresh_token = process.env.REFRESH_TOKEN;
+  res.json(tokenData);
+});
 
-    // 🔑 3. SAVE to amazon_tokens
-    await db.execute(
-      `INSERT INTO amazon_tokens (user_id, email, refresh_token, access_token, token_type, expires_in)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [user_id, email, refresh_token, access_token, token_type, expires_in]
-    );
+// Example: /api/amazon/profile
+app.get("/api/amazon/profile", async (req, res) => {
+  const { user_id } = req.query;
+  const [rows] = await db.execute(
+    "SELECT * FROM amazon_tokens WHERE user_id = ? LIMIT 1",
+    [user_id]
+  );
+  if (rows.length === 0) return res.json({ amazonProfile: null });
+  res.json({ amazonProfile: rows[0] });
+});
 
-    res.json({ success: true, tokenData });
-  } catch (error) {
-    console.error("Token fetch error:", error.response?.data || error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data || error.message,
-    });
-  }
+app.delete("/api/amazon/disconnect", async (req, res) => {
+  const { user_id } = req.body;
+  await db.execute("DELETE FROM amazon_tokens WHERE user_id = ?", [user_id]);
+  res.json({ message: "Amazon account disconnected." });
 });
 
 // ✅ Start Server

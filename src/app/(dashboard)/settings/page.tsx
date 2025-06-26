@@ -219,6 +219,26 @@ export default function Settings() {
   const [name, setName] = useState(user?.username || "");
   const [email, setEmail] = useState(user?.email || "");
   const [isChanged, setIsChanged] = useState(false);
+const [amazonProfile, setAmazonProfile] = useState<any>(null);
+
+
+useEffect(() => {
+  const fetchAmazonProfile = async () => {
+    if (!user?.id) return;
+
+    try {
+      const res = await axios.get(
+        `${BACKEND_SERVER_URL}/api/amazon/profile?user_id=${user.id}`
+      );
+      setAmazonProfile(res.data.amazonProfile);
+    } catch (err) {
+      console.error("Failed to fetch Amazon profile", err);
+    }
+  };
+
+  fetchAmazonProfile();
+}, [user]);
+
 
   useEffect(() => {
     if (user) {
@@ -633,18 +653,86 @@ export default function Settings() {
           </div>
         )}
 
-<div className="mt-6">
-  <button
-    onClick={() => {
-      const url = '/amazon-auth';
-      const windowFeatures = 'noopener,noreferrer,width=600,height=800';
-      window.open(url, '_blank', windowFeatures);
-    }}
-    className="px-6 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400"
-  >
-    Connect to Amazon
-  </button>
+
+        <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors mt-6">
+  <h2 className="text-white font-semibold mb-4">Amazon Account</h2>
+
+  <div className="flex items-center mb-4">
+    <span
+      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+        amazonProfile?.access_token
+          ? "bg-green-100 text-green-700"
+          : "bg-red-100 text-red-700"
+      }`}
+    >
+      {amazonProfile?.access_token ? "Connected" : "Disconnected"}
+    </span>
+  </div>
+
+  {amazonProfile?.access_token ? (
+    <button
+      onClick={async () => {
+        // Optional: disconnect logic
+        // await axios.delete(`${BACKEND_SERVER_URL}/api/amazon/disconnect`, {
+        //   data: { user_id: user.id },
+        // });
+        setAmazonProfile(null);
+        Swal.fire("Disconnected!", "Amazon account has been removed.", "success");
+      }}
+      className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+    >
+      Disconnect Amazon Account
+    </button>
+  ) : (
+    <button
+      onClick={() => {
+        if (!user || !user.id) {
+          console.error("❌ User not found in sessionStorage");
+          return;
+        }
+        const url = `/amazon-auth?user_id=${user.id}`;
+        const windowFeatures = "noopener,noreferrer,width=600,height=800";
+        const authWindow = window.open(url, "_blank", windowFeatures);
+
+        const checkAuthCompletion = setInterval(async () => {
+          try {
+            const res = await axios.get(
+              `${BACKEND_SERVER_URL}/api/amazon/profile?user_id=${user.id}`
+            );
+            if (res.data.amazonProfile?.access_token) {
+              clearInterval(checkAuthCompletion);
+              setAmazonProfile(res.data.amazonProfile);
+              Swal.fire("Connected!", "Amazon account linked successfully.", "success");
+            }
+          } catch {}
+        }, 2000); // Poll every 2s (you can refine this)
+      }}
+      className="px-6 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400"
+    >
+      Connect to Amazon
+    </button>
+  )}
 </div>
+
+
+
+
+
+{/* <button
+  onClick={() => {
+    if (!user || !user.id) {
+      console.error("❌ User not found in sessionStorage");
+      return;
+    }
+    const url = `/amazon-auth?user_id=${user.id}`;
+    const windowFeatures = 'noopener,noreferrer,width=600,height=800';
+    window.open(url, '_blank', windowFeatures);
+  }}
+  className="px-6 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400"
+>
+  Connect to Amazon
+</button> */}
+
  
         {/* Preferences Tab */}
         {activeTab === "preferences" && (

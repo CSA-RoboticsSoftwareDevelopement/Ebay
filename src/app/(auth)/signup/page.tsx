@@ -314,13 +314,13 @@ const handleLogin = (provider: 'Google' | 'Facebook') => {
   window.location.href = loginUrl;
 };
 
-  // ✅ Validate Signup Key with API
+  // ✅ Validate license Key with API
   const validateKey = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (!signupKey.trim()) {
-      setError('Signup key is required');
+      setError('license key is required');
       return;
     }
 
@@ -333,10 +333,10 @@ const handleLogin = (provider: 'Google' | 'Facebook') => {
       if (response.data.valid) {
         setStep(2);
       } else {
-        setError('Invalid signup key. Please try again or contact support.');
+        setError('Invalid license key. Please try again or contact support.');
       }
     } catch (err) {
-      setError('Invalid signup key. Please try again or contact support.');
+      setError('Invalid license key. Please try again or contact support.');
       console.error('Key validation error:', err);
     } finally {
       setLoading(false);
@@ -428,21 +428,21 @@ const handleLogin = (provider: 'Google' | 'Facebook') => {
       )}
 
         <p className="text-neutral-gray-600 mt-2">
-          {step === 1 ? 'Enter your signup key to get started' : 'Complete your account information'}
+          {step === 1 ? 'Enter your license key to get started' : 'Complete your account information'}
         </p>
 
 
       {step === 1 ? (
         <form onSubmit={validateKey}>
           <div className="mb-6">
-            <label htmlFor="signupKey" className="label">Signup Key</label>
+            <label htmlFor="signupKey" className="label">License Key</label>
             <input
               id="signupKey"
               type="text"
               className="input w-full"
               value={signupKey}
               onChange={(e) => setSignupKey(e.target.value)}
-              placeholder="Enter your signup key"
+              placeholder="Enter your license key"
               required
               disabled={loading}
             />
