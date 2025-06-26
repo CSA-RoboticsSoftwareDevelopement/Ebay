@@ -633,18 +633,21 @@ export default function Settings() {
           </div>
         )}
 
-<div className="mt-6">
-  <button
-    onClick={() => {
-      const url = '/amazon-auth';
-      const windowFeatures = 'noopener,noreferrer,width=600,height=800';
-      window.open(url, '_blank', windowFeatures);
-    }}
-    className="px-6 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400"
-  >
-    Connect to Amazon
-  </button>
-</div>
+<button
+  onClick={() => {
+    if (!user || !user.id) {
+      console.error("❌ User not found in sessionStorage");
+      return;
+    }
+    const url = `/amazon-auth?user_id=${user.id}`;
+    const windowFeatures = 'noopener,noreferrer,width=600,height=800';
+    window.open(url, '_blank', windowFeatures);
+  }}
+  className="px-6 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400"
+>
+  Connect to Amazon
+</button>
+
  
         {/* Preferences Tab */}
         {activeTab === "preferences" && (
