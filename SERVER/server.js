@@ -894,13 +894,14 @@ app.get("/api/amazon/profile", async (req, res) => {
 });
 
 // DELETE /api/amazon/disconnect
-router.delete("/disconnect", async (req, res) => {
+
+app.delete("/api/amazon/disconnect", async (req, res) => {
   const { user_id } = req.body;
 
   if (!user_id) return res.status(400).json({ message: "Missing user_id" });
 
   try {
-    const result = await db.query(
+    const [result] = await db.execute(
       "DELETE FROM amazon_tokens WHERE user_id = ?",
       [user_id]
     );
@@ -911,7 +912,7 @@ router.delete("/disconnect", async (req, res) => {
       return res.status(404).json({ message: "No token found for this user" });
     }
   } catch (error) {
-    console.error("Error disconnecting Amazon account:", error);
+    console.error("❌ Error disconnecting Amazon account:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });

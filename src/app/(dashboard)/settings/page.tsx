@@ -380,6 +380,9 @@ useEffect(() => {
       }
     });
   };
+
+
+// Function to handle disconnecting Amazon account
 const handleDisconnectAmazon = async () => {
   if (!user || !user.id) {
     Swal.fire("Error", "User not found. Please log in again.", "error");
@@ -396,24 +399,34 @@ const handleDisconnectAmazon = async () => {
     confirmButtonText: "Yes, disconnect it!",
   });
 
-  if (result.isConfirmed) {
-    try {
-      const res = await axios.delete(`${BACKEND_SERVER_URL}/api/amazon/disconnect`, {
-        data: { user_id: user.id },
-      });
+  if (!result.isConfirmed) return;
 
-      if (res.status === 200) {
-        setAmazonProfile(null);
-        Swal.fire("Disconnected!", "Amazon account has been removed.", "success");
-      } else {
-        Swal.fire("Error", res.data.message || "Unable to disconnect.", "error");
-      }
-    } catch (err) {
-      console.error("Disconnect error:", err);
-      Swal.fire("Error", "Something went wrong while disconnecting.", "error");
+  try {
+    const response = await axios.delete(`${BACKEND_SERVER_URL}/api/amazon/disconnect`, {
+      data: { user_id: user.id }, // ✅ Body sent as expected
+    });
+
+    if (response.status === 200) {
+      setAmazonProfile(null);
+      Swal.fire("Disconnected!", "Amazon account has been removed.", "success");
+    } else {
+      Swal.fire("Error", response.data.message || "Unable to disconnect.", "error");
     }
+  } catch (error) {
+    console.error("❌ Disconnect error:", error);
+
+    // Handle common error types gracefully
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Something went wrong while disconnecting.";
+
+    Swal.fire("Error", message, "error");
   }
 };
+
+
+
   return (
     <div className="space-y-6 p-6">
                   <nav className="text-sm text-gray-400 mb-2">
