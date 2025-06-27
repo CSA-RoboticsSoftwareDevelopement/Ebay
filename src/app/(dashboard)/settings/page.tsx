@@ -41,6 +41,8 @@ export default function Settings() {
   const [newMessageContent, setNewMessageContent] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   
+
+
   // Load predefined messages from local storage on component mount
   useEffect(() => {
     const savedMessages = localStorage.getItem('predefinedMessages');
@@ -469,7 +471,7 @@ const handleDisconnectAmazon = async () => {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black"
               />
               </div>
               <div>
@@ -484,7 +486,7 @@ const handleDisconnectAmazon = async () => {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black"
               />
               </div>
               <button
@@ -509,7 +511,7 @@ const handleDisconnectAmazon = async () => {
               <div>
               <label
               htmlFor="currentPassword"
-              className="block text-sm font-medium text-white"
+              className="block text-sm font-medium text-white "
               >
               Current Password
               </label>
@@ -518,7 +520,7 @@ const handleDisconnectAmazon = async () => {
               id="currentPassword"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black bg-white"
               />
               </div>
               <div>
@@ -533,7 +535,7 @@ const handleDisconnectAmazon = async () => {
               id="newPassword"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black"
               />
               </div>
               <div>
@@ -548,7 +550,7 @@ const handleDisconnectAmazon = async () => {
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black"
               />
               </div>
               <button
