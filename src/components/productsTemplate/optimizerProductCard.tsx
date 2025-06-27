@@ -6,6 +6,15 @@ import axios from "axios";
 
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
+
+interface OptimizationData {
+  original_title: string;
+  enhanced_title: string;
+  original_image_url: string;
+  image_score: number;
+  price: number;
+  predicted_high_value: boolean;
+}
 export type ProductCardProps = {
   product: Pick<
     Product,
@@ -24,11 +33,13 @@ export type ProductCardProps = {
     | "costPrice"
   >;
   onClick: (productId: string) => void;
+  onOptimizationComplete?: (data: OptimizationData) => void; // Add this line
 };
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
+  onOptimizationComplete, // Add this line
 }) => {
   const calculateEbayFee = (price: number) => {
     const fixedFee = 0.3;
@@ -43,9 +54,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const [imgSrc, setImgSrc] = useState(
     product.imageUrl ||
-      `https://placehold.co/400x300?text=${encodeURIComponent(
-        product.title?.substring(0, 1) || product.title
-      )}`
+    `https://placehold.co/400x300?text=${encodeURIComponent(
+      product.title?.substring(0, 1) || product.title
+    )}`
   );
 
   const [editedValues, setEditedValues] = useState<{
@@ -59,6 +70,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     salesPrice: product.price,
     ebayFees: calculateEbayFee(product.price),
   });
+  const handleOptimizeClick = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent parent onClick
+
+    const payload = {
+      title: product.title,
+      price: product.price,
+      image_url: product.imageUrl || "https://example.com/default.jpg",
+      order_count: product.quantitySold || 0,
+      return_rate: 3.4, // static or dynamically fetched
+      avg_review_score: 4.1, // static or dynamically fetched
+      high_value: 0,
+    };
+
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/predict", payload);
+      console.log("🔍 Optimization Result:", response.data);
+
+      // Add this block to handle the optimization data
+      if (onOptimizationComplete) {
+        onOptimizationComplete(response.data);
+      }
+
+      // Open the modal after optimization is complete
+      onClick(product.id);
+    } catch (error) {
+      console.error("❌ Error sending optimize request:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -66,7 +105,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         const response = await axios.get(
           `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
         );
-        
+
         if (response.data?.data?.length > 0) {
           const fetchedProduct = response.data.data.find(
             (item: any) => item.sku === product.id
@@ -108,7 +147,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          onError={() => 
+          onError={() =>
             setImgSrc(`https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`)
           }
         />
@@ -152,9 +191,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Optimize Button */}
         <button
           className="w-full py-2.5 bg-primary-yellow text-black font-medium rounded-md hover:bg-primary-yellow/90 transition-colors"
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation();
-            onClick(product.id);
+            await handleOptimizeClick(e); // Wait for optimization to complete
+            onClick(product.id);         // Then open the modal
           }}
         >
           Optimize

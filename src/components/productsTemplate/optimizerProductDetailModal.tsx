@@ -1,5 +1,15 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
+
+
+type OptimizationData = {
+  original_title: string;
+  enhanced_title: string;
+  original_image_url: string;
+  image_score: number;
+  price: number;
+  predicted_high_value: boolean;
+};
 
 const ProductDetailModal: React.FC<{
   product: {
@@ -10,14 +20,21 @@ const ProductDetailModal: React.FC<{
     description?: string;
   };
   onClose: () => void;
-}> = ({ product, onClose }) => {
-  const imageUrlSrc = 
-    product.imageUrl || 
+  optimizationData?: OptimizationData; // ✅ Add this line
+}> = ({ product, onClose, optimizationData }) => { // ✅ Receive it here
+  useEffect(() => {
+    if (optimizationData) {
+      console.log("🧠 Received Optimization Data in Modal:", optimizationData);
+    }
+  }, [optimizationData]);
+  const imageUrlSrc =
+    product.imageUrl ||
     `https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`;
 
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
