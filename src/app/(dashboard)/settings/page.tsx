@@ -693,6 +693,7 @@ const handleDisconnectAmazon = async () => {
         )}
 
      {/* Amazon Integration Tab */}
+     {activeTab === "integrations" && (
         <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors mt-6">
   <h2 className="text-white font-semibold mb-4">Amazon Account</h2>
 
@@ -748,7 +749,7 @@ const handleDisconnectAmazon = async () => {
     </button>
   )}
 </div>
-
+  )}
 
 
 
