@@ -119,6 +119,12 @@ export default function Settings() {
       confirmButtonText: "Yes, disconnect it!",
     });
 
+
+
+
+
+
+    
     if (!result.isConfirmed) return;
 
     try {
@@ -372,7 +378,40 @@ useEffect(() => {
       }
     });
   };
+const handleDisconnectAmazon = async () => {
+  if (!user || !user.id) {
+    Swal.fire("Error", "User not found. Please log in again.", "error");
+    return;
+  }
 
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "This will disconnect your Amazon account!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, disconnect it!",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const res = await axios.delete(`${BACKEND_SERVER_URL}/api/amazon/disconnect`, {
+        data: { user_id: user.id },
+      });
+
+      if (res.status === 200) {
+        setAmazonProfile(null);
+        Swal.fire("Disconnected!", "Amazon account has been removed.", "success");
+      } else {
+        Swal.fire("Error", res.data.message || "Unable to disconnect.", "error");
+      }
+    } catch (err) {
+      console.error("Disconnect error:", err);
+      Swal.fire("Error", "Something went wrong while disconnecting.", "error");
+    }
+  }
+};
   return (
     <div className="space-y-6 p-6">
                   <nav className="text-sm text-gray-400 mb-2">
@@ -653,7 +692,7 @@ useEffect(() => {
           </div>
         )}
 
-
+     {/* Amazon Integration Tab */}
         <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors mt-6">
   <h2 className="text-white font-semibold mb-4">Amazon Account</h2>
 
@@ -670,19 +709,15 @@ useEffect(() => {
   </div>
 
   {amazonProfile?.access_token ? (
-    <button
-      onClick={async () => {
-        // Optional: disconnect logic
-        // await axios.delete(`${BACKEND_SERVER_URL}/api/amazon/disconnect`, {
-        //   data: { user_id: user.id },
-        // });
-        setAmazonProfile(null);
-        Swal.fire("Disconnected!", "Amazon account has been removed.", "success");
-      }}
-      className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
-    >
-      Disconnect Amazon Account
-    </button>
+<button
+  onClick={handleDisconnectAmazon}
+  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+>
+  Disconnect Amazon Account
+</button>
+
+
+
   ) : (
     <button
       onClick={() => {
