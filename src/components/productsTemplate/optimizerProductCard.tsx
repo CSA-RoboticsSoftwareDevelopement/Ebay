@@ -33,13 +33,17 @@ export type ProductCardProps = {
     | "costPrice"
   >;
   onClick: (productId: string) => void;
-  onOptimizationComplete?: (data: OptimizationData) => void; // Add this line
+  onOptimizationComplete?: (data: OptimizationData) => void;
+  triggerReoptimize?: () => void; // ✅ ✅ ✅ Properly declared here
 };
+
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
   onOptimizationComplete, // Add this line
+  triggerReoptimize, // ✅ Fix: Add this line to destructuring
+
 }) => {
   const calculateEbayFee = (price: number) => {
     const fixedFee = 0.3;
@@ -134,6 +138,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     fetchProductData();
   }, [product.id, product.price]);
 
+
+
   return (
     <div
       className="bg-neutral-800 text-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
@@ -193,12 +199,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           className="w-full py-2.5 bg-primary-yellow text-black font-medium rounded-md hover:bg-primary-yellow/90 transition-colors"
           onClick={async (e) => {
             e.stopPropagation();
-            await handleOptimizeClick(e); // Wait for optimization to complete
-            onClick(product.id);         // Then open the modal
+            await handleOptimizeClick(e);
+            onClick(product.id);  // Open modal first
+            // Wait a brief moment for modal to mount before triggering reoptimize
+            setTimeout(() => {
+              triggerReoptimize?.();
+            }, 150);
           }}
         >
           Optimize
         </button>
+
       </div>
     </div>
   );

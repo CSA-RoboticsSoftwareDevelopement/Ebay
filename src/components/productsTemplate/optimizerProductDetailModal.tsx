@@ -1,5 +1,12 @@
-import React, { useEffect } from "react";
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import Image from "next/image";
+
+
 
 
 type OptimizationData = {
@@ -11,7 +18,11 @@ type OptimizationData = {
   predicted_high_value: boolean;
 };
 
-const ProductDetailModal: React.FC<{
+const ProductDetailModal = forwardRef(({
+  product,
+  onClose,
+  optimizationData
+}: {
   product: {
     id: string;
     title: string;
@@ -20,8 +31,14 @@ const ProductDetailModal: React.FC<{
     description?: string;
   };
   onClose: () => void;
-  optimizationData?: OptimizationData; // ✅ Add this line
-}> = ({ product, onClose, optimizationData }) => { // ✅ Receive it here
+  optimizationData?: OptimizationData;
+}, ref) => {
+  const [optimizedData, setOptimizedData] = useState<OptimizationData | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    triggerReoptimize: () => handleReoptimize()
+  }));
+
   useEffect(() => {
     if (optimizationData) {
       console.log("🧠 Received Optimization Data in Modal:", optimizationData);
@@ -33,6 +50,34 @@ const ProductDetailModal: React.FC<{
 
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+  };
+  const handleReoptimize = async () => {
+    try {
+      const payload = {
+        title: product.title,
+        price: product.price,
+        image_url: product.imageUrl || "",
+        order_count: 40,
+        return_rate: 3.4,
+        avg_review_score: 4.1,
+        high_value: 0
+      };
+
+      const response = await fetch("http://127.0.0.1:8000/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error("Prediction failed");
+      const data = await response.json();
+      setOptimizedData(data);
+      console.log("✅ Optimization Response:", data);
+    } catch (err) {
+      console.error("❌ Reoptimize Error:", err);
+    }
   };
 
 
@@ -64,16 +109,25 @@ const ProductDetailModal: React.FC<{
 
             <div className="bg-gray-900/50 p-4 rounded-lg mb-4">
               <p className="font-semibold text-lg text-white text-center">
-                Image Score: <span className="text-primary-yellow">6.2</span>/10
+                Image Score:{" "}
+                <span className="text-primary-yellow">
+                  {optimizedData ? optimizedData.image_score.toFixed(1) : "—"}
+                </span>
+                /10
               </p>
+
               <p className="text-sm text-gray-400 mt-1 text-center">
                 (Industry Average: 7.5)
               </p>
             </div>
 
-            <button className="flex items-center justify-center gap-2 mt-auto px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium transition-colors">
+            <button
+              onClick={handleReoptimize}
+              className="flex items-center justify-center gap-2 mt-auto px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium transition-colors"
+            >
               <span className="text-lg">🔄</span> Reoptimize
             </button>
+
           </div>
 
           {/* Right Side - Comparison Table */}
@@ -98,10 +152,9 @@ const ProductDetailModal: React.FC<{
                 <div className="p-4">
                   <p className="font-medium text-gray-300 mb-2">Name</p>
                   <p className="text-primary-yellow">
-                    {product.title.length > 50
-                      ? `${product.title.substring(0, 47)}...`
-                      : product.title}
+                    {optimizedData?.enhanced_title || "Loading..."}
                   </p>
+
                 </div>
               </div>
 
@@ -115,8 +168,9 @@ const ProductDetailModal: React.FC<{
                   <p className="font-medium text-gray-300 mb-2">Price</p>
                   <div className="flex items-center gap-2">
                     <span className="text-primary-yellow">
-                      ${(product.price * 1.15).toFixed(2)}
+                      ${optimizedData ? optimizedData.price.toFixed(2) : "Loading..."}
                     </span>
+
                     <span className="text-green-500 text-sm font-medium">
                       (▲ 15%)
                     </span>
@@ -136,6 +190,6 @@ const ProductDetailModal: React.FC<{
       </div>
     </div>
   );
-};
+});
 
 export default ProductDetailModal;

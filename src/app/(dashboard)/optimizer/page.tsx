@@ -9,6 +9,7 @@ import AddProductModal from "../../../components/productsTemplate/optimizerAddPr
 // import { Product } from "../../../types/ProductTypes";
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
+import { useRef } from "react";
 
 export default function Products() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function Products() {
   const [statusFilter, setStatusFilter] = useState("");
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const modalRef = useRef<any>(null);
 
   const dummyProducts: Product[] = [
     {
@@ -205,15 +207,15 @@ export default function Products() {
       lastUpdated: Date;
     };
     optimizedData?: {
-  optimized_title?: string;
-  optimized_description?: string;
-  optimized_price?: number;
-};
+      optimized_title?: string;
+      optimized_description?: string;
+      optimized_price?: number;
+    };
 
     condition: string; // <-- Add this line
     category: string; // <-- Add this line
   }
-const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, OptimizationData>>({});
+  const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, OptimizationData>>({});
   interface OptimizationData {
     original_title: string;
     enhanced_title: string;
@@ -260,156 +262,156 @@ const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, Op
     }
 
     async function fetchProducts() {
-  try {
-    const response1 = await fetch(
-      `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`
-    );
-    const response2 = await fetch(
-      `${BACKEND_SERVER_URL}/api/ebay/products/optimizer?user_id=${user.id}`
-    );
+      try {
+        const response1 = await fetch(
+          `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`
+        );
+        const response2 = await fetch(
+          `${BACKEND_SERVER_URL}/api/ebay/products/optimizer?user_id=${user.id}`
+        );
 
-    if (!response1.ok && !response2.ok) {
-      throw new Error(`Failed to fetch inventory`);
+        if (!response1.ok && !response2.ok) {
+          throw new Error(`Failed to fetch inventory`);
+        }
+
+        const data1 = response1.ok ? await response1.json() : { inventory: { inventoryItems: [] } };
+        const data2 = response2.ok ? await response2.json() : { products: [] };
+
+        const inventoryItems = data1.inventory?.inventoryItems || [];
+        const optimizerItems = data2.products || [];
+
+        // Map first API (inventory)
+        const formattedInventory = inventoryItems.map((item: any) => ({
+          id: item.sku,
+          title: item.product?.title || "Untitled",
+          description: item.product?.description || "No description available",
+          price: parseFloat(item.product?.mpn || "0") || 0,
+          currency: "USD",
+          quantity: item.availability.shipToLocationAvailability.quantity,
+          quantitySold: 0,
+          sellThroughRate: 0,
+          timeToSell: 0,
+          costPrice: 0,
+          shipping: 0,
+          ebayFees: 0,
+          profit: 0,
+          profitMargin: 0,
+          roi: 0,
+          imageUrl:
+            item.product?.imageUrls?.[0] ||
+            `https://placehold.co/400x300?text=${encodeURIComponent(
+              item.product?.title || "Untitled"
+            )}`,
+          listingStatus: "Active",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          competitorData: {
+            id: item.sku,
+            avgPrice: 0,
+            avgShipping: 0,
+            lowestPrice: 0,
+            highestPrice: 0,
+            avgSellerFeedback: 0,
+            avgListingPosition: 0,
+            avgImageCount: item.product?.imageUrls?.length || 0,
+            competitorCount: 0,
+            lastUpdated: new Date(),
+          },
+          condition: "New",
+          category: "General",
+        }));
+
+        // Map second API (optimizer)
+        const formattedOptimizer = await Promise.all(
+          optimizerItems.map(async (item: any) => {
+            const baseProduct = {
+              id: item.id || item.sku,
+              title: item.product_title,
+              description: item.description || "No description available",
+              price: item.price || 0,
+              currency: "USD",
+              quantity: item.quantity || 0,
+              quantitySold: item.quantitySold || 0,
+              sellThroughRate: 0,
+              timeToSell: 0,
+              costPrice: item.costPrice || 0,
+              shipping: item.shipping || 0,
+              ebayFees: item.ebayFees || 0,
+              profit: item.profit || 0,
+              profitMargin: item.profitMargin || 0,
+              roi: item.roi || 0,
+              imageUrl:
+                item.image_url ||
+                `https://placehold.co/400x300?text=${encodeURIComponent(
+                  item.product_title || "Product"
+                )}`,
+              listingStatus: item.listingStatus || "Active",
+              createdAt: item.createdAt || new Date().toISOString(),
+              updatedAt: item.updatedAt || new Date().toISOString(),
+              competitorData: {
+                id: item.id || item.sku,
+                avgPrice: 0,
+                avgShipping: 0,
+                lowestPrice: 0,
+                highestPrice: 0,
+                avgSellerFeedback: 0,
+                avgListingPosition: 0,
+                avgImageCount: 0,
+                competitorCount: 0,
+                lastUpdated: new Date(),
+              },
+              condition: item.condition || "New",
+              category: item.category || "General",
+            };
+
+            // 🔁 Call the prediction API for optimization
+            try {
+              const predictResponse = await fetch("http://127.0.0.1:8000/predict", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  title: baseProduct.title,
+                  description: baseProduct.description,
+                  price: baseProduct.price,
+                }),
+              });
+
+              const predictResult = predictResponse.ok
+                ? await predictResponse.json()
+                : null;
+
+              return {
+                ...baseProduct,
+                optimizedData: predictResult || {}, // merge the prediction result
+              };
+            } catch (err) {
+              console.error("Prediction error:", err);
+              return baseProduct; // fallback without optimization
+            }
+          })
+        );
+
+        // ✅ Combine both product sources
+        const combinedProducts = [...formattedInventory, ...formattedOptimizer];
+
+        if (combinedProducts.length > 0) {
+          setProductsData(combinedProducts);
+        } else {
+          setError("No inventory found. Showing demo data.");
+          setProductsData(dummyProducts);
+        }
+        setLoading(false);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("An unexpected error occurred.");
+        }
+        setLoading(false);
+      }
     }
-
-    const data1 = response1.ok ? await response1.json() : { inventory: { inventoryItems: [] } };
-    const data2 = response2.ok ? await response2.json() : { products: [] };
-
-    const inventoryItems = data1.inventory?.inventoryItems || [];
-    const optimizerItems = data2.products || [];
-
-    // Map first API (inventory)
-    const formattedInventory = inventoryItems.map((item: any) => ({
-      id: item.sku,
-      title: item.product?.title || "Untitled",
-      description: item.product?.description || "No description available",
-      price: parseFloat(item.product?.mpn || "0") || 0,
-      currency: "USD",
-      quantity: item.availability.shipToLocationAvailability.quantity,
-      quantitySold: 0,
-      sellThroughRate: 0,
-      timeToSell: 0,
-      costPrice: 0,
-      shipping: 0,
-      ebayFees: 0,
-      profit: 0,
-      profitMargin: 0,
-      roi: 0,
-      imageUrl:
-        item.product?.imageUrls?.[0] ||
-        `https://placehold.co/400x300?text=${encodeURIComponent(
-          item.product?.title || "Untitled"
-        )}`,
-      listingStatus: "Active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      competitorData: {
-        id: item.sku,
-        avgPrice: 0,
-        avgShipping: 0,
-        lowestPrice: 0,
-        highestPrice: 0,
-        avgSellerFeedback: 0,
-        avgListingPosition: 0,
-        avgImageCount: item.product?.imageUrls?.length || 0,
-        competitorCount: 0,
-        lastUpdated: new Date(),
-      },
-      condition: "New",
-      category: "General",
-    }));
-
-    // Map second API (optimizer)
-    const formattedOptimizer = await Promise.all(
-  optimizerItems.map(async (item: any) => {
-    const baseProduct = {
-      id: item.id || item.sku,
-      title: item.product_title,
-      description: item.description || "No description available",
-      price: item.price || 0,
-      currency: "USD",
-      quantity: item.quantity || 0,
-      quantitySold: item.quantitySold || 0,
-      sellThroughRate: 0,
-      timeToSell: 0,
-      costPrice: item.costPrice || 0,
-      shipping: item.shipping || 0,
-      ebayFees: item.ebayFees || 0,
-      profit: item.profit || 0,
-      profitMargin: item.profitMargin || 0,
-      roi: item.roi || 0,
-      imageUrl:
-        item.image_url ||
-        `https://placehold.co/400x300?text=${encodeURIComponent(
-          item.product_title || "Product"
-        )}`,
-      listingStatus: item.listingStatus || "Active",
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: item.updatedAt || new Date().toISOString(),
-      competitorData: {
-        id: item.id || item.sku,
-        avgPrice: 0,
-        avgShipping: 0,
-        lowestPrice: 0,
-        highestPrice: 0,
-        avgSellerFeedback: 0,
-        avgListingPosition: 0,
-        avgImageCount: 0,
-        competitorCount: 0,
-        lastUpdated: new Date(),
-      },
-      condition: item.condition || "New",
-      category: item.category || "General",
-    };
-
-    // 🔁 Call the prediction API for optimization
-    try {
-      const predictResponse = await fetch("http://127.0.0.1:8000/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: baseProduct.title,
-          description: baseProduct.description,
-          price: baseProduct.price,
-        }),
-      });
-
-      const predictResult = predictResponse.ok
-        ? await predictResponse.json()
-        : null;
-
-      return {
-        ...baseProduct,
-        optimizedData: predictResult || {}, // merge the prediction result
-      };
-    } catch (err) {
-      console.error("Prediction error:", err);
-      return baseProduct; // fallback without optimization
-    }
-  })
-);
-
-    // ✅ Combine both product sources
-    const combinedProducts = [...formattedInventory, ...formattedOptimizer];
-
-    if (combinedProducts.length > 0) {
-      setProductsData(combinedProducts);
-    } else {
-      setError("No inventory found. Showing demo data.");
-      setProductsData(dummyProducts);
-    }
-    setLoading(false);
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      setError(err.message);
-    } else {
-      setError("An unexpected error occurred.");
-    }
-    setLoading(false);
-  }
-}
 
 
     fetchProducts();
@@ -449,7 +451,7 @@ const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, Op
     const matchesStatus =
       statusFilter === "" ||
       (product.listingStatus || "").toLowerCase() ===
-        statusFilter.toLowerCase();
+      statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
 
@@ -484,26 +486,27 @@ const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, Op
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
           {dummyProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onClick={() => setSelectedProductId(product.id)}
-              />
+            <ProductCard
+              key={product.id}
+              product={product}
+              onClick={() => setSelectedProductId(product.id)}
+              triggerReoptimize={() => modalRef.current?.triggerReoptimize()} // 👈 Add this
+            />
           ))}
         </div>
 
         // Update your modal rendering:
-{selectedProduct && (
-  <ProductDetailModal
-    product={selectedProduct}
-    optimizationData={optimizationDataMap[selectedProduct.id] || null}
-    onClose={() => {
-      setSelectedProductId(null);
-      setRefreshTrigger(prev => prev + 1);
-    }}
-    onUpdateProduct={handleUpdateProduct}
-  />
-)}
+        {selectedProduct && (
+          <ProductDetailModal
+            product={selectedProduct}
+            optimizationData={optimizationDataMap[selectedProduct.id] || null}
+            onClose={() => {
+              setSelectedProductId(null);
+              setRefreshTrigger(prev => prev + 1);
+            }}
+            onUpdateProduct={handleUpdateProduct}
+          />
+        )}
       </div>
     );
   }
@@ -533,7 +536,7 @@ const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, Op
           className="btn btn-primary"
           onClick={() => setIsAddProductModalOpen(true)} // ✅ Open modal on click
         >
-          Custom Work 
+          Custom Work
         </button>{" "}
       </div>
 
@@ -604,6 +607,7 @@ const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, Op
             key={product.id || `product-${index}`} // ✅ index is now defined
             product={product}
             onClick={(id) => setSelectedProductId(id)}
+            triggerReoptimize={() => modalRef.current?.triggerReoptimize()} // ✅ ADD THIS LINE
           />
         ))}
       </div>
@@ -643,7 +647,10 @@ const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, Op
       {/* Product Detail Modal */}
       {selectedProduct && (
         <ProductDetailModal
+          ref={modalRef}
           product={selectedProduct}
+          optimizationData={optimizationDataMap[selectedProduct.id] || null} // ✅ Add this
+
           onClose={() => {
             setSelectedProductId(null);
             setRefreshTrigger((prev) => prev + 1); // 🔹 Trigger re-fetch on modal close
@@ -652,7 +659,7 @@ const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, Op
         />
       )}
 
-      
+
     </div>
   );
 }
