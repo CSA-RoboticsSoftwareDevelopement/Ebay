@@ -451,7 +451,7 @@ const handleDisconnectAmazon = async () => {
                   key={tab}
                   className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                     activeTab === tab
-                      ? "border-primary-yellow text-primary-black"
+                      ? "border-primary-yellow  text-neutral-gray-500"
                       : "border-transparent text-neutral-gray-500 hover:text-neutral-gray-700 hover:border-neutral-gray-300"
                   }`}
                   onClick={() => setActiveTab(tab)}
@@ -788,7 +788,7 @@ const handleDisconnectAmazon = async () => {
         {/* Preferences Tab */}
         {activeTab === "preferences" && (
             <div className="space-y-6">
-            <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors">
+            {/* <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors">
               <h2 className="text-white font-semibold mb-4">Preferences</h2>
               <p className="text-white-600">
               Customize your application experience.
@@ -805,7 +805,7 @@ const handleDisconnectAmazon = async () => {
                   <option value="dark">Dark Mode</option>
                 </select>
               </div>
-            </div>
+            </div> */}
             
             {/* Predefined Messages Card */}
             <div className="card p-4 bg-black text-white border border-white shadow rounded-lg hover:border-primary-yellow transition-colors">
