@@ -882,7 +882,7 @@ app.get("/getAccessToken", async (req, res) => {
   res.json(tokenData);
 });
 
-// Example: /api/amazon/profile
+///api/amazon/profile
 app.get("/api/amazon/profile", async (req, res) => {
   const { user_id } = req.query;
   const [rows] = await db.execute(
