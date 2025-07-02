@@ -122,7 +122,7 @@ useEffect(() => {
   fetchProducts();
 }, []);
 
-  
+  // console.log(productsData)
 
   if (authLoading) {
     return <div className="text-center mt-10">Loading...</div>;
@@ -275,7 +275,7 @@ useEffect(() => {
             <input
           type="text"
           id="search"
-          className="block w-full rounded-lg border-neutral-gray-200 focus:ring-primary-yellow focus:border-primary-yellow px-3 py-2 text-sm"
+          className="block text-black w-full rounded-lg border-neutral-gray-200 focus:ring-primary-yellow focus:border-primary-yellow px-3 py-2 text-sm"
           placeholder="Search..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}

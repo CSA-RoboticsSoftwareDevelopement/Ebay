@@ -148,7 +148,7 @@ export function Header({ className, breadcrumbs }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full hover:bg-white/10">
                 <Avatar className="h-9 w-9 border border-white/10">
-                  <AvatarImage src="/vibrant-street-market.png" alt="User" />
+                  <AvatarImage src="" alt="User" />
                   <AvatarFallback className="bg-gradient-to-br from-[#FFC300] to-[#FF9500] text-[#09090B]">
                     {username.charAt(0).toUpperCase()}
                   </AvatarFallback>

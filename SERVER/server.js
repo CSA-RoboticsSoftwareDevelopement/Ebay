@@ -884,7 +884,7 @@ app.get("/getAccessToken", async (req, res) => {
   res.json(tokenData);
 });
 
-// Example: /api/amazon/profile
+///api/amazon/profile
 app.get("/api/amazon/profile", async (req, res) => {
   const { user_id } = req.query;
   const [rows] = await db.execute(
@@ -895,10 +895,28 @@ app.get("/api/amazon/profile", async (req, res) => {
   res.json({ amazonProfile: rows[0] });
 });
 
+// DELETE /api/amazon/disconnect
+
 app.delete("/api/amazon/disconnect", async (req, res) => {
   const { user_id } = req.body;
-  await db.execute("DELETE FROM amazon_tokens WHERE user_id = ?", [user_id]);
-  res.json({ message: "Amazon account disconnected." });
+
+  if (!user_id) return res.status(400).json({ message: "Missing user_id" });
+
+  try {
+    const [result] = await db.execute(
+      "DELETE FROM amazon_tokens WHERE user_id = ?",
+      [user_id]
+    );
+
+    if (result.affectedRows > 0) {
+      return res.status(200).json({ message: "Amazon account disconnected" });
+    } else {
+      return res.status(404).json({ message: "No token found for this user" });
+    }
+  } catch (error) {
+    console.error("❌ Error disconnecting Amazon account:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 // ✅ Start Server
