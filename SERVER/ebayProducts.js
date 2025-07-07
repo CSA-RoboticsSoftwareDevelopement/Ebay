@@ -482,7 +482,7 @@ module.exports = (db) => {
       res.status(500).json({ error: "Failed to add inventory item" });
     }
   });
-
+ 
   router.delete("/inventory/delete/:sku", async (req, res) => {
     try {
       const { sku } = req.params;

@@ -1,0 +1,56 @@
+[
+  {
+    "asin": "HJN123",
+    "fnSku": "SHR321",
+    "sellerSku": "SHR321",
+    "condition": "NEW"
+  },
+  {
+    "asin": "HJN123",
+    "fnSku": "SHR321",
+    "sellerSku": "SHR321",
+    "condition": "NEW"
+  },
+  {
+    "asin": "HJN123",
+    "fnSku": "SHR321",
+    "sellerSku": "SHR321",
+    "condition": "NEW"
+  },
+  {
+    "asin": "IPN123",
+    "fnSku": "SHR321",
+    "sellerSku": "SHR321",
+    "condition": "NEW"
+  },
+  {
+    "asin": "IPKKN123",
+    "fnSku": "SHR321",
+    "sellerSku": "SHR321",
+    "condition": "NEW",
+    "title": "Bolt Wireless Earbuds - Bluetooth 5.0",
+    "quantity": 10,
+    "price": "29.99",
+    "currency": "USD",
+    "mpn": "BOLT-BT123",
+    "description": "Experience premium sound quality with Bolt Wireless Earbuds. Bluetooth 5.0, long battery life, and comfortable fit.",
+    "imageUrls": [
+      "https://i.imgur.com/1Q8ZQ1Y.jpg"
+    ]
+  },
+  {
+    "asin": "IPKKN123",
+    "fnSku": "SHR321",
+    "sellerSku": "SHR321",
+    "condition": "NEW",
+    "title": "Bolt Wireless Earbuds - Bluetooth 5.0",
+    "quantity": 10,
+    "price": "29.99",
+    "currency": "USD",
+    "mpn": "BOLT-BT123",
+    "description": "Experience premium sound quality with Bolt Wireless Earbuds. Bluetooth 5.0, long battery life, and comfortable fit.",
+    "imageUrls": [
+      "https://i.imgur.com/1Q8ZQ1Y.jpg"
+    ]
+  }
+]

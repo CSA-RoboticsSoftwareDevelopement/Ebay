@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-require-imports */
 const express = require("express");
 const cors = require("cors");
@@ -17,6 +18,8 @@ const path = require("path");
 const fs = require("fs"); // ✅ Add this line
 const ebayAnalytics = require("./ebayAnalytics");
 const dashboardService = require("./dashboardService");
+const amazonRoutes = require("./amazonRoutes/amazonRoutes");
+
 
 require("dotenv").config();
 
@@ -896,7 +899,6 @@ app.get("/api/amazon/profile", async (req, res) => {
 });
 
 // DELETE /api/amazon/disconnect
-
 app.delete("/api/amazon/disconnect", async (req, res) => {
   const { user_id } = req.body;
 
@@ -918,6 +920,9 @@ app.delete("/api/amazon/disconnect", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+app.use("/api/amazon", amazonRoutes);
+
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;

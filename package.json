@@ -13,6 +13,9 @@
     "server": "node SERVER/server.js"
   },
   "dependencies": {
+    "@aws-sdk/credential-provider-node": "^3.840.0",
+    "@aws-sdk/hash-node": "^3.374.0",
+    "@aws-sdk/signature-v4": "^3.374.0",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-accordion": "^1.2.10",
     "@radix-ui/react-alert-dialog": "^1.1.13",
@@ -44,7 +47,9 @@
     "@shadcn/ui": "^0.0.4",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.3.1",
-    "axios": "^1.9.0",
+    "amazon-sp-api": "^1.1.6",
+    "aws-sdk": "^2.1692.0",
+    "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
