@@ -1,4 +1,7 @@
 export interface Product {
+    sku: string;
+    product_id: string;
+    product_title: string;
     id: string;
     title: string;
     description: string;

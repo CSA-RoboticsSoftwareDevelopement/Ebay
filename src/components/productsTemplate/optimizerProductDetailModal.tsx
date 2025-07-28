@@ -101,12 +101,35 @@ const ProductDetailModal = forwardRef(({
     setSelectedTitle(title);
   };
 
-  const handleApplyChanges = () => {
-    if (selectedTitle) {
-      onSaveChanges(selectedTitle);
-      onClose();
+const handleApplyChanges = async () => {
+  if (!selectedTitle || !product?.id) return;
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/ebay/products/optimizer/update/${product.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        product_title: selectedTitle
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("❌ Update failed:", result.message);
+      return;
     }
-  };
+
+    console.log("✅ Product title updated:", result);
+    onSaveChanges(selectedTitle); // Optional: callback to parent
+    onClose(); // Close modal
+  } catch (error) {
+    console.error("❌ Error updating product:", error);
+  }
+};
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -163,6 +186,11 @@ const ProductDetailModal = forwardRef(({
               <div className="p-4 bg-gray-900">
                 <h3 className="text-white font-bold mb-3">CURRENT</h3>
                 <div className="space-y-3">
+                  <div>
+                    <p className="text-gray-400 text-sm">ID</p>
+                    <p className="text-white">{product.id}</p>
+                  </div>
+
                   <div>
                     <p className="text-gray-400 text-sm">Name</p>
                     <p className="text-white">{product.title}</p>
@@ -230,7 +258,7 @@ const ProductDetailModal = forwardRef(({
 
             {/* Apply Button */}
             <div className="flex justify-end mt-6">
-              <button 
+              <button
                 onClick={handleApplyChanges}
                 disabled={!selectedTitle}
                 className={`px-6 py-2 ${selectedTitle ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-gray-500 cursor-not-allowed'} text-black rounded-lg font-medium transition-colors`}
