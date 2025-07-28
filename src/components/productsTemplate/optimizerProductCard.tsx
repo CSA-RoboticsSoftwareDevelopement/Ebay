@@ -6,15 +6,15 @@ import axios from "axios";
 
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
-
 interface OptimizationData {
   original_title: string;
-  enhanced_title: string;
+  optimized_suggestions: string[];
   original_image_url: string;
   image_score: number;
   price: number;
   predicted_high_value: boolean;
 }
+
 export type ProductCardProps = {
   product: Pick<
     Product,
@@ -31,36 +31,31 @@ export type ProductCardProps = {
     | "imageUrl"
     | "listingStatus"
     | "costPrice"
+    | "category"
+    | "subcategory"
   >;
   onClick: (productId: string) => void;
-  onOptimizationComplete?: (data: OptimizationData) => void;
-  triggerReoptimize?: () => void; // ✅ ✅ ✅ Properly declared here
+  onOptimizeClick: (productId: string) => Promise<void>;
 };
-
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
-  onOptimizationComplete, // Add this line
-  triggerReoptimize, // ✅ Fix: Add this line to destructuring
-
+  onOptimizeClick,
 }) => {
   const calculateEbayFee = (price: number) => {
     const fixedFee = 0.3;
-    let variableFee = 0;
-    if (price <= 1000) {
-      variableFee = price * 0.134;
-    } else {
-      variableFee = 1000 * 0.134 + (price - 1000) * 0.0275;
-    }
+    let variableFee = price <= 1000
+      ? price * 0.134
+      : 1000 * 0.134 + (price - 1000) * 0.0275;
     return parseFloat((fixedFee + variableFee).toFixed(2));
   };
 
   const [imgSrc, setImgSrc] = useState(
     product.imageUrl ||
-    `https://placehold.co/400x300?text=${encodeURIComponent(
-      product.title?.substring(0, 1) || product.title
-    )}`
+      `https://placehold.co/400x300?text=${encodeURIComponent(
+        product.title?.substring(0, 1) || product.title
+      )}`
   );
 
   const [editedValues, setEditedValues] = useState<{
@@ -74,33 +69,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     salesPrice: product.price,
     ebayFees: calculateEbayFee(product.price),
   });
-  const handleOptimizeClick = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent parent onClick
 
-    const payload = {
-      title: product.title,
-      price: product.price,
-      image_url: product.imageUrl || "https://example.com/default.jpg",
-      order_count: product.quantitySold || 0,
-      return_rate: 3.4, // static or dynamically fetched
-      avg_review_score: 4.1, // static or dynamically fetched
-      high_value: 0,
-    };
-
-    try {
-      const response = await axios.post("http://127.0.0.1:8000/predict", payload);
-      console.log("🔍 Optimization Result:", response.data);
-
-      // Add this block to handle the optimization data
-      if (onOptimizationComplete) {
-        onOptimizationComplete(response.data);
-      }
-
-      // Open the modal after optimization is complete
-      onClick(product.id);
-    } catch (error) {
-      console.error("❌ Error sending optimize request:", error);
-    }
+  const handleOptimize = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await onOptimizeClick(product.id);
+    onClick(product.id);
   };
 
   useEffect(() => {
@@ -110,26 +83,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
         );
 
-        if (response.data?.data?.length > 0) {
-          const fetchedProduct = response.data.data.find(
-            (item: any) => item.sku === product.id
-          );
+        const fetchedProduct = response.data.data.find(
+          (item: any) => item.sku === product.id
+        );
 
-          const costPrice = fetchedProduct
-            ? parseFloat(fetchedProduct.cost_price ?? "0")
-            : 0;
-          const ebayFees = fetchedProduct?.ebay_fees != null
-            ? parseFloat(fetchedProduct.ebay_fees)
-            : calculateEbayFee(product.price);
+        const costPrice = fetchedProduct
+          ? parseFloat(fetchedProduct.cost_price ?? "0")
+          : 0;
+        const ebayFees = fetchedProduct?.ebay_fees != null
+          ? parseFloat(fetchedProduct.ebay_fees)
+          : calculateEbayFee(product.price);
 
-          setEditedValues(prev => ({
-            ...prev,
-            costPrice,
-            ebayFees,
-            profit: prev.salesPrice - costPrice - ebayFees,
-            roi: costPrice > 0 ? (prev.salesPrice - costPrice - ebayFees) / costPrice : 0,
-          }));
-        }
+        setEditedValues((prev) => ({
+          ...prev,
+          costPrice,
+          ebayFees,
+          profit: prev.salesPrice - costPrice - ebayFees,
+          roi:
+            costPrice > 0
+              ? (prev.salesPrice - costPrice - ebayFees) / costPrice
+              : 0,
+        }));
       } catch (error) {
         console.error("Error fetching product data:", error);
       }
@@ -138,14 +112,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     fetchProductData();
   }, [product.id, product.price]);
 
-
-
   return (
     <div
-      className="bg-neutral-800 text-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+      className="bg-neutral-800 text-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer flex flex-col h-full"
       onClick={() => onClick(product.id)}
     >
-      {/* Product Image */}
       <div className="h-48 relative">
         <Image
           src={imgSrc}
@@ -154,13 +125,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           onError={() =>
-            setImgSrc(`https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`)
+            setImgSrc(
+              `https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`
+            )
           }
         />
       </div>
 
-      {/* Product Details */}
-      <div className="p-4">
+      <div className="p-4 flex-grow">
         <h3 className="font-medium text-lg text-white line-clamp-2 mb-3">
           {product.title}
         </h3>
@@ -193,23 +165,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </p>
           </div>
         </div>
+      </div>
 
-        {/* Optimize Button */}
+      <div className="p-4">
         <button
           className="w-full py-2.5 bg-primary-yellow text-black font-medium rounded-md hover:bg-primary-yellow/90 transition-colors"
-          onClick={async (e) => {
-            e.stopPropagation();
-            await handleOptimizeClick(e);
-            onClick(product.id);  // Open modal first
-            // Wait a brief moment for modal to mount before triggering reoptimize
-            setTimeout(() => {
-              triggerReoptimize?.();
-            }, 150);
-          }}
+          onClick={handleOptimize}
         >
           Optimize
         </button>
-
       </div>
     </div>
   );

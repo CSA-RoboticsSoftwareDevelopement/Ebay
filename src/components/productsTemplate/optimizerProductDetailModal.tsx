@@ -1,3 +1,4 @@
+// optimizerProductDetailModal.tsx
 import React, {
   useEffect,
   useState,
@@ -6,34 +7,42 @@ import React, {
 } from "react";
 import Image from "next/image";
 
-
-
-
 type OptimizationData = {
   original_title: string;
   enhanced_title: string;
+  alternative_title?: string;
+  short_title?: string;
   original_image_url: string;
   image_score: number;
   price: number;
   predicted_high_value: boolean;
+  category?: string;
+  subcategory?: string;
+};
+
+type Product = {
+  id: string;
+  title: string;
+  imageUrl?: string;
+  price: number;
+  description?: string;
+  category?: string;
+  subcategory?: string;
 };
 
 const ProductDetailModal = forwardRef(({
   product,
   onClose,
-  optimizationData
+  optimizationData,
+  onSaveChanges // Add this prop
 }: {
-  product: {
-    id: string;
-    title: string;
-    imageUrl?: string;
-    price: number;
-    description?: string;
-  };
+  product: Product;
   onClose: () => void;
   optimizationData?: OptimizationData;
+  onSaveChanges: (selectedTitle: string) => void; // Function to save changes
 }, ref) => {
   const [optimizedData, setOptimizedData] = useState<OptimizationData | null>(null);
+  const [selectedTitle, setSelectedTitle] = useState<string | null>(null);
 
   useImperativeHandle(ref, () => ({
     triggerReoptimize: () => handleReoptimize()
@@ -41,9 +50,13 @@ const ProductDetailModal = forwardRef(({
 
   useEffect(() => {
     if (optimizationData) {
+      setOptimizedData(optimizationData);
+      // Set the first optimized title as default selection
+      setSelectedTitle(optimizationData.enhanced_title);
       console.log("🧠 Received Optimization Data in Modal:", optimizationData);
     }
   }, [optimizationData]);
+
   const imageUrlSrc =
     product.imageUrl ||
     `https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`;
@@ -51,6 +64,7 @@ const ProductDetailModal = forwardRef(({
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
   const handleReoptimize = async () => {
     try {
       const payload = {
@@ -60,7 +74,9 @@ const ProductDetailModal = forwardRef(({
         order_count: 40,
         return_rate: 3.4,
         avg_review_score: 4.1,
-        high_value: 0
+        high_value: 0,
+        category: product.category,
+        subcategory: product.subcategory
       };
 
       const response = await fetch("http://127.0.0.1:8000/predict", {
@@ -74,12 +90,23 @@ const ProductDetailModal = forwardRef(({
       if (!response.ok) throw new Error("Prediction failed");
       const data = await response.json();
       setOptimizedData(data);
+      setSelectedTitle(data.enhanced_title); // Reset selection to first option
       console.log("✅ Optimization Response:", data);
     } catch (err) {
       console.error("❌ Reoptimize Error:", err);
     }
   };
 
+  const handleTitleSelect = (title: string) => {
+    setSelectedTitle(title);
+  };
+
+  const handleApplyChanges = () => {
+    if (selectedTitle) {
+      onSaveChanges(selectedTitle);
+      onClose();
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -127,61 +154,87 @@ const ProductDetailModal = forwardRef(({
             >
               <span className="text-lg">🔄</span> Reoptimize
             </button>
-
           </div>
 
           {/* Right Side - Comparison Table */}
           <div className="w-full md:w-2/3 p-6 flex flex-col">
             <div className="border border-gray-700 rounded-lg overflow-hidden flex-1">
-              {/* Table Header */}
-              <div className="grid grid-cols-2 bg-gray-900">
-                <div className="p-3 font-medium text-white text-center border-r border-gray-700">
-                  Current
-                </div>
-                <div className="p-3 font-medium text-white text-center">
-                  Optimized
+              {/* Current Section */}
+              <div className="p-4 bg-gray-900">
+                <h3 className="text-white font-bold mb-3">CURRENT</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-gray-400 text-sm">Name</p>
+                    <p className="text-white">{product.title}</p>
+                  </div>
+                  {product.category && (
+                    <div>
+                      <p className="text-gray-400 text-sm">Category</p>
+                      <p className="text-white">{product.category}</p>
+                    </div>
+                  )}
+                  {product.subcategory && (
+                    <div>
+                      <p className="text-gray-400 text-sm">Subcategory</p>
+                      <p className="text-white">{product.subcategory}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-gray-400 text-sm">Price</p>
+                    <p className="text-white">${product.price.toFixed(2)}</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Name Row */}
-              <div className="grid grid-cols-2 border-t border-gray-700">
-                <div className="p-4 border-r border-gray-700">
-                  <p className="font-medium text-gray-300 mb-2">Name</p>
-                  <p className="text-white">{product.title}</p>
-                </div>
-                <div className="p-4">
-                  <p className="font-medium text-gray-300 mb-2">Name</p>
-                  <p className="text-primary-yellow">
-                    {optimizedData?.enhanced_title || "Loading..."}
-                  </p>
-
-                </div>
-              </div>
-
-              {/* Price Row */}
-              <div className="grid grid-cols-2 border-t border-gray-700">
-                <div className="p-4 border-r border-gray-700">
-                  <p className="font-medium text-gray-300 mb-2">Price</p>
-                  <p className="text-white">${product.price.toFixed(2)}</p>
-                </div>
-                <div className="p-4">
-                  <p className="font-medium text-gray-300 mb-2">Price</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-primary-yellow">
-                      ${optimizedData ? optimizedData.price.toFixed(2) : "Loading..."}
-                    </span>
-
-                    <span className="text-green-500 text-sm font-medium">
-                      (▲ 15%)
-                    </span>
+              {/* Optimized Section */}
+              <div className="p-4 border-t border-gray-700">
+                <h3 className="text-white font-bold mb-3">OPTIMIZED</h3>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-gray-400 text-sm mb-2">Select optimized title:</p>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => handleTitleSelect(optimizedData?.enhanced_title || '')}
+                        className={`px-3 py-2 text-left rounded-md ${selectedTitle === optimizedData?.enhanced_title ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+                      >
+                        {optimizedData?.enhanced_title || "Option 1 loading..."}
+                      </button>
+                      <button
+                        onClick={() => handleTitleSelect(optimizedData?.alternative_title || '')}
+                        className={`px-3 py-2 text-left rounded-md ${selectedTitle === optimizedData?.alternative_title ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+                      >
+                        {optimizedData?.alternative_title || "Option 2 loading..."}
+                      </button>
+                      <button
+                        onClick={() => handleTitleSelect(optimizedData?.short_title || '')}
+                        className={`px-3 py-2 text-left rounded-md ${selectedTitle === optimizedData?.short_title ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+                      >
+                        {optimizedData?.short_title || "Option 3 loading..."}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Price</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-primary-yellow">
+                        ${optimizedData ? optimizedData.price.toFixed(2) : "—"}
+                      </span>
+                      <span className="text-green-500 text-sm font-medium">
+                        (▲ 15%)
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Apply Button - Now perfectly matches Reoptimize button */}
+            {/* Apply Button */}
             <div className="flex justify-end mt-6">
-              <button className="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium transition-colors">
+              <button 
+                onClick={handleApplyChanges}
+                disabled={!selectedTitle}
+                className={`px-6 py-2 ${selectedTitle ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-gray-500 cursor-not-allowed'} text-black rounded-lg font-medium transition-colors`}
+              >
                 Apply Changes
               </button>
             </div>
@@ -191,5 +244,7 @@ const ProductDetailModal = forwardRef(({
     </div>
   );
 });
+
+ProductDetailModal.displayName = "ProductDetailModal";
 
 export default ProductDetailModal;

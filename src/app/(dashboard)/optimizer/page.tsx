@@ -10,6 +10,7 @@ import AddProductModal from "../../../components/productsTemplate/optimizerAddPr
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 import { useRef } from "react";
+import axios from "axios";  // Add this line at the top of your file
 
 export default function Products() {
   const { user } = useAuth();
@@ -216,14 +217,51 @@ export default function Products() {
     category: string; // <-- Add this line
   }
   const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, OptimizationData>>({});
-  interface OptimizationData {
-    original_title: string;
-    enhanced_title: string;
-    original_image_url: string;
-    image_score: number;
-    price: number;
-    predicted_high_value: boolean;
-  }
+
+  const handleOptimizeProduct = async (productId: string) => {
+    const product = productsData.find(p => p.id === productId);
+    if (!product) return;
+
+    try {
+      const response = await axios.post(`http://127.0.0.1:5000/optimize_title`, {
+        title: product.title,
+        price: product.price,
+        image_url: product.imageUrl,
+        category: product.category,
+        subcategory: product.subcategory
+      });
+
+      const optimizationData = {
+        original_title: response.data.original_title,
+        enhanced_title: response.data.optimized_suggestions[0] || product.title,
+        alternative_title: response.data.optimized_suggestions[1] || "",
+        short_title: response.data.optimized_suggestions[2] || "",
+        original_image_url: product.imageUrl || "",
+        image_score: response.data.image_score || 0,
+        price: response.data.price || product.price,
+        predicted_high_value: response.data.predicted_high_value || false,
+      };
+
+      setOptimizationDataMap(prev => ({
+        ...prev,
+        [productId]: optimizationData
+      }));
+    } catch (error) {
+      console.error("Error optimizing product:", error);
+    }
+  };
+
+  const handleSaveChanges = (productId: string, newTitle: string) => {
+    setProductsData(prevProducts =>
+      prevProducts.map(product =>
+        product.id === productId
+          ? { ...product, title: newTitle }
+          : product
+      )
+    );
+    // Here you would typically also make an API call to save to your backend
+    console.log("Saved new title:", newTitle);
+  };
   // interface User {
   //   id?: string | null;
   //   name?: string;
@@ -498,13 +536,25 @@ export default function Products() {
         // Update your modal rendering:
         {selectedProduct && (
           <ProductDetailModal
+            ref={modalRef}
             product={selectedProduct}
             optimizationData={optimizationDataMap[selectedProduct.id] || null}
             onClose={() => {
               setSelectedProductId(null);
               setRefreshTrigger(prev => prev + 1);
             }}
-            onUpdateProduct={handleUpdateProduct}
+            onSaveChanges={(newTitle) => {
+              // Update the product title in your state
+              setProductsData(prevProducts =>
+                prevProducts.map(product =>
+                  product.id === selectedProduct.id
+                    ? { ...product, title: newTitle }
+                    : product
+                )
+              );
+              // You might also want to make an API call here to save to your backend
+              console.log("Saved new title:", newTitle);
+            }}
           />
         )}
       </div>
@@ -602,12 +652,12 @@ export default function Products() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product, index) => (
+        {filteredProducts.map((product) => (
           <ProductCard
-            key={product.id || `product-${index}`} // ✅ index is now defined
+            key={product.id}
             product={product}
             onClick={(id) => setSelectedProductId(id)}
-            triggerReoptimize={() => modalRef.current?.triggerReoptimize()} // ✅ ADD THIS LINE
+            onOptimizeClick={handleOptimizeProduct}
           />
         ))}
       </div>
@@ -649,13 +699,9 @@ export default function Products() {
         <ProductDetailModal
           ref={modalRef}
           product={selectedProduct}
-          optimizationData={optimizationDataMap[selectedProduct.id] || null} // ✅ Add this
-
-          onClose={() => {
-            setSelectedProductId(null);
-            setRefreshTrigger((prev) => prev + 1); // 🔹 Trigger re-fetch on modal close
-          }}
-          onUpdateProduct={handleUpdateProduct}
+          optimizationData={optimizationDataMap[selectedProduct.id] || null}
+          onClose={() => setSelectedProductId(null)}
+          onSaveChanges={(newTitle) => handleSaveChanges(selectedProduct.id, newTitle)}
         />
       )}
 
