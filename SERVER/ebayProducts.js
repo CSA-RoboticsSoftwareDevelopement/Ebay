@@ -32,7 +32,12 @@ module.exports = (db) => {
         "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
         "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
       ].join(" ");
-
+      console.log('Submitting data:', {
+        product_title: formData.product_title,
+        category: formData.category,
+        price: formData.price,
+        image_url: formData.image_url
+      });
       const response = await axios.post(
         `${EBAY_API_URL}/identity/v1/oauth2/token`,
         qs.stringify({
@@ -642,5 +647,134 @@ module.exports = (db) => {
     }
   });
 
+  router.post("/optimizer/add", async (req, res) => {
+    try {
+      const { product_title, category, price, image_url } = req.body;
+      console.log("Received body:", req.body); // or request.json() if Python
+
+      // Validate required fields
+      if (!product_title || !category || !price || !image_url) {
+        return res.status(400).json({
+          success: false,
+          message: "All fields are required.",
+          missingFields: {
+            product_title: !product_title,
+            category: !category,
+            price: !price,
+            image_url: !image_url
+          }
+        });
+      }
+
+      // Validate price is a number
+      if (isNaN(parseFloat(price))) {
+        return res.status(400).json({
+          success: false,
+          message: "Price must be a valid number"
+        });
+      }
+
+      // Insert into database
+      const [result] = await db.query(
+        "INSERT INTO `product_optimizer` (`product_title`, `category`, `price`, `image_file`) VALUES (?, ?, ?, ?)",
+        [product_title, category, parseFloat(price), image_url]
+      );
+
+      // Return success response with the new product data
+      return res.status(201).json({
+        success: true,
+        message: "Product added successfully",
+        product: {
+          id: result.insertId,
+          product_title,
+          category,
+          price,
+          image_url
+        }
+      });
+    } catch (error) {
+      console.error("Database Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message // Include the actual error message for debugging
+      });
+    }
+  });
+
+
+  router.get("/optimizer", async (req, res) => {
+    try {
+      // Retrieve all products from database
+      const [rows] = await db.query(
+        "SELECT id, product_title, category, price, image_file AS image_url FROM `product_optimizer`"
+      );
+
+      // Send back the list of products
+      return res.status(200).json({
+        success: true,
+        message: "Products retrieved successfully",
+        products: rows
+      });
+    } catch (error) {
+      console.error("Database Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message
+      });
+    }
+  });
+
+  router.put("/optimizer/update/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { product_title } = req.body;
+
+      // Validate required fields
+      if (!product_title) {
+        return res.status(400).json({
+          success: false,
+          message: "Product title is required"
+        });
+      }
+
+      // Check if product exists
+      const [existingProduct] = await db.query(
+        "SELECT `id` FROM `product_optimizer` WHERE `id` = ?",
+        [id]
+      );
+
+      if (existingProduct.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found"
+        });
+      }
+
+      // Update the product title
+      await db.query(
+        "UPDATE `product_optimizer` SET `product_title` = ? WHERE `id` = ?",
+        [product_title, id]
+      );
+
+      // Return success response
+      return res.status(200).json({
+        success: true,
+        message: "Product title updated successfully",
+        product: {
+          id: parseInt(id),
+          product_title
+        }
+      });
+    } catch (error) {
+      console.error("Database Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message
+      });
+    }
+  });
   return router;
 };

@@ -1,16 +1,66 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-// import Link from "next/link"; // Ensure you're using Next.js
 import ProductCard from "../../../components/productsTemplate/optimizerProductCard";
 import ProductDetailModal from "../../../components/productsTemplate/optimizerProductDetailModal";
-
-import AddProductModal from "../../../components/productsTemplate/optimizerAddProductModal"; // ✅ Import AddProductModal
-// import { Product } from "../../../types/ProductTypes";
+import AddProductModal from "../../../components/productsTemplate/optimizerAddProductModal";
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 import { useRef } from "react";
-import axios from "axios";  // Add this line at the top of your file
+import axios from "axios";
+
+interface OptimizationData {
+  original_title: string;
+  enhanced_title: string;
+  alternative_title: string;
+  short_title: string;
+  original_image_url: string;
+  image_score: number;
+  price: number;
+  predicted_high_value: boolean;
+}
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  quantity: number;
+  quantitySold: number;
+  sellThroughRate: number;
+  timeToSell: number;
+  costPrice: number;
+  shipping: number;
+  ebayFees: number;
+  profit: number;
+  profitMargin: number;
+  roi: number;
+  imageUrl: string;
+  listingStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  competitorData: {
+    id: string;
+    avgPrice: number;
+    avgShipping: number;
+    lowestPrice: number;
+    highestPrice: number;
+    avgSellerFeedback: number;
+    avgListingPosition: number;
+    avgImageCount: number;
+    competitorCount: number;
+    lastUpdated: Date;
+  };
+  optimizedData?: {
+    optimized_title?: string;
+    optimized_description?: string;
+    optimized_price?: number;
+  };
+  condition: string;
+  category: string;
+  subcategory?: string;
+}
 
 export default function Products() {
   const { user } = useAuth();
@@ -18,14 +68,13 @@ export default function Products() {
   const [productsData, setProductsData] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    null
-  );
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const modalRef = useRef<any>(null);
+  const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, OptimizationData>>({});
 
   const dummyProducts: Product[] = [
     {
@@ -48,7 +97,6 @@ export default function Products() {
       listingStatus: "Active",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-
       competitorData: {
         id: "dummy-1",
         avgPrice: 85,
@@ -61,8 +109,8 @@ export default function Products() {
         competitorCount: 10,
         lastUpdated: new Date(),
       },
-      condition: "New", // <-- Add this line
-      category: "Electronics", // <-- Add this line
+      condition: "New",
+      category: "Electronics",
     },
     {
       id: "dummy-2",
@@ -84,7 +132,6 @@ export default function Products() {
       listingStatus: "Active",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-
       competitorData: {
         id: "dummy-2",
         avgPrice: 125,
@@ -97,8 +144,8 @@ export default function Products() {
         competitorCount: 15,
         lastUpdated: new Date(),
       },
-      condition: "New", // <-- Add this line
-      category: "Electronics", // <-- Add this line
+      condition: "New",
+      category: "Electronics",
     },
     {
       id: "dummy-3",
@@ -120,7 +167,6 @@ export default function Products() {
       listingStatus: "Active",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-
       competitorData: {
         id: "dummy-4",
         avgPrice: 125,
@@ -133,8 +179,8 @@ export default function Products() {
         competitorCount: 15,
         lastUpdated: new Date(),
       },
-      condition: "New", // <-- Add this line
-      category: "Electronics", // <-- Add this line
+      condition: "New",
+      category: "Electronics",
     },
     {
       id: "dummy-4",
@@ -156,7 +202,6 @@ export default function Products() {
       listingStatus: "Active",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-
       competitorData: {
         id: "dummy-5",
         avgPrice: 125,
@@ -169,79 +214,36 @@ export default function Products() {
         competitorCount: 15,
         lastUpdated: new Date(),
       },
-      condition: "New", // <-- Add this line
-      category: "Electronics", // <-- Add this line
+      condition: "New",
+      category: "Electronics",
     },
   ];
-
-  interface Product {
-    id: string;
-    title: string;
-    description: string;
-    price: number;
-    currency: string;
-    quantity: number;
-    quantitySold: number;
-    sellThroughRate: number;
-    timeToSell: number;
-    costPrice: number;
-    shipping: number;
-    ebayFees: number;
-    profit: number;
-    profitMargin: number;
-    roi: number;
-    imageUrl: string;
-    listingStatus: string;
-    createdAt: string;
-    updatedAt: string;
-
-    competitorData: {
-      id: string;
-      avgPrice: number;
-      avgShipping: number;
-      lowestPrice: number;
-      highestPrice: number;
-      avgSellerFeedback: number;
-      avgListingPosition: number;
-      avgImageCount: number;
-      competitorCount: number;
-      lastUpdated: Date;
-    };
-    optimizedData?: {
-      optimized_title?: string;
-      optimized_description?: string;
-      optimized_price?: number;
-    };
-
-    condition: string; // <-- Add this line
-    category: string; // <-- Add this line
-  }
-  const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, OptimizationData>>({});
 
   const handleOptimizeProduct = async (productId: string) => {
     const product = productsData.find(p => p.id === productId);
     if (!product) return;
 
     try {
-      const response = await axios.post(`http://127.0.0.1:5000/optimize_title`, {
+      const response = await axios.post(`http://127.0.0.1:5000/get_best_titles`, {
         title: product.title,
-        price: product.price,
-        image_url: product.imageUrl,
         category: product.category,
-        subcategory: product.subcategory
+        subcategory: product.subcategory || "",
+        attributes: ""
       });
 
-      const optimizationData = {
-        original_title: response.data.original_title,
-        enhanced_title: response.data.optimized_suggestions[0] || product.title,
-        alternative_title: response.data.optimized_suggestions[1] || "",
-        short_title: response.data.optimized_suggestions[2] || "",
-        original_image_url: product.imageUrl || "",
-        image_score: response.data.image_score || 0,
-        price: response.data.price || product.price,
-        predicted_high_value: response.data.predicted_high_value || false,
-      };
+      const bestTitles = response.data.best_seller_titles || [];
 
+      const optimizationData = {
+        original_title: response.data.input_title,
+        enhanced_title: bestTitles[0] || product.title,
+        alternative_title: bestTitles[1] || "",
+        short_title: bestTitles[2] || "",
+        original_image_url: product.imageUrl || "",
+        image_score: 0,
+        price: product.price,
+        predicted_high_value: false
+      };
+    
       setOptimizationDataMap(prev => ({
         ...prev,
         [productId]: optimizationData
@@ -259,31 +261,15 @@ export default function Products() {
           : product
       )
     );
-    // Here you would typically also make an API call to save to your backend
     console.log("Saved new title:", newTitle);
   };
-  // interface User {
-  //   id?: string | null;
-  //   name?: string;
-  // }
 
-  // Props or fetched user
-  // interface InventoryProps {
-  //   user: User | null;
-  //   dummyProducts: Product[];
-  //   fetchProducts: () => Promise<Product[]>; // function to fetch real products
-  //   availableStatuses: string[];
-  // }
-
-  if (user?.id) {
-    console.log("API URL:", EBAY_INVENTORY_API);
-  }
-  // Fetch inventory data from API
   useEffect(() => {
-    if (!user?.id) return; // ⛔ Don't fetch until user is ready
+    if (!user?.id) return;
 
     const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`;
     console.log("Fetching inventory from:", EBAY_INVENTORY_API);
+
     interface InventoryItem {
       sku: string;
       product: {
@@ -402,7 +388,6 @@ export default function Products() {
               category: item.category || "General",
             };
 
-            // 🔁 Call the prediction API for optimization
             try {
               const predictResponse = await fetch("http://127.0.0.1:8000/predict", {
                 method: "POST",
@@ -422,16 +407,15 @@ export default function Products() {
 
               return {
                 ...baseProduct,
-                optimizedData: predictResult || {}, // merge the prediction result
+                optimizedData: predictResult || {},
               };
             } catch (err) {
               console.error("Prediction error:", err);
-              return baseProduct; // fallback without optimization
+              return baseProduct;
             }
           })
         );
 
-        // ✅ Combine both product sources
         const combinedProducts = [...formattedInventory, ...formattedOptimizer];
 
         if (combinedProducts.length > 0) {
@@ -451,13 +435,11 @@ export default function Products() {
       }
     }
 
-
     fetchProducts();
   }, [refreshTrigger, user]);
 
   const handleAddProduct = (newProduct: Product) => {
     setProductsData((prevProducts) => {
-      // Check for duplicates before adding
       if (prevProducts.some((product) => product.id === newProduct.id)) {
         return prevProducts;
       }
@@ -473,15 +455,13 @@ export default function Products() {
       return [...prevProducts, updatedProduct];
     });
 
-    setRefreshTrigger((prev) => prev + 1); // 🔹 Forces re-fetch
+    setRefreshTrigger((prev) => prev + 1);
   };
 
-  // Find the selected product
   const selectedProduct = selectedProductId
     ? productsData.find((product) => product.id === selectedProductId)
     : null;
 
-  // Filter products based on search query and status filter
   const filteredProducts = productsData.filter((product) => {
     const matchesSearch = (product.title || "")
       .toLowerCase()
@@ -493,7 +473,6 @@ export default function Products() {
     return matchesSearch && matchesStatus;
   });
 
-  // Handler for updating product data
   const handleUpdateProduct = (
     productId: string,
     updates: Partial<Product>
@@ -502,7 +481,6 @@ export default function Products() {
     alert(`Product ${productId} updated (simulated)`);
   };
 
-  // Get available statuses for filtering
   const availableStatuses = Array.from(
     new Set(
       productsData.map((p) => p.listingStatus).filter(Boolean) as string[]
@@ -528,12 +506,11 @@ export default function Products() {
               key={product.id}
               product={product}
               onClick={() => setSelectedProductId(product.id)}
-              triggerReoptimize={() => modalRef.current?.triggerReoptimize()} // 👈 Add this
+              triggerReoptimize={() => modalRef.current?.triggerReoptimize()}
             />
           ))}
         </div>
 
-        // Update your modal rendering:
         {selectedProduct && (
           <ProductDetailModal
             ref={modalRef}
@@ -544,7 +521,6 @@ export default function Products() {
               setRefreshTrigger(prev => prev + 1);
             }}
             onSaveChanges={(newTitle) => {
-              // Update the product title in your state
               setProductsData(prevProducts =>
                 prevProducts.map(product =>
                   product.id === selectedProduct.id
@@ -552,7 +528,6 @@ export default function Products() {
                     : product
                 )
               );
-              // You might also want to make an API call here to save to your backend
               console.log("Saved new title:", newTitle);
             }}
           />
@@ -561,7 +536,6 @@ export default function Products() {
     );
   }
 
-  // Render loading and error states
   if (loading) return <p>Loading products...</p>;
   if (error) {
     return (
@@ -584,13 +558,12 @@ export default function Products() {
         <h1 className="text-2xl font-bold text-white">Optimizer</h1>
         <button
           className="btn btn-primary"
-          onClick={() => setIsAddProductModalOpen(true)} // ✅ Open modal on click
+          onClick={() => setIsAddProductModalOpen(true)}
         >
           Custom Work
-        </button>{" "}
+        </button>
       </div>
 
-      {/* Filters */}
       <div className="bg-neutral-800 rounded-lg shadow p-4 mb-12 mt-5">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
@@ -644,13 +617,11 @@ export default function Products() {
           </div>
         </div>
 
-        {/* Results summary */}
         <div className="mt-4 text-sm text-white-400">
           Showing {filteredProducts.length} of {productsData.length} products
         </div>
       </div>
 
-      {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts.map((product) => (
           <ProductCard
@@ -662,7 +633,6 @@ export default function Products() {
         ))}
       </div>
 
-      {/* No Results */}
       {filteredProducts.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg shadow">
           <svg
@@ -687,14 +657,13 @@ export default function Products() {
           </p>
         </div>
       )}
-      {/* ✅ Add Product Modal */}
+
       <AddProductModal
         isOpen={isAddProductModalOpen}
         onClose={() => setIsAddProductModalOpen(false)}
         onAddProduct={handleAddProduct}
       />
 
-      {/* Product Detail Modal */}
       {selectedProduct && (
         <ProductDetailModal
           ref={modalRef}
@@ -704,8 +673,6 @@ export default function Products() {
           onSaveChanges={(newTitle) => handleSaveChanges(selectedProduct.id, newTitle)}
         />
       )}
-
-
     </div>
   );
 }
