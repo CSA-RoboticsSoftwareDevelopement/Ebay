@@ -10,7 +10,6 @@ import {
   ChevronRight,
   PlusCircle,
   Search, 
-  BarChart3,
   // Store,
   PersonStandingIcon,
   // DollarSign,

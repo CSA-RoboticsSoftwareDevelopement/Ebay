@@ -227,8 +227,17 @@ export default function Settings() {
   const [name, setName] = useState(user?.username || "");
   const [email, setEmail] = useState(user?.email || "");
   const [isChanged, setIsChanged] = useState(false);
-const [amazonProfile, setAmazonProfile] = useState<any>(null);
+type AmazonProfile = {
+  username?: string;
+  email?: string;
+  access_token?: string;
+  expires_at?: Date;
+  created_at?: Date;
+  updated_at?: Date;
+};
 
+// Then update the state declaration:
+const [amazonProfile, setAmazonProfile] = useState<AmazonProfile | null>(null);
 
 useEffect(() => {
   const fetchAmazonProfile = async () => {
@@ -741,9 +750,7 @@ const handleDisconnectAmazon = async () => {
           console.error("❌ User not found in sessionStorage");
           return;
         }
-        const url = `/amazon-auth?user_id=${user.id}`;
-        const windowFeatures = "noopener,noreferrer,width=600,height=800";
-        const authWindow = window.open(url, "_blank", windowFeatures);
+      
 
         const checkAuthCompletion = setInterval(async () => {
           try {
