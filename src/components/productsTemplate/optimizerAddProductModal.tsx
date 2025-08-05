@@ -13,62 +13,78 @@ const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 const API_URL = `${BACKEND_SERVER_URL}/api/ebay/products/optimizer/add`;
 
 const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onAddProduct }) => {
+
   const [formData, setFormData] = useState({
     product_title: "",
     category: "",
     price: "",
     image_url: "",
+    user_id: " ", // ← replace with dynamic user ID
   });
+
   const [, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    const { product_title, category, price, image_url } = formData;
-    if (!product_title || !category || !price || !image_url) {
-      setError("All fields are required.");
-      return;
-    }
+  const { product_title, category, price, image_url } = formData;
+  if (!product_title || !category || !price || !image_url) {
+    setError("All fields are required.");
+    return;
+  }
 
-    setLoading(true);
+  const user_id = sessionStorage.getItem("userId"); // 🔑 Get from session storage
 
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+  if (!user_id) {
+    setError("User ID not found in session.");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const payload = { ...formData, user_id };
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      onAddProduct(result.product);
+      Swal.fire("Success", "Product added successfully!", "success");
+      setFormData({
+        product_title: "",
+        category: "",
+        price: "",
+        image_url: "",
+        user_id: "", // Clear manually (optional)
       });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        onAddProduct(result.product); // callback to parent
-        Swal.fire("Success", "Product added successfully!", "success");
-        setFormData({
-          product_title: "",
-          category: "",
-          price: "",
-          image_url: "",
-        });
-        setImagePreview("");
-        onClose();
-      } else {
-        setError(result.message || "Something went wrong.");
-      }
-    } catch (err) {
-      console.error("Error adding product:", err);
-      setError("Server error. Please try again.");
-    } finally {
-      setLoading(false);
+      setImagePreview("");
+      onClose();
+    } else {
+      setError(result.message || "Something went wrong.");
     }
-  };
+  } catch (err) {
+    console.error("Error adding product:", err);
+    setError("Server error. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
 
   return (

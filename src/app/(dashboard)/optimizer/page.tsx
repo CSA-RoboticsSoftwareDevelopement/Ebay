@@ -242,21 +242,6 @@ export default function Products() {
     const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`;
     console.log("Fetching inventory from:", EBAY_INVENTORY_API);
 
-    // interface InventoryItem {
-    //   sku: string;
-    //   product: {
-    //     title: string;
-    //     description: string;
-    //     mpn: string;
-    //     imageUrls: string[];
-    //   };
-    //   availability: {
-    //     shipToLocationAvailability: {
-    //       quantity: number;
-    //     };
-    //   };
-    // }
-
     async function fetchProducts() {
       if (!user?.id) {
         console.warn("User is not available yet.");
@@ -267,7 +252,7 @@ export default function Products() {
           `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`
         );
         const response2 = await fetch(
-          `${BACKEND_SERVER_URL}/api/ebay/products/optimizer?user_id=${user.id}`
+          `${BACKEND_SERVER_URL}/api/ebay/products/optimizer/${user.id}`
         );
 
         if (!response1.ok && !response2.ok) {
@@ -453,9 +438,15 @@ export default function Products() {
         return prevProducts;
       }
 
+      const imageUrl = newProduct.imageUrl ||
+        `https://placehold.co/400x300?text=${encodeURIComponent(
+          newProduct.title || "Product"
+        )}`;
+
       // Ensure competitorData exists (fallback to default if missing)
       const productWithCompetitorData: Product = {
         ...newProduct,
+         imageUrl,
         competitorData: newProduct.competitorData || {
           id: newProduct.id,
           avgPrice: 0,
@@ -465,6 +456,7 @@ export default function Products() {
           avgSellerFeedback: 0,
           avgListingPosition: 0,
           avgImageCount: 0,
+          
           competitorCount: 0,
           lastUpdated: new Date(),
         },
@@ -500,14 +492,6 @@ export default function Products() {
       statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
-
-  // const handleUpdateProduct = (
-  //   productId: string,
-  //   updates: Partial<Product>
-  // ) => {
-  //   console.log("Updating product:", productId, updates);
-  //   alert(`Product ${productId} updated (simulated)`);
-  // };
 
   const availableStatuses = Array.from(
     new Set(

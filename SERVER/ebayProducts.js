@@ -32,12 +32,7 @@ module.exports = (db) => {
         "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
         "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
       ].join(" ");
-      console.log('Submitting data:', {
-        product_title: formData.product_title,
-        category: formData.category,
-        price: formData.price,
-        image_url: formData.image_url
-      });
+
       const response = await axios.post(
         `${EBAY_API_URL}/identity/v1/oauth2/token`,
         qs.stringify({
@@ -649,11 +644,11 @@ module.exports = (db) => {
 
   router.post("/optimizer/add", async (req, res) => {
     try {
-      const { product_title, category, price, image_url } = req.body;
-      console.log("Received body:", req.body); // or request.json() if Python
+      const { product_title, category, price, image_url, user_id } = req.body;
+      console.log("Received body:", req.body);
 
       // Validate required fields
-      if (!product_title || !category || !price || !image_url) {
+      if (!product_title || !category || !price || !image_url || !user_id) {
         return res.status(400).json({
           success: false,
           message: "All fields are required.",
@@ -661,8 +656,9 @@ module.exports = (db) => {
             product_title: !product_title,
             category: !category,
             price: !price,
-            image_url: !image_url
-          }
+            image_url: !image_url,
+            user_id: !user_id,
+          },
         });
       }
 
@@ -670,14 +666,14 @@ module.exports = (db) => {
       if (isNaN(parseFloat(price))) {
         return res.status(400).json({
           success: false,
-          message: "Price must be a valid number"
+          message: "Price must be a valid number",
         });
       }
 
-      // Insert into database
+      // Insert into database (include user_id)
       const [result] = await db.query(
-        "INSERT INTO `product_optimizer` (`product_title`, `category`, `price`, `image_file`) VALUES (?, ?, ?, ?)",
-        [product_title, category, parseFloat(price), image_url]
+        "INSERT INTO `product_optimizer` (`product_title`, `category`, `price`, `image_file`, `user_id`) VALUES (?, ?, ?, ?, ?)",
+        [product_title, category, parseFloat(price), image_url, user_id]
       );
 
       // Return success response with the new product data
@@ -689,25 +685,30 @@ module.exports = (db) => {
           product_title,
           category,
           price,
-          image_url
-        }
+          image_url,
+          user_id,
+        },
       });
     } catch (error) {
       console.error("Database Error:", error);
       return res.status(500).json({
         success: false,
         message: "Internal Server Error",
-        error: error.message // Include the actual error message for debugging
+        error: error.message,
       });
     }
   });
 
 
-  router.get("/optimizer", async (req, res) => {
+
+  router.get("/optimizer/:user_id", async (req, res) => {
     try {
-      // Retrieve all products from database
+      const { user_id } = req.params;
+
+      // Retrieve all products for the specific user from database
       const [rows] = await db.query(
-        "SELECT id, product_title, category, price, image_file AS image_url FROM `product_optimizer`"
+        "SELECT id, product_title, category, price, image_file AS image_url FROM `product_optimizer` WHERE `user_id` = ?",
+        [user_id]
       );
 
       // Send back the list of products

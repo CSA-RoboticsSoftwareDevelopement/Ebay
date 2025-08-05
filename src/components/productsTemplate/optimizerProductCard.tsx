@@ -160,6 +160,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 : "N/A"}
             </p>
           </div>
+        
           <div>
             <p className="text-gray-400 mb-1">In Stock</p>
             <p className="font-semibold text-white">{product.quantity}</p>
