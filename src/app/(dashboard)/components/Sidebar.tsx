@@ -10,7 +10,6 @@ import {
   ChevronRight,
   PlusCircle,
   Search, 
-  BarChart3,
   // Store,
   PersonStandingIcon,
   // DollarSign,
@@ -142,13 +141,7 @@ if (installedPluginIds.includes(1)) { // 1 = Product Finder plugin id
     });
   }
 
-  pluginNavItems.push({
-    icon: BarChart3,
-    label: "Analytics Pro",
-    href: "/analytics",
-    active: activeItem === "/analytics",
-  });
-
+  
   
   const mobileMenuVariants = {
     open: { x: 0, opacity: 1 },

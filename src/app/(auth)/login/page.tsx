@@ -217,9 +217,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (user) {
     router.push(`/verify-otp?email=${email}`);
-//router.push('/verify-otp');
-
-
+    //router.push('/verify-otp');  
     }
   }, [user, router]);
 

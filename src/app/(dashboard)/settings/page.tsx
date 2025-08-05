@@ -41,6 +41,8 @@ export default function Settings() {
   const [newMessageContent, setNewMessageContent] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   
+
+
   // Load predefined messages from local storage on component mount
   useEffect(() => {
     const savedMessages = localStorage.getItem('predefinedMessages');
@@ -119,6 +121,12 @@ export default function Settings() {
       confirmButtonText: "Yes, disconnect it!",
     });
 
+
+
+
+
+
+    
     if (!result.isConfirmed) return;
 
     try {
@@ -219,6 +227,35 @@ export default function Settings() {
   const [name, setName] = useState(user?.username || "");
   const [email, setEmail] = useState(user?.email || "");
   const [isChanged, setIsChanged] = useState(false);
+type AmazonProfile = {
+  username?: string;
+  email?: string;
+  access_token?: string;
+  expires_at?: Date;
+  created_at?: Date;
+  updated_at?: Date;
+};
+
+// Then update the state declaration:
+const [amazonProfile, setAmazonProfile] = useState<AmazonProfile | null>(null);
+
+useEffect(() => {
+  const fetchAmazonProfile = async () => {
+    if (!user?.id) return;
+
+    try {
+      const res = await axios.get(
+        `${BACKEND_SERVER_URL}/api/amazon/profile?user_id=${user.id}`
+      );
+      setAmazonProfile(res.data.amazonProfile);
+    } catch (err) {
+      console.error("Failed to fetch Amazon profile", err);
+    }
+  };
+
+  fetchAmazonProfile();
+}, [user]);
+
 
   useEffect(() => {
     if (user) {
@@ -353,6 +390,52 @@ export default function Settings() {
     });
   };
 
+
+// Function to handle disconnecting Amazon account
+const handleDisconnectAmazon = async () => {
+  if (!user || !user.id) {
+    Swal.fire("Error", "User not found. Please log in again.", "error");
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "This will disconnect your Amazon account!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, disconnect it!",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const response = await axios.delete(`${BACKEND_SERVER_URL}/api/amazon/disconnect`, {
+      data: { user_id: user.id }, // ✅ Body sent as expected
+    });
+
+    if (response.status === 200) {
+      setAmazonProfile(null);
+      Swal.fire("Disconnected!", "Amazon account has been removed.", "success");
+    } else {
+      Swal.fire("Error", response.data.message || "Unable to disconnect.", "error");
+    }
+  } catch (error) {
+    console.error("❌ Disconnect error:", error);
+
+    // Handle common error types gracefully
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Something went wrong while disconnecting.";
+
+    Swal.fire("Error", message, "error");
+  }
+};
+
+
+
   return (
     <div className="space-y-6 p-6">
                   <nav className="text-sm text-gray-400 mb-2">
@@ -377,7 +460,7 @@ export default function Settings() {
                   key={tab}
                   className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                     activeTab === tab
-                      ? "border-primary-yellow text-primary-black"
+                      ? "border-primary-yellow  text-neutral-gray-500"
                       : "border-transparent text-neutral-gray-500 hover:text-neutral-gray-700 hover:border-neutral-gray-300"
                   }`}
                   onClick={() => setActiveTab(tab)}
@@ -410,7 +493,7 @@ export default function Settings() {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black"
               />
               </div>
               <div>
@@ -425,7 +508,7 @@ export default function Settings() {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black"
               />
               </div>
               <button
@@ -450,7 +533,7 @@ export default function Settings() {
               <div>
               <label
               htmlFor="currentPassword"
-              className="block text-sm font-medium text-white"
+              className="block text-sm font-medium text-white "
               >
               Current Password
               </label>
@@ -459,7 +542,7 @@ export default function Settings() {
               id="currentPassword"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black bg-white"
               />
               </div>
               <div>
@@ -474,7 +557,7 @@ export default function Settings() {
               id="newPassword"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black"
               />
               </div>
               <div>
@@ -489,7 +572,7 @@ export default function Settings() {
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black caret-black"
               />
               </div>
               <button
@@ -633,10 +716,69 @@ export default function Settings() {
           </div>
         )}
 
+     {/* Amazon Integration Tab */}
+     {activeTab === "integrations" && (
+        <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors mt-6">
+  <h2 className="text-white font-semibold mb-4">Amazon Account</h2>
+
+  <div className="flex items-center mb-4">
+    <span
+      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+        amazonProfile?.access_token
+          ? "bg-green-100 text-green-700"
+          : "bg-red-100 text-red-700"
+      }`}
+    >
+      {amazonProfile?.access_token ? "Connected" : "Disconnected"}
+    </span>
+  </div>
+
+  {amazonProfile?.access_token ? (
+<button
+  onClick={handleDisconnectAmazon}
+  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+>
+  Disconnect Amazon Account
+</button>
+
+
+
+  ) : (
+    <button
+      onClick={() => {
+        if (!user || !user.id) {
+          console.error("❌ User not found in sessionStorage");
+          return;
+        }
+      
+
+        const checkAuthCompletion = setInterval(async () => {
+          try {
+            const res = await axios.get(
+              `${BACKEND_SERVER_URL}/api/amazon/profile?user_id=${user.id}`
+            );
+            if (res.data.amazonProfile?.access_token) {
+              clearInterval(checkAuthCompletion);
+              setAmazonProfile(res.data.amazonProfile);
+              Swal.fire("Connected!", "Amazon account linked successfully.", "success");
+            }
+          } catch {}
+        }, 2000); // Poll every 2s (you can refine this)
+      }}
+      className="px-6 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400"
+    >
+      Connect to Amazon
+    </button>
+  )}
+</div>
+  )}
+
+
+ 
         {/* Preferences Tab */}
         {activeTab === "preferences" && (
             <div className="space-y-6">
-            <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors">
+            {/* <div className="card p-4 bg-black shadow rounded-lg border border-white hover:outline hover:outline-2 hover:outline-primary-yellow transition-colors">
               <h2 className="text-white font-semibold mb-4">Preferences</h2>
               <p className="text-white-600">
               Customize your application experience.
@@ -653,7 +795,7 @@ export default function Settings() {
                   <option value="dark">Dark Mode</option>
                 </select>
               </div>
-            </div>
+            </div> */}
             
             {/* Predefined Messages Card */}
             <div className="card p-4 bg-black text-white border border-white shadow rounded-lg hover:border-primary-yellow transition-colors">

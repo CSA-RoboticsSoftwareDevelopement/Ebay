@@ -113,12 +113,14 @@ const ProductDetailModal = forwardRef(({
 
   const handleTitleSelect = (title: string) => {
     setSelectedTitle(title);
+    setCurrentTitle(title);
   };
 
   const handleApplyChanges = async () => {
     if (!product?.id) return;
 
-    const finalTitle = selectedTitle !== null ? selectedTitle : currentTitle;
+    const finalTitle = currentTitle.trim();
+
 
     try {
       const payload = {
@@ -157,12 +159,12 @@ const ProductDetailModal = forwardRef(({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-   <div
-  className={`absolute top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 bg-green-600 text-white transition-all duration-500 ease-in-out
+      <div
+        className={`absolute top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 bg-green-600 text-white transition-all duration-500 ease-in-out
     ${showSuccess ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"}`}
->
-  ✅ Successfully updated!
-</div>
+      >
+        ✅ Successfully updated!
+      </div>
 
 
       <div
@@ -221,11 +223,15 @@ const ProductDetailModal = forwardRef(({
                     <input
                       type="text"
                       value={currentTitle}
-                      onChange={(e) => setCurrentTitle(e.target.value)}
+                      onChange={(e) => {
+                        setCurrentTitle(e.target.value);
+                        setSelectedTitle(null); // clear if user edits manually
+                      }}
                       onBlur={() => setIsEditingTitle(false)}
                       autoFocus
                       className="text-white bg-transparent border-b border-yellow-500 focus:outline-none w-full"
                     />
+
                   ) : (
                     <div
                       className="flex items-center justify-between cursor-pointer group"

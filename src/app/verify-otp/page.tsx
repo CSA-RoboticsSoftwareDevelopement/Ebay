@@ -11,22 +11,23 @@ export default function VerifyOtpPage() {
 
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [countdown, setCountdown] = useState(0); // <-- NEW: countdown timer
+  const [countdown, setCountdown] = useState(0);
+  const [otpSentText, setOtpSentText] = useState<string>('');
+
   const otpSentRef = useRef(false);
   const { checkAuth } = useAuth();
 
   useEffect(() => {
     if (emailFromQuery && !otpSentRef.current) {
       setEmail(emailFromQuery);
+      setOtpSentText(`Sending OTP to ${emailFromQuery}...`); // 👈 Show immediately
       sendOtp(emailFromQuery);
       otpSentRef.current = true;
     }
   }, [emailFromQuery]);
 
-  // NEW: Countdown logic
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (countdown > 0) {
@@ -35,41 +36,33 @@ export default function VerifyOtpPage() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  const sendOtp = async (emailToSend: string) => {
+  const sendOtp = async (emailToSend: string, isResend = false) => {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_BACKEND_SERVER_URL}/post_login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailToSend }),
       });
-      console.log('📧 OTP sent to:', emailToSend);
-    } catch (err) {
-      console.error('❌ Failed to send OTP', err);
-      setMessage('Failed to send OTP. Please try again.');
+      setOtpSentText(`${isResend ? 'A new OTP has been sent to' : 'An OTP has been sent to'} ${emailToSend}`);
+    } catch {
+      setOtpSentText('Failed to send OTP. Please try again.');
     }
   };
 
   const handleResendOtp = async () => {
     setResending(true);
-    setMessage('');
-    setCountdown(10); // <-- NEW: start countdown at 10
-    try {
-      await sendOtp(email);
-      setMessage('📨 OTP resent successfully!');
-    } catch (err: any) {
-      setMessage(err.message || 'Failed to resend OTP.');
-    } finally {
-      setResending(false);
-    }
+    setCountdown(10);
+    setOtpSentText(`Sending OTP to ${email}...`); // 👈 Immediate feedback for resend too
+    await sendOtp(email, true);
+    setResending(false);
   };
 
   const handleVerify = async () => {
     setLoading(true);
-    setMessage('');
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_SERVER_URL}/verify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ email, otp }),
       });
 
@@ -80,11 +73,9 @@ export default function VerifyOtpPage() {
       sessionStorage.setItem("user", JSON.stringify(data.user));
 
       await checkAuth();
-
-      setMessage('✅ OTP verified! Redirecting...');
-      setTimeout(() => router.push('/dashboard'), 1000);
-    } catch (err: any) {
-      setMessage(err.message);
+      router.push('/dashboard');
+    } catch {
+      // silent fail
     } finally {
       setLoading(false);
     }
@@ -93,9 +84,12 @@ export default function VerifyOtpPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <div className="card max-w-md w-full p-6 shadow-md rounded-md bg-white">
-        <h1 className="text-2xl font-bold mb-6 text-center">Two-Step Verification</h1>
+        <h1 className="text-2xl font-bold mb-2 text-center">Two-Step Verification</h1>
 
-        <input type="hidden" value={email} />
+        {/* ✅ Only this one statement */}
+        {otpSentText && (
+          <div className="text-center text-gray-600 text-sm mb-4">{otpSentText}</div>
+        )}
 
         <div className="mb-4">
           <input
@@ -109,7 +103,7 @@ export default function VerifyOtpPage() {
         </div>
 
         <div className="mb-2 text-left text-sm text-gray-500">
-          <span>Didn’t receive the OTP? </span>
+          Didn’t receive the OTP?{' '}
           <button
             onClick={handleResendOtp}
             disabled={resending}
@@ -119,10 +113,9 @@ export default function VerifyOtpPage() {
           </button>
         </div>
 
-        {/* NEW: Show countdown */}
         {countdown > 0 && (
           <div className="mb-4 text-left text-xs text-gray-400">
-             Resend available in: <span className="font-medium">{countdown}s</span>
+            Resend available in <span className="font-medium">{countdown}s</span>
           </div>
         )}
 
@@ -133,8 +126,6 @@ export default function VerifyOtpPage() {
         >
           {loading ? 'Verifying...' : 'Verify'}
         </button>
-
-        {message && <div className="mt-4 text-center text-sm text-red-600">{message}</div>}
       </div>
     </div>
   );

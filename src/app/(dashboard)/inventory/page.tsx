@@ -26,6 +26,9 @@ export default function Products() {
 
   const dummyProducts: Product[] = [
     {
+      sku: "dummy-1",
+product_id: "prod-001",
+product_title: "Wireless Headphones",
       id: "dummy-1",
       title: "Wireless Headphones",
       description: "High-quality wireless headphones with noise cancellation.",
@@ -62,6 +65,9 @@ export default function Products() {
       category: "Electronics", // <-- Add this line
     },
     {
+      sku: "dummy-1",
+product_id: "prod-001",
+product_title: "Wireless Headphones",
       id: "dummy-2",
       title: "Smartwatch",
       description: "Fitness tracking smartwatch with heart rate monitor.",
@@ -98,6 +104,9 @@ export default function Products() {
       category: "Electronics", // <-- Add this line
     },
     {
+      sku: "dummy-1",
+product_id: "prod-001",
+product_title: "Wireless Headphones",
       id: "dummy-3",
       title: "Charger",
       description: "Charger C type .",
@@ -134,6 +143,9 @@ export default function Products() {
       category: "Electronics", // <-- Add this line
     },
     {
+      sku: "dummy-1",
+product_id: "prod-001",
+product_title: "Wireless Headphones",
       id: "dummy-4",
       title: "Extension",
       description: "One Extension for all your charging .",
@@ -171,42 +183,45 @@ export default function Products() {
     },
   ];
 
-  interface Product {
-    id: string;
-    title: string;
-    description: string;
-    price: number;
-    currency: string;
-    quantity: number;
-    quantitySold: number;
-    sellThroughRate: number;
-    timeToSell: number;
-    costPrice: number;
-    shipping: number;
-    ebayFees: number;
-    profit: number;
-    profitMargin: number;
-    roi: number;
-    imageUrl: string;
-    listingStatus: string;
-    createdAt: string;
-    updatedAt: string;
+ interface Product {
+  id: string;
+  sku: string;
+  product_id: string;
+  product_title: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  quantity: number;
+  quantitySold: number;
+  sellThroughRate: number;
+  timeToSell: number;
+  costPrice: number;
+  shipping: number;
+  ebayFees: number;
+  profit: number;
+  profitMargin: number;
+  roi: number;
+  imageUrl: string;
+  listingStatus: string;
+  createdAt: string;
+  updatedAt: string;
 
-    competitorData: {
-      id: string;
-      avgPrice: number;
-      avgShipping: number;
-      lowestPrice: number;
-      highestPrice: number;
-      avgSellerFeedback: number;
-      avgListingPosition: number;
-      avgImageCount: number;
-      competitorCount: number;
-      lastUpdated: Date;
-    };
-    condition: string; // <-- Add this line
-    category: string; // <-- Add this line
-  }
+  competitorData: {
+    id: string;
+    avgPrice: number;
+    avgShipping: number;
+    lowestPrice: number;
+    highestPrice: number;
+    avgSellerFeedback: number;
+    avgListingPosition: number;
+    avgImageCount: number;
+    competitorCount: number;
+    lastUpdated: Date;
+  };
+  condition: string;
+  category: string;
+}
 
   // interface User {
   //   id?: string | null;
@@ -230,26 +245,27 @@ export default function Products() {
 
     const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`;
     console.log("Fetching inventory from:", EBAY_INVENTORY_API);
-    interface InventoryItem {
-      sku: string;
-      product: {
-        title: string;
-        description: string;
-        mpn: string;
-        imageUrls: string[];
-      };
-      availability: {
-        shipToLocationAvailability: {
-          quantity: number;
-        };
-      };
-    }
+   interface InventoryItem {
+  sku: string;
+  product: {
+    title: string;
+    description: string;
+    mpn: string;
+    imageUrls: string[];
+  };
+  availability: {
+    shipToLocationAvailability: {
+      quantity: number;
+    };
+  };
+}
+
 
     async function fetchProducts() {
       try {
         const response = await fetch(EBAY_INVENTORY_API);
         if (!response.ok) {
-          throw new Error(`Failed to fetch inventory: ${response.statusText}`);
+          throw new Error(`Please connect to your seller account from setting page`);
         }
         const data = await response.json();
         const inventoryItems = data.inventory?.inventoryItems || [];

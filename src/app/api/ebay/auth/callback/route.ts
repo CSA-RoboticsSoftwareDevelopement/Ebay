@@ -25,11 +25,22 @@ export async function GET(request: NextRequest) {
 
   // ✅ Check for missing values
   if (!code) {
-    return NextResponse.json({ error: "Authorization code missing" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Authorization code missing" },
+      { status: 400 }
+    );
   }
-  if (!EBAY_CLIENT_ID || !EBAY_CLIENT_SECRET || !EBAY_REDIRECT_URI || !EBAY_API_URL) {
+  if (
+    !EBAY_CLIENT_ID ||
+    !EBAY_CLIENT_SECRET ||
+    !EBAY_REDIRECT_URI ||
+    !EBAY_API_URL
+  ) {
     console.error("❌ Missing eBay API environment variables.");
-    return NextResponse.json({ error: "Server misconfiguration: Missing eBay credentials." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Server misconfiguration: Missing eBay credentials." },
+      { status: 500 }
+    );
   }
   if (!userId) {
     return NextResponse.json({ error: "User ID is required" }, { status: 400 });
@@ -47,19 +58,27 @@ export async function GET(request: NextRequest) {
       }).toString(),
       {
         headers: {
-          Authorization: `Basic ${Buffer.from(`${EBAY_CLIENT_ID}:${EBAY_CLIENT_SECRET}`).toString("base64")}`,
+          Authorization: `Basic ${Buffer.from(
+            `${EBAY_CLIENT_ID}:${EBAY_CLIENT_SECRET}`
+          ).toString("base64")}`,
           "Content-Type": "application/x-www-form-urlencoded",
         },
       }
     );
 
-    const { access_token, refresh_token, expires_in, refresh_token_expires_in } = response.data;
+    const {
+      access_token,
+      refresh_token,
+      expires_in,
+      refresh_token_expires_in,
+    } = response.data;
     console.log("✅ eBay Access Token:", access_token);
     console.log("✅ eBay Refresh Token:", refresh_token);
 
     // ✅ Calculate expiration timestamps
-    const access_token_expires_at =  expires_in ; // Convert to milliseconds
-    const refresh_token_expires_at = refresh_token_expires_in ; // Convert to milliseconds
+    const now = Date.now(); // Current timestamp in milliseconds
+    const access_token_expires_at = now + expires_in * 1000;
+    const refresh_token_expires_at = now + refresh_token_expires_in * 1000;
 
     // ✅ Store tokens in the database
     await executeQuery(
@@ -70,28 +89,83 @@ export async function GET(request: NextRequest) {
        refresh_token=VALUES(refresh_token), 
        access_token_expires_at=VALUES(access_token_expires_at), 
        refresh_token_expires_at=VALUES(refresh_token_expires_at)`,
-      [userId, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at]
+      [
+        userId,
+        access_token,
+        refresh_token,
+        access_token_expires_at,
+        refresh_token_expires_at,
+      ]
     );
 
-  //  ✅ Close the popup and notify the parent window
-    // return new NextResponse(
-    //   `<html>
-    //     <body>
-    //       <script>
-    //         window.opener.postMessage({ status: "success" }, "*");
-    //         window.close();
-    //       </script>
-    //     </body>
-    //   </html>`,
-    //   { headers: { "Content-Type": "text/html" } }
-    // );
+    //  ✅ Close the popup and notify the parent window
+    return new NextResponse(
+  `<html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+          background-color: #fefefe;
+          height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .message {
+          max-width: 400px;
+          background: #ffffff;
+          padding: 24px 32px;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+          text-align: center;
+          animation: fadeIn 0.6s ease-in-out;
+        }
+        .message h2 {
+          margin: 0 0 12px;
+          font-size: 20px;
+          color: #22bb33;
+        }
+        .message p {
+          margin: 0;
+          font-size: 16px;
+          color: #333;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="message">
+        <h2>✅ Successfully Authenticated!</h2>
+        <p>This window will close automatically in 5 seconds...</p>
+      </div>
+      <script>
+        window.opener.postMessage({ status: "success" }, "*");
+        setTimeout(() => window.close(), 5000);
+      </script>
+    </body>
+  </html>`,
+  { headers: { "Content-Type": "text/html; charset=UTF-8" } }
+);
 
   } catch (error) {
     const apiError = error as { response?: { data?: unknown } };
-    console.error("❌ Error fetching eBay token:", apiError.response?.data || (error as Error).message);
-    return NextResponse.json({ 
-      error: "Failed to get access token", 
-      details: apiError.response?.data 
-    }, { status: 500 });
+    console.error(
+      "❌ Error fetching eBay token:",
+      apiError.response?.data || (error as Error).message
+    );
+    return NextResponse.json(
+      {
+        error: "Failed to get access token",
+        details: apiError.response?.data,
+      },
+      { status: 500 }
+    );
   }
 }
