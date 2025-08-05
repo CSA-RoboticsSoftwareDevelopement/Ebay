@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import ProductCard from "../../../components/productsTemplate/optimizerProductCard";
-import ProductDetailModal from "../../../components/productsTemplate/optimizerProductDetailModal";
 import AddProductModal from "../../../components/productsTemplate/optimizerAddProductModal";
 import { useAuth } from "@/context/AuthContext";
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 import { useRef } from "react";
 import axios from "axios";
+import ProductDetailModal, { ProductDetailModalHandle } from "../../../components/productsTemplate/optimizerProductDetailModal";
+import { Product } from "@/types/ProductTypes";
+
 
 interface OptimizationData {
   original_title: string;
@@ -20,51 +22,9 @@ interface OptimizationData {
   predicted_high_value: boolean;
 }
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  currency: string;
-  quantity: number;
-  quantitySold: number;
-  sellThroughRate: number;
-  timeToSell: number;
-  costPrice: number;
-  shipping: number;
-  ebayFees: number;
-  profit: number;
-  profitMargin: number;
-  roi: number;
-  imageUrl: string;
-  listingStatus: string;
-  createdAt: string;
-  updatedAt: string;
-  competitorData: {
-    id: string;
-    avgPrice: number;
-    avgShipping: number;
-    lowestPrice: number;
-    highestPrice: number;
-    avgSellerFeedback: number;
-    avgListingPosition: number;
-    avgImageCount: number;
-    competitorCount: number;
-    lastUpdated: Date;
-  };
-  optimizedData?: {
-    optimized_title?: string;
-    optimized_description?: string;
-    optimized_price?: number;
-  };
-  condition: string;
-  category: string;
-  subcategory?: string;
-}
-
 export default function Products() {
   const { user } = useAuth();
-  const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user?.id}`;
+  // const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user?.id}`;
   const [productsData, setProductsData] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +33,7 @@ export default function Products() {
   const [statusFilter, setStatusFilter] = useState("");
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const modalRef = useRef<any>(null);
+  const modalRef = useRef<ProductDetailModalHandle>(null);
   const [optimizationDataMap, setOptimizationDataMap] = useState<Record<string, OptimizationData>>({});
 
   const dummyProducts: Product[] = [
@@ -111,6 +71,9 @@ export default function Products() {
       },
       condition: "New",
       category: "Electronics",
+      sku: "",
+      product_id: "",
+      product_title: ""
     },
     {
       id: "dummy-2",
@@ -146,6 +109,9 @@ export default function Products() {
       },
       condition: "New",
       category: "Electronics",
+      sku: "",
+      product_id: "",
+      product_title: ""
     },
     {
       id: "dummy-3",
@@ -181,6 +147,9 @@ export default function Products() {
       },
       condition: "New",
       category: "Electronics",
+      sku: "",
+      product_id: "",
+      product_title: ""
     },
     {
       id: "dummy-4",
@@ -216,6 +185,9 @@ export default function Products() {
       },
       condition: "New",
       category: "Electronics",
+      sku: "",
+      product_id: "",
+      product_title: ""
     },
   ];
 
@@ -243,7 +215,7 @@ export default function Products() {
         price: product.price,
         predicted_high_value: false
       };
-    
+
       setOptimizationDataMap(prev => ({
         ...prev,
         [productId]: optimizationData
@@ -270,22 +242,26 @@ export default function Products() {
     const EBAY_INVENTORY_API = `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`;
     console.log("Fetching inventory from:", EBAY_INVENTORY_API);
 
-    interface InventoryItem {
-      sku: string;
-      product: {
-        title: string;
-        description: string;
-        mpn: string;
-        imageUrls: string[];
-      };
-      availability: {
-        shipToLocationAvailability: {
-          quantity: number;
-        };
-      };
-    }
+    // interface InventoryItem {
+    //   sku: string;
+    //   product: {
+    //     title: string;
+    //     description: string;
+    //     mpn: string;
+    //     imageUrls: string[];
+    //   };
+    //   availability: {
+    //     shipToLocationAvailability: {
+    //       quantity: number;
+    //     };
+    //   };
+    // }
 
     async function fetchProducts() {
+      if (!user?.id) {
+        console.warn("User is not available yet.");
+        return;
+      }
       try {
         const response1 = await fetch(
           `${BACKEND_SERVER_URL}/api/ebay/products/inventory?user_id=${user.id}`
@@ -305,7 +281,20 @@ export default function Products() {
         const optimizerItems = data2.products || [];
 
         // Map first API (inventory)
-        const formattedInventory = inventoryItems.map((item: any) => ({
+        const formattedInventory = inventoryItems.map((item: {
+          sku: string;
+          product?: {
+            title?: string;
+            description?: string;
+            mpn?: string;
+            imageUrls?: string[];
+          };
+          availability: {
+            shipToLocationAvailability: {
+              quantity: number;
+            };
+          };
+        }) => ({
           id: item.sku,
           title: item.product?.title || "Untitled",
           description: item.product?.description || "No description available",
@@ -347,7 +336,27 @@ export default function Products() {
 
         // Map second API (optimizer)
         const formattedOptimizer = await Promise.all(
-          optimizerItems.map(async (item: any) => {
+          optimizerItems.map(async (item: {
+            id?: string;
+            sku?: string;
+            product_title: string;
+            description?: string;
+            price?: number;
+            quantity?: number;
+            quantitySold?: number;
+            costPrice?: number;
+            shipping?: number;
+            ebayFees?: number;
+            profit?: number;
+            profitMargin?: number;
+            roi?: number;
+            image_url?: string;
+            listingStatus?: string;
+            createdAt?: string;
+            updatedAt?: string;
+            condition?: string;
+            category?: string;
+          }) => {
             const baseProduct = {
               id: item.id || item.sku,
               title: item.product_title,
@@ -444,15 +453,34 @@ export default function Products() {
         return prevProducts;
       }
 
-      const updatedProduct: Product = {
+      // Ensure competitorData exists (fallback to default if missing)
+      const productWithCompetitorData: Product = {
         ...newProduct,
+        competitorData: newProduct.competitorData || {
+          id: newProduct.id,
+          avgPrice: 0,
+          avgShipping: 0,
+          lowestPrice: 0,
+          highestPrice: 0,
+          avgSellerFeedback: 0,
+          avgListingPosition: 0,
+          avgImageCount: 0,
+          competitorCount: 0,
+          lastUpdated: new Date(),
+        },
         currency: newProduct.currency || "USD",
         quantitySold: newProduct.quantitySold || 0,
+        sellThroughRate: newProduct.sellThroughRate || 0,
+        timeToSell: newProduct.timeToSell || 0,
+        ebayFees: newProduct.ebayFees || 0,
+        profit: newProduct.profit || 0,
+        profitMargin: newProduct.profitMargin || 0,
+        roi: newProduct.roi || 0,
         createdAt: newProduct.createdAt || new Date().toISOString(),
         updatedAt: newProduct.updatedAt || new Date().toISOString(),
       };
 
-      return [...prevProducts, updatedProduct];
+      return [...prevProducts, productWithCompetitorData];
     });
 
     setRefreshTrigger((prev) => prev + 1);
@@ -473,13 +501,13 @@ export default function Products() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleUpdateProduct = (
-    productId: string,
-    updates: Partial<Product>
-  ) => {
-    console.log("Updating product:", productId, updates);
-    alert(`Product ${productId} updated (simulated)`);
-  };
+  // const handleUpdateProduct = (
+  //   productId: string,
+  //   updates: Partial<Product>
+  // ) => {
+  //   console.log("Updating product:", productId, updates);
+  //   alert(`Product ${productId} updated (simulated)`);
+  // };
 
   const availableStatuses = Array.from(
     new Set(
@@ -506,9 +534,13 @@ export default function Products() {
               key={product.id}
               product={product}
               onClick={() => setSelectedProductId(product.id)}
-              triggerReoptimize={() => modalRef.current?.triggerReoptimize()}
+              onOptimizeClick={async () => {
+                // You can leave this empty or add a console log for dev testing
+                console.log(`Optimize clicked for product: ${product.id}`);
+              }}
             />
           ))}
+
         </div>
 
         {selectedProduct && (

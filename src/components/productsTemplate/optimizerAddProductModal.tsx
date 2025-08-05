@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { FiX, FiTrash2 } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 import Swal from "sweetalert2";
+import { Product } from "@/types/ProductTypes";
 
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProduct: (newProduct: any) => void;
+  onAddProduct: (newProduct: Product) => void;
 }
 
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
@@ -18,7 +19,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onAd
     price: "",
     image_url: "",
   });
-  const [imagePreview, setImagePreview] = useState("");
+  const [, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,17 +63,13 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onAd
         setError(result.message || "Something went wrong.");
       }
     } catch (err) {
+      console.error("Error adding product:", err);
       setError("Server error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setFormData({ ...formData, image_url: url });
-    setImagePreview(url);
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">

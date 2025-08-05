@@ -6,14 +6,14 @@ import axios from "axios";
 
 const BACKEND_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
 
-interface OptimizationData {
-  original_title: string;
-  optimized_suggestions: string[];
-  original_image_url: string;
-  image_score: number;
-  price: number;
-  predicted_high_value: boolean;
-}
+// interface OptimizationData {
+//   original_title: string;
+//   optimized_suggestions: string[];
+//   original_image_url: string;
+//   image_score: number;
+//   price: number;
+//   predicted_high_value: boolean;
+// }
 
 export type ProductCardProps = {
   product: Pick<
@@ -43,19 +43,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onClick,
   onOptimizeClick,
 }) => {
+  const [loading, setLoading] = useState(false); // 👈 Loading state
+
   const calculateEbayFee = (price: number) => {
     const fixedFee = 0.3;
-    let variableFee = price <= 1000
-      ? price * 0.134
-      : 1000 * 0.134 + (price - 1000) * 0.0275;
+    const variableFee =
+      price <= 1000
+        ? price * 0.134
+        : 1000 * 0.134 + (price - 1000) * 0.0275;
     return parseFloat((fixedFee + variableFee).toFixed(2));
   };
 
   const [imgSrc, setImgSrc] = useState(
     product.imageUrl ||
-      `https://placehold.co/400x300?text=${encodeURIComponent(
-        product.title?.substring(0, 1) || product.title
-      )}`
+    `https://placehold.co/400x300?text=${encodeURIComponent(
+      product.title?.substring(0, 1) || product.title
+    )}`
   );
 
   const [editedValues, setEditedValues] = useState<{
@@ -72,8 +75,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleOptimize = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await onOptimizeClick(product.id);
-    onClick(product.id);
+    setLoading(true); // 👈 Start loading
+    try {
+      await onOptimizeClick(product.id);
+      onClick(product.id);
+    } finally {
+      setLoading(false); // 👈 Stop loading
+    }
   };
 
   useEffect(() => {
@@ -82,17 +90,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         const response = await axios.get(
           `${BACKEND_SERVER_URL}/api/ebay/products/productsdata`
         );
-
         const fetchedProduct = response.data.data.find(
-          (item: any) => item.sku === product.id
+          (item: { sku: string; cost_price?: string; ebay_fees?: string }) => item.sku === product.id
         );
+
 
         const costPrice = fetchedProduct
           ? parseFloat(fetchedProduct.cost_price ?? "0")
           : 0;
-        const ebayFees = fetchedProduct?.ebay_fees != null
-          ? parseFloat(fetchedProduct.ebay_fees)
-          : calculateEbayFee(product.price);
+        const ebayFees =
+          fetchedProduct?.ebay_fees != null
+            ? parseFloat(fetchedProduct.ebay_fees)
+            : calculateEbayFee(product.price);
 
         setEditedValues((prev) => ({
           ...prev,
@@ -113,10 +122,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   }, [product.id, product.price]);
 
   return (
-    <div
-      className="bg-neutral-800 text-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer flex flex-col h-full"
-      onClick={() => onClick(product.id)}
-    >
+    <div className="bg-neutral-800 text-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer flex flex-col h-full">
       <div className="h-48 relative">
         <Image
           src={imgSrc}
@@ -126,7 +132,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           onError={() =>
             setImgSrc(
-              `https://placehold.co/400x300?text=${encodeURIComponent(product.title)}`
+              `https://placehold.co/400x300?text=${encodeURIComponent(
+                product.title
+              )}`
             )
           }
         />
@@ -169,10 +177,37 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
       <div className="p-4">
         <button
-          className="w-full py-2.5 bg-primary-yellow text-black font-medium rounded-md hover:bg-primary-yellow/90 transition-colors"
+          className="w-full py-2.5 bg-primary-yellow text-black font-medium rounded-md hover:bg-primary-yellow/90 transition-colors flex items-center justify-center gap-2"
           onClick={handleOptimize}
+          disabled={loading}
         >
-          Optimize
+          {loading ? (
+            <>
+              <svg
+                className="animate-spin h-5 w-5 text-black"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                ></path>
+              </svg>
+              Optimizing...
+            </>
+          ) : (
+            "Optimize"
+          )}
         </button>
       </div>
     </div>

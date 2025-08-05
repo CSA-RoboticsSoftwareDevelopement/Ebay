@@ -37,6 +37,7 @@ export interface Product {
     // Cross-listing specific fields
     condition: string;
     category: string;
+      subcategory?: string; // ✅ Add this line
     variations?: ProductVariation[];
     platformData?: {
       ebay?: EbaySpecificData;
@@ -95,4 +96,6 @@ export interface EtsySpecificData {
   isPersonalizable: boolean;
   sku?: string;
 }
-  
+  export interface ProductDetailModalHandle {
+  triggerReoptimize: () => void;
+}
