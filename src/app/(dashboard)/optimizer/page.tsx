@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import ProductCard from "../../../components/productsTemplate/optimizerProductCard";
 import AddProductModal from "../../../components/productsTemplate/optimizerAddProductModal";
@@ -73,7 +72,8 @@ export default function Products() {
       category: "Electronics",
       sku: "",
       product_id: "",
-      product_title: ""
+      product_title: "",
+      user_id: ""
     },
     {
       id: "dummy-2",
@@ -111,7 +111,8 @@ export default function Products() {
       category: "Electronics",
       sku: "",
       product_id: "",
-      product_title: ""
+      product_title: "",
+      user_id: ""
     },
     {
       id: "dummy-3",
@@ -149,7 +150,8 @@ export default function Products() {
       category: "Electronics",
       sku: "",
       product_id: "",
-      product_title: ""
+      product_title: "",
+      user_id: ""
     },
     {
       id: "dummy-4",
@@ -187,7 +189,8 @@ export default function Products() {
       category: "Electronics",
       sku: "",
       product_id: "",
-      product_title: ""
+      product_title: "",
+      user_id: ""
     },
   ];
 
@@ -446,7 +449,7 @@ export default function Products() {
       // Ensure competitorData exists (fallback to default if missing)
       const productWithCompetitorData: Product = {
         ...newProduct,
-         imageUrl,
+        imageUrl,
         competitorData: newProduct.competitorData || {
           id: newProduct.id,
           avgPrice: 0,
@@ -456,7 +459,7 @@ export default function Products() {
           avgSellerFeedback: 0,
           avgListingPosition: 0,
           avgImageCount: 0,
-          
+
           competitorCount: 0,
           lastUpdated: new Date(),
         },
@@ -498,6 +501,14 @@ export default function Products() {
       productsData.map((p) => p.listingStatus).filter(Boolean) as string[]
     )
   );
+
+  const handleDeleteProduct = (deletedProductId: string) => {
+    setProductsData(prev =>
+      prev.filter(product => product.id !== deletedProductId)
+    );
+  };
+
+
 
   if (!user?.id) {
     return (
@@ -546,7 +557,9 @@ export default function Products() {
               );
               console.log("Saved new title:", newTitle);
             }}
+            onDeleteProduct={handleDeleteProduct}
           />
+
         )}
       </div>
     );
@@ -687,6 +700,7 @@ export default function Products() {
           optimizationData={optimizationDataMap[selectedProduct.id] || null}
           onClose={() => setSelectedProductId(null)}
           onSaveChanges={(newTitle) => handleSaveChanges(selectedProduct.id, newTitle)}
+          onDeleteProduct={handleDeleteProduct}
         />
       )}
     </div>

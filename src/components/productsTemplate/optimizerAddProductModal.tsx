@@ -25,64 +25,69 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onAd
   const [, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  const { product_title, category, price, image_url } = formData;
-  if (!product_title || !category || !price || !image_url) {
-    setError("All fields are required.");
-    return;
-  }
-
-  const user_id = sessionStorage.getItem("userId"); // 🔑 Get from session storage
-
-  if (!user_id) {
-    setError("User ID not found in session.");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const payload = { ...formData, user_id };
-
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await response.json();
-
-    if (response.ok && result.success) {
-      onAddProduct(result.product);
-      Swal.fire("Success", "Product added successfully!", "success");
-      setFormData({
-        product_title: "",
-        category: "",
-        price: "",
-        image_url: "",
-        user_id: "", // Clear manually (optional)
-      });
-      setImagePreview("");
-      onClose();
-    } else {
-      setError(result.message || "Something went wrong.");
+    const { product_title, category, price, image_url } = formData;
+    if (!product_title || !category || !price || !image_url) {
+      setError("All fields are required.");
+      return;
     }
-  } catch (err) {
-    console.error("Error adding product:", err);
-    setError("Server error. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+
+    const user_id = sessionStorage.getItem("userId"); // 🔑 Get from session storage
+
+    if (!user_id) {
+      setError("User ID not found in session.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = { ...formData, user_id };
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const fixedProduct = {
+          ...result.product,
+          imageUrl: result.product.image_url, // ✅ Convert snake_case to camelCase
+        };
+
+        onAddProduct(fixedProduct);
+        Swal.fire("Success", "Product added successfully!", "success");
+        setFormData({
+          product_title: "",
+          category: "",
+          price: "",
+          image_url: "",
+          user_id: "", // Clear manually (optional)
+        });
+        setImagePreview("");
+        onClose();
+      } else {
+        setError(result.message || "Something went wrong.");
+      }
+    } catch (err) {
+      console.error("Error adding product:", err);
+      setError("Server error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
 

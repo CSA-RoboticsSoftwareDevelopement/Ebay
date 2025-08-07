@@ -27,8 +27,8 @@ export default function Products() {
   const dummyProducts: Product[] = [
     {
       sku: "dummy-1",
-product_id: "prod-001",
-product_title: "Wireless Headphones",
+      product_id: "prod-001",
+      product_title: "Wireless Headphones",
       id: "dummy-1",
       title: "Wireless Headphones",
       description: "High-quality wireless headphones with noise cancellation.",
@@ -62,12 +62,13 @@ product_title: "Wireless Headphones",
         lastUpdated: new Date(),
       },
       condition: "New", // <-- Add this line
-      category: "Electronics", // <-- Add this line
+      category: "Electronics",
+      user_id: ""
     },
     {
       sku: "dummy-1",
-product_id: "prod-001",
-product_title: "Wireless Headphones",
+      product_id: "prod-001",
+      product_title: "Wireless Headphones",
       id: "dummy-2",
       title: "Smartwatch",
       description: "Fitness tracking smartwatch with heart rate monitor.",
@@ -101,12 +102,13 @@ product_title: "Wireless Headphones",
         lastUpdated: new Date(),
       },
       condition: "New", // <-- Add this line
-      category: "Electronics", // <-- Add this line
+      category: "Electronics",
+      user_id: ""
     },
     {
       sku: "dummy-1",
-product_id: "prod-001",
-product_title: "Wireless Headphones",
+      product_id: "prod-001",
+      product_title: "Wireless Headphones",
       id: "dummy-3",
       title: "Charger",
       description: "Charger C type .",
@@ -140,12 +142,13 @@ product_title: "Wireless Headphones",
         lastUpdated: new Date(),
       },
       condition: "New", // <-- Add this line
-      category: "Electronics", // <-- Add this line
+      category: "Electronics",
+      user_id: ""
     },
     {
       sku: "dummy-1",
-product_id: "prod-001",
-product_title: "Wireless Headphones",
+      product_id: "prod-001",
+      product_title: "Wireless Headphones",
       id: "dummy-4",
       title: "Extension",
       description: "One Extension for all your charging .",
@@ -179,11 +182,13 @@ product_title: "Wireless Headphones",
         lastUpdated: new Date(),
       },
       condition: "New", // <-- Add this line
-      category: "Electronics", // <-- Add this line
+      category: "Electronics",
+      user_id: ""
     },
   ];
 
  interface Product {
+  user_id: string; // ✅ Add this line
   id: string;
   sku: string;
   product_id: string;
